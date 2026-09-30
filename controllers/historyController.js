@@ -1,4 +1,28 @@
+const mongoose = require('mongoose');
 const LocationHistory = require('../models/LocationHistory');
+const Group = require('../models/Group');
+
+// Returns an HTTP status (400/403) if the requester may not view target's history, otherwise null.
+async function checkHistoryAccess(requesterId, targetUserId) {
+  if (!mongoose.isValidObjectId(targetUserId)) return 400;
+  if (requesterId.toString() === targetUserId) return null;
+  const sharesGroup = await Group.exists({ members: { $all: [requesterId, targetUserId] } });
+  return sharesGroup ? null : 403;
+}
+
+function sendAccessError(res, status) {
+  const message = status === 400
+    ? 'Invalid user ID format.'
+    : 'You can only view history of yourself or members of your groups.';
+  return res.status(status).json({ success: false, message });
+}
+
+// toISOString() would shift local midnight to the previous UTC day.
+function formatLocalDate(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
 
 /**
  * @desc    Get a user's location history for the current day
@@ -9,7 +33,10 @@ exports.getUserLocationHistory = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Get start and end of today (UTC)
+    const accessError = await checkHistoryAccess(req.user._id, userId);
+    if (accessError) return sendAccessError(res, accessError);
+
+    // Start/end of today in server local time (set TZ env on the host)
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
@@ -35,7 +62,7 @@ exports.getUserLocationHistory = async (req, res) => {
     res.json({
       success: true,
       count: formattedHistory.length,
-      date: startOfDay.toISOString().split('T')[0],
+      date: formatLocalDate(startOfDay),
       data: formattedHistory,
     });
   } catch (error) {
@@ -258,6 +285,9 @@ exports.getDayJourney = async (req, res) => {
     const { userId } = req.params;
     const { date } = req.query; // optional "YYYY-MM-DD"
 
+    const accessError = await checkHistoryAccess(req.user._id, userId);
+    if (accessError) return sendAccessError(res, accessError);
+
     // Determine the target date range
     let startOfDay, endOfDay;
     if (date) {
@@ -280,7 +310,7 @@ exports.getDayJourney = async (req, res) => {
       .sort({ timestamp: 1 })
       .lean();
 
-    const dateStr = startOfDay.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(startOfDay);
 
     if (rawHistory.length === 0) {
       return res.json({

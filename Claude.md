@@ -83,3 +83,59 @@ Tức là phải có API : lưu dữ liệu dưới Database , tự động gử
 
 
 Hình như app vẫn chưa có API get thông báo trong nhóm theo cài đặt thời gian đó, hãy hiện thực API này và ghi vào file claude.md
+
+---
+
+## 🚀 Deploy lên Render (Free) + MongoDB Atlas
+
+### Thay đổi code để chạy production
+- `render.yaml` — Render Blueprint (web service, plan free, region singapore, health check `/api/health`)
+- `.env.example` — mẫu biến môi trường
+- `server.js`:
+  - Bắt buộc có `JWT_SECRET` (và `MONGODB_URI` khi `NODE_ENV=production`), thiếu → exit 1
+  - Production **không** fallback sang in-memory MongoDB (tránh mất dữ liệu âm thầm)
+  - `helmet`, `trust proxy`, CORS lấy từ `CORS_ORIGIN`, giới hạn body 100kb
+  - URL public lấy từ `PUBLIC_URL` hoặc `RENDER_EXTERNAL_URL` (Render tự set)
+  - Ẩn chi tiết lỗi 5xx khi production
+  - Graceful shutdown khi nhận `SIGTERM`
+- `config/swagger.js` — thêm server Production (URL Render), path theo `__dirname`
+- `mongodb-memory-server` chuyển sang `devDependencies`
+
+### Bảo mật
+- `GET /api/history/:userId` và `/journey`: chỉ xem được **bản thân** hoặc **người cùng nhóm** (403 nếu không), `userId` sai định dạng → 400
+- Rate limit `POST /api/auth/register` + `/login`: 20 request / 15 phút / IP (→ 429), chỉnh bằng `AUTH_RATE_LIMIT`
+- `GroupDigest` tự xoá sau 30 ngày (TTL index trên `sentAt`)
+- Socket auth trả lỗi chung `Authentication error`
+
+### Biến môi trường
+
+| Key | Giá trị | Ghi chú |
+|---|---|---|
+| `NODE_ENV` | `production` | |
+| `MONGODB_URI` | `mongodb+srv://...` | Nhập tay trên Render |
+| `JWT_SECRET` | chuỗi ngẫu nhiên | Blueprint tự sinh |
+| `JWT_EXPIRES_IN` | `7d` | |
+| `TZ` | `Asia/Ho_Chi_Minh` | Để "hôm nay" trong history/journey tính theo giờ VN |
+| `CORS_ORIGIN` | `*` | Hoặc danh sách origin, phân tách bằng dấu phẩy |
+| `PORT` | — | Render tự cấp, không cần set |
+
+### Các bước deploy
+1. **MongoDB Atlas**
+   - Database Access → tạo user/password
+   - Network Access → Add IP `0.0.0.0/0` (Render Free không có IP tĩnh)
+   - Connect → Drivers → copy URI, thêm tên DB: `.../location-sharing-app?retryWrites=true&w=majority`
+2. **GitHub**: push repo `Backend` (kèm `package-lock.json`, `render.yaml`; `.env` đã bị ignore)
+3. **Render**: Dashboard → New → **Blueprint** → chọn repo → nhập `MONGODB_URI` → Apply
+4. Kiểm tra:
+   - `https://<app>.onrender.com/api/health` → `"mongodb": "connected"`
+   - `https://<app>.onrender.com/api-docs` → Swagger (chọn server "Production server")
+
+### Mobile (iOS) kết nối
+- REST base URL: `https://<app>.onrender.com/api`
+- Socket.io: `https://<app>.onrender.com` (tự nâng lên `wss://`), `auth: { token }`
+
+### Giới hạn Render Free
+- Service ngủ sau 15 phút không có request → lần gọi đầu mất ~50s (cold start)
+- Khi ngủ, **digest scheduler dừng** → không gửi `group_digest`. Có thể dùng UptimeRobot / cron-job.org ping `/api/health` mỗi 10 phút
+- Chỉ 1 instance → không bị gửi digest trùng
+- Nếu Atlas đã có index cũ `sentAt_1` (không TTL) trên collection `groupdigests`, cần drop thủ công để TTL index được tạo

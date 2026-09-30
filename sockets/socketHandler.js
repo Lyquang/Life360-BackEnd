@@ -143,14 +143,14 @@ function initializeSocket(io) {
       const token = socket.handshake.auth.token;
 
       if (!token) {
-        return next(new Error('Authentication error: No token provided'));
+        return next(new Error('Authentication error'));
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id);
 
       if (!user) {
-        return next(new Error('Authentication error: User not found'));
+        return next(new Error('Authentication error'));
       }
 
       // Attach user to socket
@@ -158,7 +158,7 @@ function initializeSocket(io) {
       socket.user = user;
       next();
     } catch (error) {
-      next(new Error('Authentication error: Invalid token'));
+      next(new Error('Authentication error'));
     }
   });
 
@@ -367,7 +367,7 @@ function initializeSocket(io) {
   // ─── Group Digest Scheduler ─────────────────────────────────
   // Chạy mỗi phút, kiểm tra từng group xem đã đến giờ gửi digest chưa
   // "Digest" = thông báo tóm tắt vị trí + thời gian online cuối của từng thành viên
-  setInterval(async () => {
+  const digestTimer = setInterval(async () => {
     try {
       // Chỉ xử lý group có notificationIntervalMinutes > 0
       const groups = await Group.find({ notificationIntervalMinutes: { $gt: 0 } })
@@ -459,6 +459,8 @@ function initializeSocket(io) {
   }, 60 * 1000); // Chạy mỗi 1 phút
 
   console.log('🔌 Socket.io initialized');
+
+  return { stop: () => clearInterval(digestTimer) };
 }
 
 module.exports = initializeSocket;

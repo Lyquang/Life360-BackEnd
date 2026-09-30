@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { register, login, getMe } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 /**
  * @swagger
@@ -35,8 +36,10 @@ const { authenticate } = require('../middleware/auth');
  *         description: Validation error
  *       409:
  *         description: Email already registered
+ *       429:
+ *         description: Too many attempts
  */
-router.post('/register', register);
+router.post('/register', authLimiter, register);
 
 /**
  * @swagger
@@ -64,8 +67,10 @@ router.post('/register', register);
  *         description: Login successful, returns JWT token
  *       401:
  *         description: Invalid credentials
+ *       429:
+ *         description: Too many attempts
  */
-router.post('/login', login);
+router.post('/login', authLimiter, login);
 
 /**
  * @swagger

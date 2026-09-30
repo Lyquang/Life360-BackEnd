@@ -43,11 +43,10 @@ const groupDigestSchema = new mongoose.Schema(
     },
     // Danh sách trạng thái của từng thành viên tại thời điểm gửi
     members: [memberStatusSchema],
-    // Thời điểm digest được tạo (indexed để query theo thời gian)
+    // Thời điểm digest được tạo (TTL index bên dưới tự xoá sau 30 ngày)
     sentAt: {
       type: Date,
       default: Date.now,
-      index: true,
     },
   },
   {
@@ -57,6 +56,9 @@ const groupDigestSchema = new mongoose.Schema(
 
 // ─── Compound index: query digest của 1 group theo thời gian ─
 groupDigestSchema.index({ groupId: 1, sentAt: -1 });
+
+const DIGEST_RETENTION_SECONDS = 30 * 24 * 60 * 60;
+groupDigestSchema.index({ sentAt: 1 }, { expireAfterSeconds: DIGEST_RETENTION_SECONDS });
 
 // ─── Transform output ────────────────────────────────────────
 groupDigestSchema.set('toJSON', {

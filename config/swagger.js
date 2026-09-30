@@ -1,4 +1,12 @@
+const path = require('path');
 const swaggerJsdoc = require('swagger-jsdoc');
+
+const localUrl = `http://localhost:${process.env.PORT || 3000}`;
+const publicUrl = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL;
+
+const servers = [];
+if (publicUrl) servers.push({ url: publicUrl, description: 'Production server' });
+servers.push({ url: localUrl, description: 'Development server' });
 
 const options = {
   definition: {
@@ -13,12 +21,7 @@ const options = {
         name: 'API Support',
       },
     },
-    servers: [
-      {
-        url: `http://localhost:${process.env.PORT || 3000}`,
-        description: 'Development server',
-      },
-    ],
+    servers,
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -30,6 +33,7 @@ const options = {
       },
     },
     tags: [
+      { name: 'Health', description: 'Server health check' },
       { name: 'Auth', description: 'Authentication (Register, Login)' },
       { name: 'Groups', description: 'Group management (Create, Join, Members)' },
       { name: 'Places', description: 'Favorite places management' },
@@ -37,7 +41,10 @@ const options = {
       { name: 'Socket.io', description: 'Real-time events documentation' },
     ],
   },
-  apis: ['./routes/*.js', './server.js'],
+  apis: [
+    path.join(__dirname, '..', 'routes', '*.js'),
+    path.join(__dirname, '..', 'server.js'),
+  ],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
