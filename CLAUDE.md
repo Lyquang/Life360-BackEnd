@@ -1,237 +1,361 @@
-1. Tôi muốn thêm tính năng là Ví dụ trong một gia đinh là biết người đó đang ở thời điểm đó bao nhiêu lâu rồi, 
-Ví dụ trong 30 phút, 1 giờ, 1 ngày,  rồi sẽ có gửi thông báo đến cho mọi người trong gia đình theo một tần suất nào đó
-2. Với những người trong một nhóm, tôi muốn biết ngày hôm nay họ đã đi theo lộ trình như thế nào( bắt đầu từ 00:00 - 23h59) tôi muốn biết họ sẽ đi theo con đường nào,ở đâu bao lâu, từ bắt đầu một ngày cho đến cuối ngày
-3. 
+# CLAUDE.md — AI Agent Guide for Family Tracker Backend
 
-Yêu cầu mới: 
-Người trong nhóm vẫn muốn biết là các thành viên trong nhóm mình ở đâu, online được mấy phút trước rồi, ( kể cả giờ là đang offline)
-Ví dụ: tất cả thành viên trong nhóm nhận được thông báo là "Quang đã ở địa điểm Vietcombank Tower 30 phút rồi và đã online 30 phút trước " 
-Tức là phải có API : lưu dữ liệu dưới Database , tự động gửi thông báo đến cho mọi người trong nhóm theo cài đặt của nhóm ( Ví dụ nhóm setup là mỗi 1 tiếng là phải gủi thông báo đến cho moị người trong nhóm thì 1 tiêngs gửi 1 lần , ai cũng có thể setup như vậy , theo nhu cầu của mỗi người) 
+> This file is for AI coding assistants (Claude, Gemini, etc.) to understand the codebase quickly and follow the established patterns.
 
 ---
 
-## 📋 Implementation Plan — Yêu cầu mới (Group Digest Notification)
+## 🏛 Architecture Overview
 
-### ✅ Backend — DONE
-
-#### Models
-- [x] `User.js` — Thêm `lastSeenAt: Date` + `lastKnownLocation: { coordinates, updatedAt, durationMinutes }`
-- [x] `Group.js` — Thêm `notificationIntervalMinutes: Number` (default 60) + `lastDigestSentAt: Date`
-
-#### Socket (`socketHandler.js`)
-- [x] Khi nhận `update_location`: persist `lastSeenAt` + `lastKnownLocation` vào DB
-- [x] Khi nhận `update_location`: persist `durationMinutes` sau khi tính duration  
-- [x] Khi `disconnect`: persist `lastSeenAt` + set `isOnline: false` vào DB
-- [x] `member_offline` event: bổ sung trường `lastSeenAt`
-- [x] **Digest Scheduler**: `setInterval` chạy mỗi 1 phút, kiểm tra từng group
-  - So sánh `now - lastDigestSentAt` với `notificationIntervalMinutes`
-  - Chỉ gửi nếu có ít nhất 1 thành viên đang online trong room
-
-  - Emit sự kiện `group_digest` đến toàn bộ room
-  - Update `lastDigestSentAt` sau khi gửi
-
-#### API
-- [x] `PATCH /api/v1/groups/:groupId/notification-interval` — Cài interval (0 = tắt, max 1440)
-  - Ai trong nhóm cũng có thể gọi
-  - Validate 0 ≤ intervalMinutes ≤ 1440
-
-### 🔲 Mobile (TODO)
-- [ ] Subscribe Socket event `group_digest` trong `SocketService.swift`
-- [ ] Hiển thị digest panel / notification trong UI (tab "Ở đây" hoặc tab riêng)
-- [ ] API call `updateNotificationInterval` để user tự cài
-- [ ] Hiển thị "online X phút trước" trên avatar thành viên
-
----
-
-## Socket Events
-
-### Mới thêm: `group_digest`
-```json
-{
-  "type": "GROUP_DIGEST",
-  "groupId": "...",
-  "groupName": "Gia đình",
-  "intervalMinutes": 60,
-  "members": [
-    {
-      "userId": "...",
-      "name": "Quang",
-      "isOnline": false,
-      "lastSeenText": "30 phút trước",
-      "batteryLevel": 72,
-      "latitude": 10.776,
-      "longitude": 106.700,
-      "durationMinutes": 30,
-      "durationFormatted": "30 phút",
-      "summary": "Quang ở đây 30 phút và 30 phút trước"
-    }
-  ],
-  "timestamp": "2026-09-17T08:00:00.000Z"
-}
-```
-
-### Cập nhật: `member_offline`
-```json
-{
-  "userId": "...",
-  "name": "Quang",
-  "isOnline": false,
-  "lastSeenAt": "2026-09-17T07:30:00.000Z",
-  "timestamp": "2026-09-17T07:30:00.000Z"
-}
-```
-
-
-Hình như app vẫn chưa có API get thông báo trong nhóm theo cài đặt thời gian đó, hãy hiện thực API này và ghi vào file claude.md
-
----
-
-## 🚀 Deploy lên Render (Free) + MongoDB Atlas
-
-### Thay đổi code để chạy production
-- `render.yaml` — Render Blueprint (web service, plan free, region singapore, health check `/api/health`)
-- `.env.example` — mẫu biến môi trường
-- `src/config/env.js` (Zod) — bắt buộc `JWT_SECRET` (và `MONGODB_URI` khi `NODE_ENV=production`), thiếu → exit 1
-- `src/infrastructure/database/connection.js`:
-  - Production **không** fallback sang in-memory MongoDB; chỉ `NODE_ENV=development` mới fallback (replica set in-memory)
-  - Production **bắt buộc replica set** (Atlas) vì dùng transaction
-- `src/presentation/http/app.js` — `helmet`, `trust proxy`, CORS từ `CORS_ORIGIN`, body 100kb, ẩn lỗi 5xx khi production
-- URL public lấy từ `PUBLIC_URL` hoặc `RENDER_EXTERNAL_URL` (Render tự set)
-- `server.js` — graceful shutdown khi nhận `SIGTERM`
-- `mongodb-memory-server`, `socket.io-client` ở `devDependencies` (chỉ dùng cho test/dev)
-
-### Bảo mật
-- `GET /api/v1/history/:userId` và `/journey`: chỉ xem được **bản thân** hoặc **người cùng nhóm** (403 nếu không), `userId` sai định dạng → 400
-- Rate limit `POST /api/v1/auth/register` + `/login`: 20 request / 15 phút / IP (→ 429), chỉnh bằng `AUTH_RATE_LIMIT`
-- `GroupDigest` tự xoá sau 30 ngày (TTL index trên `sentAt`)
-- Socket auth trả lỗi chung `Authentication error`
-
-### Biến môi trường
-
-| Key | Giá trị | Ghi chú |
-|---|---|---|
-| `NODE_ENV` | `production` | |
-| `MONGODB_URI` | `mongodb+srv://...` | Nhập tay trên Render |
-| `JWT_SECRET` | chuỗi ngẫu nhiên | Blueprint tự sinh |
-| `JWT_EXPIRES_IN` | `7d` | |
-| `TZ` | `Asia/Ho_Chi_Minh` | Để "hôm nay" trong history/journey tính theo giờ VN |
-| `CORS_ORIGIN` | `*` | Hoặc danh sách origin, phân tách bằng dấu phẩy |
-| `PORT` | — | Render tự cấp, không cần set |
-| `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BASE_URL` | — | Upload ảnh chat. Set đủ cả 4 hoặc bỏ trống (tắt) |
-| `S3_ENDPOINT` / `S3_REGION` | R2: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` / `auto` | AWS S3: bỏ trống endpoint, region ví dụ `ap-southeast-1` |
-| `UPLOAD_MAX_BYTES` / `UPLOAD_URL_TTL_SECONDS` | `10485760` / `300` | Tuỳ chọn |
-
-### Các bước deploy
-1. **MongoDB Atlas**
-   - Database Access → tạo user/password
-   - Network Access → Add IP `0.0.0.0/0` (Render Free không có IP tĩnh)
-   - Connect → Drivers → copy URI, thêm tên DB: `.../location-sharing-app?retryWrites=true&w=majority`
-2. **GitHub**: push repo `Backend` (kèm `package-lock.json`, `render.yaml`; `.env` đã bị ignore)
-3. **Render**: Dashboard → New → **Blueprint** → chọn repo → nhập `MONGODB_URI` → Apply
-4. Kiểm tra:
-   - `https://<app>.onrender.com/api/health` → `"mongodb": "connected"`
-   - `https://<app>.onrender.com/api-docs` → Swagger (chọn server "Production server")
-
-### Mobile (iOS) kết nối
-- REST base URL: `https://<app>.onrender.com/api/v1`
-- Socket.io: `https://<app>.onrender.com` (tự nâng lên `wss://`), `auth: { token }`
-
-### Giới hạn Render Free
-- Service ngủ sau 15 phút không có request → lần gọi đầu mất ~50s (cold start)
-- Khi ngủ, **digest scheduler dừng** → không gửi `group_digest`. Có thể dùng UptimeRobot / cron-job.org ping `/api/health` mỗi 10 phút
-- Chỉ 1 instance → không bị gửi digest trùng
-- Nếu Atlas đã có index cũ `sentAt_1` (không TTL) trên collection `groupdigests`, cần drop thủ công để TTL index được tạo
-
----
-
-## 🏛 Kiến trúc Backend (Clean Architecture)
+This project follows **Clean Architecture** with strict layer separation:
 
 ```
-server.js                      # entrypoint: loadConfig → createServer → listen, SIGTERM
+server.js → bootstrap.js → container.js → use cases → repositories → models
+```
+
+### Layer Rules
+
+| Layer | Location | Rule |
+|-------|----------|------|
+| **Domain** | `src/domain/` | Pure JS, zero I/O, no imports from other layers |
+| **Application** | `src/application/` | Use cases; receives deps via factory function; NO Express/Socket/Mongoose |
+| **Infrastructure** | `src/infrastructure/` | Only layer that touches Mongoose, JWT, bcrypt, S3 |
+| **Presentation** | `src/presentation/` | Controllers only validate (Zod) → call use case → format response. No DB queries. |
+
+### Dependency Injection
+
+All dependencies are wired in [`container.js`](src/container.js) — the composition root.  
+Use cases are created via factory functions: `createXxxUseCases({ repo, service, ... })`.  
+Never import a use case directly; always inject via container.
+
+---
+
+## 📁 Directory Structure
+
+```
 src/
-├── config/        env.js (Zod env), swagger.js
-├── domain/        errors (AppError), geo, journey (stay-point algo), dates, media (upload key rules)
-├── application/   use cases — KHÔNG biết Express/Socket.IO/Mongoose
-│   ├── auth/ groups/ places/ history/ digests/ location/ chat/
-│   └── shared/policies.js     # requireGroupMember
+├── application/
+│   ├── auth/           authUseCases.js
+│   ├── chat/           chatUseCases.js, chatMappers.js
+│   ├── digests/        digestUseCases.js
+│   ├── groups/         groupUseCases.js
+│   ├── history/        historyUseCases.js
+│   ├── location/       locationUseCases.js
+│   ├── places/         placeUseCases.js
+│   └── shared/         policies.js (requireGroupMember, sameId)
+├── domain/
+│   ├── errors.js       AppError + Errors factory
+│   ├── geo.js          haversineDistance, formatDuration, formatLastSeen
+│   ├── journey.js      detectStayPoints, buildDayJourney (stay-point algo)
+│   ├── dates.js        localDayRange, formatLocalDate
+│   └── media.js        buildChatUploadKey, isChatUploadKeyOwnedBy, IMAGE_MIME_TYPES
 ├── infrastructure/
-│   ├── database/  connection.js, unitOfWork.js (transaction), models/*
-│   ├── repositories/          # 1 file / aggregate, chỉ chỗ này đụng Mongoose model
-│   ├── security/  tokenService (JWT), passwordHasher (bcrypt)
-│   ├── storage/   s3Storage.js (S3 / R2 presigned PUT)
-│   └── realtime/  socketRealtime.js (port emit/subscribe cho use case)
-├── presentation/
-│   ├── dto/       Zod schemas cho MỌI request (HTTP body/params/query + socket payload)
-│   ├── http/      app.js, middleware (validate, authenticate, errorHandler...), controllers, routes (/api/v1)
-│   ├── socket/    socketServer.js, gateways/{location,chat}Gateway.js
-│   └── jobs/      digestScheduler.js
-├── container.js   # composition root: repo + service → use case
-└── bootstrap.js   # createServer(config) (dùng chung cho server.js và test)
+│   ├── database/
+│   │   ├── connection.js       mongoose.connect + in-memory fallback
+│   │   ├── unitOfWork.js       mongoose.connection.transaction() wrapper
+│   │   └── models/
+│   │       ├── User.js
+│   │       ├── Group.js
+│   │       ├── Conversation.js
+│   │       ├── ConversationMember.js
+│   │       ├── ChatMessage.js
+│   │       ├── LocationHistory.js
+│   │       ├── GroupDigest.js       (TTL 30 days on sentAt)
+│   │       └── FavoritePlace.js
+│   ├── repositories/           1 file per aggregate, only place that imports models
+│   ├── realtime/               socketRealtime.js — port for use cases to emit/subscribe
+│   ├── security/               tokenService.js (JWT), passwordHasher.js (bcrypt)
+│   └── storage/                s3Storage.js (presigned PUT, S3/R2)
+└── presentation/
+    ├── dto/                    Zod schemas for ALL requests (HTTP + socket)
+    ├── http/
+    │   ├── app.js              Express setup (helmet, cors, swagger, rate-limit)
+    │   ├── controllers/        1 file per domain
+    │   ├── middleware/         validate.js, authenticate.js, errorHandler.js
+    │   └── routes/             authRoutes, groupRoutes, chatRoutes, historyRoutes, systemRoutes
+    ├── socket/
+    │   ├── socketServer.js     io.on('connection') — auth middleware + gateway registration
+    │   └── gateways/
+    │       ├── chatGateway.js        chat:send_message, chat:mark_read, chat:typing
+    │       └── locationGateway.js    update_location, sos_alert
+    └── jobs/
+        └── digestScheduler.js  setInterval wrapper, calls digests.sendDueDigests every minute
 ```
-
-Quy tắc:
-- Controller / Gateway: chỉ validate (Zod) → gọi use case → format response. Không query DB.
-- Use case nhận dependency qua factory (`createXxxUseCases(deps)`) → test có thể thay repo lỗi để kiểm tra rollback.
-- Lỗi nghiệp vụ: `throw Errors.forbidden(...)` (domain/errors) → HTTP status / socket ack tự map.
-- Response lỗi chuẩn: `{ success: false, code, message, errors?: [{ field, message }] }`.
-- Tất cả REST ở `/api/v1/*` (route cũ `/api/*` đã bỏ; chỉ giữ `/api/health` cho Render health check).
 
 ---
 
-## 💬 Chat (Group chat theo Circle + Direct 1-1)
+## 🔑 Key Patterns
 
-Circle = Group. MongoDB ánh xạ thiết kế SQL như sau:
+### Error Handling
+Always use the factory in `domain/errors.js`:
+```js
+const { Errors } = require('../../domain/errors');
 
-| SQL | MongoDB |
-|---|---|
-| bảng `conversations` | collection `conversations` — `{ type: group\|direct, groupId (unique), directKey (unique), name, avatarUrl, lastMessageId, lastMessageAt }` |
-| bảng `conversation_members` | collection `conversation_members` — `{ conversationId, userId, lastReadMessageId, lastReadAt }`, unique `(conversationId, userId)` |
-| bảng `messages` | collection `chat_messages` — `{ conversationId, senderId, type: text\|image, content, attachment{url,key,width,height,blurhash,mimeType,size}, createdAt }` |
-| index `(conversation_id, id)` | index `{ conversationId: 1, _id: 1 }` (ObjectId tăng dần theo thời gian ⇒ đóng vai `id`) |
-| `GREATEST(last_read_message_id, $id)` | update pipeline `$max: ['$lastReadMessageId', id]` (atomic) |
-| Transaction | `mongoose.connection.transaction()` (Atlas = replica set) |
+throw Errors.notFound('User not found.');      // 404
+throw Errors.forbidden('Not a member.');       // 403
+throw Errors.badRequest('Invalid input.');     // 400
+throw Errors.unauthorized('Token expired.');   // 401
+throw Errors.conflict('Email taken.');         // 409
+throw Errors.tooManyRequests('Slow down.');    // 429
+throw Errors.serviceUnavailable('S3 off.');   // 503
+```
 
-### 1. Lifecycle Circle ↔ Conversation
-- `POST /api/v1/groups` → **1 transaction**: tạo Group + Conversation(type group) + ConversationMember(creator). Lỗi ở bất kỳ bước nào → rollback toàn bộ.
-- `POST /api/v1/groups/join` → **1 transaction**: thêm vào `Group.members` + `conversation_members`. Socket đang mở của user tự join room chat mới.
-- Khi server start: `syncGroupConversations()` backfill conversation/member cho circle cũ (idempotent).
-- `PATCH /api/v1/conversations/:id` `{ name?, avatarUrl? (https | null) }` — chỉ **thành viên Circle**; chỉ group chat; broadcast `chat:conversation_updated`. Không đổi tên Circle.
-- `POST /api/v1/conversations/direct` `{ userId }` → get-or-create DM (phải cùng ít nhất 1 circle).
+Standard error response: `{ success: false, code, message, errors?: [{ field, message }] }`
 
-### 2. Read receipts & unread
-- Gửi tin → con trỏ đọc của người gửi tự tiến tới tin đó ⇒ `unread = count(_id > lastReadMessageId)` (range thuần trên index, không cần lọc senderId).
-- `chat:mark_read` (socket) / `POST /api/v1/conversations/:id/read` `{ messageId? }` — bỏ `messageId` = đọc hết. Con trỏ **không bao giờ lùi**; chỉ broadcast `chat:read_receipt` khi tiến.
-- `GET /api/v1/conversations/:id/unread` → `{ conversationId, unreadCount, lastReadMessageId }`
-- `GET /api/v1/conversations/unread-summary` → `{ totalUnread, conversations: [...] }` (1 aggregation, mỗi nhánh `$or` là 1 index range)
+### Validation
+All request validation uses **Zod** schemas in `src/presentation/dto/`.  
+Controllers use the `validate()` middleware — never validate in use cases.
 
-### 3. Media / hình ảnh
-1. `POST /api/v1/chat/upload-ticket` `{ conversationId, contentType: image/jpeg|png|webp|heic|heif|gif, contentLength }` → `{ uploadUrl, method: PUT, headers, key, fileUrl, expiresIn }`
-   - Key: `chat/<conversationId>/<userId>/<uuid>.<ext>`; URL ký cả `content-type` + `content-length` (sai type/size → S3/R2 từ chối); TTL 300s
-   - Chưa cấu hình `S3_*` → 503
-2. Client `PUT` file lên `uploadUrl` với đúng `headers`
-3. `chat:send_message` `{ conversationId, type: 'image', attachmentUrl: fileUrl, content?, metadata: { width, height, blurhash, mimeType?, size? } }`
-   - Server chỉ nhận `attachmentUrl` là `fileUrl` do chính user đó xin cho đúng conversation (chống dùng URL lạ / của người khác)
+### Transactions
+```js
+// infrastructure/database/unitOfWork.js
+await unitOfWork.run(async (session) => {
+  await groupRepo.create({ ... }, { session });
+  await conversationRepo.createGroupConversation({ ... }, { session });
+});
+```
+Only available when MongoDB supports replica set (Atlas in production, MongoMemoryReplSet in tests).
 
-### Socket events (chat)
-| Hướng | Event | Payload |
-|---|---|---|
-| C → S | `chat:send_message` | text: `{ conversationId, type: 'text', content }` / image như trên — ack `{ success, data: Message }` |
-| C → S | `chat:mark_read` | `{ conversationId, messageId? }` — ack `{ success, data: { lastReadMessageId, unreadCount, advanced } }` |
-| C → S | `chat:typing` | `{ conversationId, isTyping }` |
-| S → C | `session:ready` | `{ groupIds, conversationIds }` — đã join xong room |
-| S → C | `chat:new_message` | `{ id, conversationId, senderId, senderName, type, content, attachment, createdAt }` |
-| S → C | `chat:read_receipt` | `{ conversationId, userId, lastReadMessageId, readAt }` |
-| S → C | `chat:typing` | `{ conversationId, userId, name, isTyping }` |
-| S → C | `chat:conversation_updated` | `{ conversationId, name, avatarUrl, updatedBy, updatedAt }` |
-| S → C | `chat:error` | `{ event, status, code, message, errors? }` — khi emit không kèm ack |
+### Socket Auth
+Handled in `socketServer.js` before any gateway. User object is attached to `socket.data.user`.
+Gateways receive `{ chat, location, logger }` and register events with `socket.on(...)`.
 
-Rate limit `chat:send_message`: 20 tin / 10 giây / connection (→ 429).
+### Adding a New Feature
+1. Add Zod schema to `src/presentation/dto/`
+2. Add use case to `src/application/<domain>/`
+3. Add repository methods to `src/infrastructure/repositories/`
+4. Wire in `src/container.js`
+5. Add controller method → route → test
 
-### REST khác
-- `GET /api/v1/conversations` — danh sách (members, lastMessage, unreadCount), mới nhất trước
-- `GET /api/v1/conversations/:id` — chi tiết
-- `GET /api/v1/conversations/:id/messages?limit=30&before=<messageId>` — 1 trang cũ → mới, trang trước dùng `nextBefore`
+---
 
-### Test
-`npm test` — 63 test (node:test + socket.io-client + MongoMemoryReplSet, transaction thật, không đụng Atlas):
-`tests/groupChatLifecycle.test.js`, `tests/chat.test.js`, `tests/upload.test.js`, `tests/api.test.js`
+## 🗄 Data Model Summary
+
+### Group (Circle)
+```js
+{
+  name, admin, members: [ObjectId],
+  inviteCode: String (6 digits, unique),
+  notificationIntervalMinutes: Number (0 = off, default 60, max 1440),
+  lastDigestSentAt: Date
+}
+```
+
+### Conversation
+```js
+{
+  type: 'group' | 'direct',
+  groupId: ObjectId,          // only for group type
+  directKey: String,          // sorted "userA_userB", unique — prevents duplicate DMs
+  name, avatarUrl,
+  lastMessageId, lastMessageAt
+}
+```
+
+### ConversationMember
+```js
+{
+  conversationId, userId,
+  lastReadMessageId,          // unread = count(_id > lastReadMessageId)
+  lastReadAt
+  // unique index: (conversationId, userId)
+}
+```
+
+### ChatMessage
+```js
+{
+  conversationId, senderId,
+  type: 'text' | 'image',
+  content: String,
+  attachment: { url, key, width, height, blurhash, mimeType, size }
+  // index: { conversationId: 1, _id: 1 }
+}
+```
+
+### User
+```js
+{
+  name, email, passwordHash,
+  isOnline, lastSeenAt,
+  lastKnownLocation: { coordinates: [lng, lat], updatedAt, durationMinutes },
+  batteryLevel
+}
+```
+
+### GroupDigest
+```js
+{
+  groupId, groupName, intervalMinutes,
+  members: [{ userId, name, isOnline, lastSeenText, latitude, longitude, durationMinutes, summary }],
+  sentAt   // TTL index: auto-delete after 30 days
+}
+```
+
+---
+
+## 🔌 All Socket Events Reference
+
+### Client → Server
+
+| Event | Required Payload | Notes |
+|-------|-----------------|-------|
+| `update_location` | `{ latitude, longitude, batteryLevel? }` | Saves to DB, throttled (50m or 30s) |
+| `sos_alert` | `{ message?, latitude?, longitude?, batteryLevel? }` | Broadcasts to all circles |
+| `chat:send_message` | `{ conversationId, type, content }` or `{ ..., type: 'image', attachmentUrl, metadata }` | Rate limit 20/10s |
+| `chat:mark_read` | `{ conversationId, messageId? }` | Omit messageId = mark all read |
+| `chat:typing` | `{ conversationId, isTyping }` | Fire-and-forget, no ack |
+
+### Server → Client
+
+| Event | When |
+|-------|------|
+| `session:ready` | After join all group+conversation rooms — safe to rely on broadcasts |
+| `location_update` | Member sent new location |
+| `location_stay_alert` | Member at same spot for 30m/1h/2h/4h/8h/24h |
+| `sos_alert` | SOS from a circle member |
+| `sos_confirmed` | Your SOS sent to N groups |
+| `member_online` | Member connected |
+| `member_offline` | Member disconnected (includes `lastSeenAt`) |
+| `group_digest` | Scheduled status summary to circle |
+| `chat:new_message` | New message in conversation |
+| `chat:read_receipt` | Someone advanced their read pointer |
+| `chat:typing` | Typing indicator |
+| `chat:conversation_updated` | Group chat name/avatar changed |
+| `chat:error` | Emit error (only when no ack provided) |
+
+---
+
+## 🌐 REST API Summary
+
+Base: `/api/v1` | Auth: `Authorization: Bearer <token>`
+
+```
+POST   /auth/register
+POST   /auth/login
+GET    /auth/me
+
+POST   /groups                              create circle (atomic: group + conversation)
+GET    /groups                              my circles
+POST   /groups/join                         join by 6-digit invite code
+GET    /groups/:id/members
+PATCH  /groups/:id/notification-interval   { intervalMinutes: 0..1440 }
+GET    /groups/:id/digests                 ?page&limit&from&to
+GET    /groups/:id/digests/latest
+POST   /groups/:id/places                  { name, category, latitude, longitude }
+GET    /groups/:id/places
+
+GET    /conversations                      with unreadCount, lastMessage
+GET    /conversations/unread-summary
+POST   /conversations/direct               { userId } get-or-create DM (requires shared circle)
+GET    /conversations/:id
+PATCH  /conversations/:id                  { name?, avatarUrl? } — group only, member of circle
+GET    /conversations/:id/messages         ?limit&before (cursor pagination, oldest→newest)
+POST   /conversations/:id/read             { messageId? }
+GET    /conversations/:id/unread
+
+POST   /chat/upload-ticket                 { conversationId, contentType, contentLength }
+
+GET    /history/:userId                    today's points
+GET    /history/:userId/journey            ?date=YYYY-MM-DD stay points + moving segments
+
+GET    /api/health
+GET    /api/v1/socket-info
+GET    /api/docs                           Swagger UI
+```
+
+---
+
+## 🏗 Chat — Circle Group Chat + Direct 1-1
+
+- Every Circle has exactly one group Conversation (created in same transaction as the Group).
+- Joining a Circle also joins its Conversation (atomic transaction).
+- DM: `POST /conversations/direct` — get-or-create, requires users share ≥1 circle.
+- Server startup: `syncGroupConversations()` backfills any existing circles without conversations (idempotent).
+- Unread count: `count(_id > lastReadMessageId)` on `{conversationId, _id}` index — no full scan.
+- Read pointer: `$max` update pipeline — never moves backwards, atomic, safe to retry.
+
+### Image Upload Flow
+```
+1. POST /chat/upload-ticket → { uploadUrl, headers, fileUrl, expiresAt }
+2. PUT <uploadUrl> (exact headers, raw bytes)  — S3/R2 validates content-type & content-length
+3. socket.emit('chat:send_message', { type: 'image', attachmentUrl: fileUrl, metadata: {...} })
+   Server validates attachmentUrl belongs to this user+conversation (prevents URL hijacking)
+```
+
+---
+
+## 🔐 Security Notes
+
+- History/journey: requester must be self OR share ≥1 circle with target user (403 otherwise)
+- Auth endpoints: 20 req/15min/IP (configurable via `AUTH_RATE_LIMIT`)
+- Socket auth error is generic: "Authentication error" (no token leak)
+- Image upload keys are scoped to `chat/<conversationId>/<userId>/` — server rejects foreign keys
+- GroupDigest TTL: auto-deleted after 30 days (`sentAt` TTL index)
+
+---
+
+## 🧪 Tests
+
+```bash
+npm test        # node:test runner, concurrency=1
+npm run seed    # seed fake user to MongoDB
+```
+
+Test infrastructure:
+- `MongoMemoryReplSet` — real transactions, no Atlas needed
+- `socket.io-client` — real WebSocket testing
+- Shared test server via `createServer()` (same as production)
+
+Test files: `tests/api.test.js`, `tests/chat.test.js`, `tests/upload.test.js`, `tests/groupChatLifecycle.test.js`
+
+---
+
+## ⚙️ Environment Variables
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `NODE_ENV` | `development` | `development` enables in-memory MongoDB fallback |
+| `PORT` | `3000` | HTTP port |
+| `MONGODB_URI` | `mongodb://localhost:27017/...` | Required in production |
+| `JWT_SECRET` | `change_me` | **Must change in production** |
+| `JWT_EXPIRES_IN` | `7d` | |
+| `CORS_ORIGIN` | `*` | Comma-separated list or `*` |
+| `TZ` | `Asia/Ho_Chi_Minh` | Timezone for day boundary in history |
+| `AUTH_RATE_LIMIT` | `20` | Requests per IP per 15 min for auth |
+| `S3_BUCKET` | — | Enables image messages when set |
+| `S3_REGION` | `auto` | `auto` for Cloudflare R2 |
+| `S3_ENDPOINT` | — | Cloudflare R2 endpoint URL |
+| `S3_ACCESS_KEY_ID` | — | |
+| `S3_SECRET_ACCESS_KEY` | — | |
+| `S3_PUBLIC_BASE_URL` | — | CDN base URL for uploaded files |
+| `UPLOAD_MAX_BYTES` | `10485760` | 10 MB |
+| `UPLOAD_URL_TTL_SECONDS` | `300` | 5 minutes |
+
+---
+
+## 🚢 Deploy on Render
+
+`render.yaml` is included. Connect repo on Render → Blueprint → set `MONGODB_URI` (MongoDB Atlas).
+
+**Important for Render Free:**
+- Service sleeps after 15 min idle → ~50s cold start
+- Digest scheduler pauses during sleep → ping `/api/health` every 10 min via UptimeRobot
+- Atlas: set Network Access to `0.0.0.0/0` (Render Free has no static IP)
+
+**Health check:** `GET /api/health` → `{ status: "ok", mongodb: "connected" }`
+
+---
+
+## 🔢 Location Throttling & Stay Alert Logic
+
+**History throttle** (in `locationUseCases.js`):
+- Save to DB only if moved ≥50m OR ≥30s since last save
+
+**Stay duration tracking** (in-memory, per server instance):
+- Reset when moved ≥50m from tracked position
+- Alert milestones: 30min, 1h, 2h, 4h, 8h, 24h
+
+**Journey analysis** (in `domain/journey.js`):
+- Stay point: run of GPS points within 80m radius lasting ≥5 minutes
+- Moving segment: points between stay points
+- Algorithm: sliding window, O(n)
