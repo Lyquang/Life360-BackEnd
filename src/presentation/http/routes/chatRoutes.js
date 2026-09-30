@@ -7,6 +7,7 @@ const {
   updateConversationBody,
   openDirectBody,
   uploadTicketBody,
+  sendMessageBody,
 } = require('../../dto/chat.schemas');
 
 function createConversationRoutes({ controller, authenticate }) {
@@ -142,6 +143,48 @@ function createConversationRoutes({ controller, authenticate }) {
     '/:conversationId/messages',
     validate({ params: conversationIdParams, query: listMessagesQuery }),
     controller.listMessages
+  );
+
+  /**
+   * @swagger
+   * /api/v1/conversations/{conversationId}/messages:
+   *   post:
+   *     summary: Send a message (text or image) via REST — also broadcasts chat:new_message to all sockets
+   *     description: |
+   *       Identical to the Socket.IO `chat:send_message` event but exposed as a REST endpoint.
+   *       Useful for testing with Postman/curl without setting up a WebSocket client.
+   *       The message is persisted and **broadcast in real-time** to all connected Socket.IO clients.
+   *     tags: [Chat]
+   *     security: [{ bearerAuth: [] }]
+   *     parameters:
+   *       - $ref: '#/components/parameters/ConversationId'
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             oneOf:
+   *               - type: object
+   *                 required: [type, content]
+   *                 properties:
+   *                   type: { type: string, enum: [text] }
+   *                   content: { type: string, minLength: 1, maxLength: 2000, example: Hello! }
+   *               - type: object
+   *                 required: [type, attachmentUrl, metadata]
+   *                 properties:
+   *                   type: { type: string, enum: [image] }
+   *                   attachmentUrl: { type: string, format: uri }
+   *                   content: { type: string, description: Optional caption }
+   *                   metadata: { type: object, required: [width, height, blurhash], properties: { width: { type: integer }, height: { type: integer }, blurhash: { type: string } } }
+   *     responses:
+   *       201: { description: Message sent, content: { application/json: { schema: { $ref: '#/components/schemas/Message' } } } }
+   *       400: { description: Validation error }
+   *       403: { description: Not a member of this conversation }
+   */
+  router.post(
+    '/:conversationId/messages',
+    validate({ params: conversationIdParams, body: sendMessageBody }),
+    controller.sendMessage
   );
 
   /**

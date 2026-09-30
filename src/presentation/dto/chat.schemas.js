@@ -55,6 +55,13 @@ const imageMessage = z.object({
 
 const sendMessagePayload = z.discriminatedUnion('type', [textMessage, imageMessage]);
 
+// REST variant: conversationId comes from URL params, not body.
+// Strips conversationId from body fields so the use case gets it injected from params.
+const sendMessageBody = z.discriminatedUnion('type', [
+  textMessage.omit({ conversationId: true }),
+  imageMessage.omit({ conversationId: true }),
+]);
+
 const markReadPayload = z.object({
   conversationId: objectId,
   messageId: objectId.optional(),
@@ -73,6 +80,7 @@ module.exports = {
   openDirectBody,
   uploadTicketBody,
   sendMessagePayload,
+  sendMessageBody,
   markReadPayload,
   typingPayload,
 };

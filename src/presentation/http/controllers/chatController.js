@@ -53,6 +53,17 @@ function createChatController({ chat }) {
       res.json({ success: true, data: await chat.getUnreadSummary(req.user._id) });
     }),
 
+    sendMessage: asyncHandler(async (req, res) => {
+      const data = await chat.sendMessage({
+        userId: req.user._id,
+        userName: req.user.name,
+        conversationId: req.dto.params.conversationId,
+        message: req.dto.body,
+        exceptSocketId: null, // REST: broadcast to ALL sockets (including caller)
+      });
+      res.status(201).json({ success: true, data });
+    }),
+
     uploadTicket: asyncHandler(async (req, res) => {
       const data = await chat.createUploadTicket({ userId: req.user._id, ...req.dto.body });
       res.status(201).json({ success: true, data });
