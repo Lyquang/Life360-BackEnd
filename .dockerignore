@@ -1,0 +1,27 @@
+# Dev dependencies and local config
+node_modules
+.env
+.env.*
+!.env.example
+
+# Test and dev files
+tests/
+scripts/
+.github/
+
+# Docs / editor
+*.md
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
