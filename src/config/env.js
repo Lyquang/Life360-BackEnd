@@ -10,10 +10,12 @@ const envSchema = z.object({
   MONGODB_URI: optionalString,
   JWT_SECRET: optionalString,
   JWT_EXPIRES_IN: z.string().default('7d'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
   CORS_ORIGIN: z.string().default('*'),
   PUBLIC_URL: optionalUrl,
   RENDER_EXTERNAL_URL: optionalUrl,
   AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
+  GOOGLE_CLIENT_ID: optionalString,
 
   S3_BUCKET: optionalString,
   S3_REGION: z.string().default('auto'),
@@ -75,7 +77,10 @@ function loadConfig(env = process.env) {
     mongodbUri: e.MONGODB_URI || 'mongodb://localhost:27017/location-sharing-app',
     // Only local development may silently fall back to an in-memory database.
     allowInMemoryDatabase: e.NODE_ENV === 'development',
-    jwt: { secret: e.JWT_SECRET, expiresIn: e.JWT_EXPIRES_IN },
+    jwt: { secret: e.JWT_SECRET, expiresIn: e.JWT_EXPIRES_IN, refreshExpiresIn: e.JWT_REFRESH_EXPIRES_IN },
+    oauth: {
+      googleClientId: e.GOOGLE_CLIENT_ID,
+    },
     corsOrigin,
     publicUrl: e.PUBLIC_URL || e.RENDER_EXTERNAL_URL || `http://localhost:${e.PORT}`,
     authRateLimit: e.AUTH_RATE_LIMIT,

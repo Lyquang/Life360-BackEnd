@@ -6,10 +6,12 @@ const digestRepo = require('./infrastructure/repositories/digestRepository');
 const conversationRepo = require('./infrastructure/repositories/conversationRepository');
 const conversationMemberRepo = require('./infrastructure/repositories/conversationMemberRepository');
 const messageRepo = require('./infrastructure/repositories/messageRepository');
+const userSocialAccountRepo = require('./infrastructure/repositories/userSocialAccountRepository');
 const passwordHasher = require('./infrastructure/security/passwordHasher');
 const { createTokenService } = require('./infrastructure/security/tokenService');
 const { createS3Storage } = require('./infrastructure/storage/s3Storage');
 const { createSocketRealtime } = require('./infrastructure/realtime/socketRealtime');
+const { createOAuthProviderFactory } = require('./infrastructure/oauth/oauthProviderFactory');
 const { createUnitOfWork } = require('./infrastructure/database/unitOfWork');
 const { createAuthUseCases } = require('./application/auth/authUseCases');
 const { createGroupUseCases } = require('./application/groups/groupUseCases');
@@ -30,12 +32,14 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     conversationRepo,
     conversationMemberRepo,
     messageRepo,
+    userSocialAccountRepo,
   };
   const services = {
     unitOfWork: createUnitOfWork({ supportsTransactions, logger }),
     realtime: createSocketRealtime(io),
     tokenService: createTokenService(config.jwt),
     passwordHasher,
+    oauthProviderFactory: createOAuthProviderFactory({ config }),
     storage: config.storage ? createS3Storage(config.storage) : null,
     logger,
   };

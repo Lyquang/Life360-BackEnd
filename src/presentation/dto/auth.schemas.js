@@ -13,4 +13,9 @@ const loginBody = z.object({
   password: z.string().min(1).max(128),
 });
 
-module.exports = { registerBody, loginBody };
+const socialLoginBody = z.object({
+  provider: z.enum(['google', 'apple', 'facebook']),
+  token: z.string().trim().min(1).max(4096),
+});
+
+module.exports = { registerBody, loginBody, socialLoginBody };

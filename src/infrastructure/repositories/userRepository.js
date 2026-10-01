@@ -3,12 +3,16 @@ const User = require('../database/models/User');
 const PUBLIC_PROFILE_FIELDS = 'name avatar isOnline lastSeenAt';
 
 module.exports = {
-  create({ name, email, passwordHash }) {
-    return User.create({ name, email, password: passwordHash });
+  create({ name, email, passwordHash, avatar }) {
+    return User.create({ name, email, password: passwordHash, avatar });
   },
 
   existsByEmail(email) {
     return User.exists({ email });
+  },
+
+  findByEmail(email) {
+    return User.findOne({ email });
   },
 
   findByEmailWithPassword(email) {
@@ -25,6 +29,13 @@ module.exports = {
 
   markOnline(id) {
     return User.updateOne({ _id: id }, { isOnline: true });
+  },
+
+  updateSocialProfile(id, { name, avatarUrl }) {
+    const update = { isOnline: true };
+    if (name) update.name = name;
+    if (avatarUrl !== undefined) update.avatar = avatarUrl;
+    return User.findByIdAndUpdate(id, update, { new: true });
   },
 
   markOffline(id, at) {

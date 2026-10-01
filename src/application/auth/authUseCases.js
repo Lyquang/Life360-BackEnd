@@ -1,6 +1,11 @@
 const { Errors } = require('../../domain/errors');
+const { normalizeSocialProfile } = require('../../domain/oauth');
 
-function createAuthUseCases({ userRepo, passwordHasher, tokenService }) {
+function authPayload(user, tokenService) {
+  return { user, ...tokenService.signAuthTokens(user) };
+}
+
+function createAuthUseCases({ userRepo, userSocialAccountRepo, passwordHasher, tokenService, oauthProviderFactory }) {
   async function register({ name, email, password }) {
     if (await userRepo.existsByEmail(email)) throw Errors.conflict('Email already registered.');
 
@@ -12,17 +17,56 @@ function createAuthUseCases({ userRepo, passwordHasher, tokenService }) {
       if (error.code === 11000) throw Errors.conflict('Email already registered.');
       throw error;
     }
-    return { user, token: tokenService.sign(user) };
+    return authPayload(user, tokenService);
   }
 
   async function login({ email, password }) {
     const user = await userRepo.findByEmailWithPassword(email);
-    if (!user || !(await passwordHasher.compare(password, user.password))) {
+    if (!user || !user.password || !(await passwordHasher.compare(password, user.password))) {
       throw Errors.unauthorized('Invalid email or password.');
     }
     await userRepo.markOnline(user._id);
     user.isOnline = true;
-    return { user, token: tokenService.sign(user) };
+    return authPayload(user, tokenService);
+  }
+
+  async function socialLogin({ provider, token }) {
+    const oauthProvider = oauthProviderFactory.get(provider);
+    const profile = normalizeSocialProfile(await oauthProvider.verifyToken(token));
+
+    let user;
+    const socialAccount = await userSocialAccountRepo.findByProvider(profile.provider, profile.providerId);
+    if (socialAccount) {
+      user = await userRepo.findById(socialAccount.userId);
+      if (!user) throw Errors.unauthorized('Linked social account no longer has a user.');
+    } else {
+      user = await userRepo.findByEmail(profile.email);
+      if (!user) {
+        try {
+          user = await userRepo.create({
+            name: profile.name,
+            email: profile.email,
+            avatar: profile.avatarUrl,
+          });
+        } catch (error) {
+          if (error.code !== 11000) throw error;
+          user = await userRepo.findByEmail(profile.email);
+        }
+      }
+
+      try {
+        await userSocialAccountRepo.create({
+          userId: user._id,
+          provider: profile.provider,
+          providerId: profile.providerId,
+        });
+      } catch (error) {
+        if (error.code !== 11000) throw error;
+      }
+    }
+
+    user = await userRepo.updateSocialProfile(user._id, { name: profile.name, avatarUrl: profile.avatarUrl });
+    return authPayload(user, tokenService);
   }
 
   async function getProfile(userId) {
@@ -46,7 +90,7 @@ function createAuthUseCases({ userRepo, passwordHasher, tokenService }) {
     return user;
   }
 
-  return { register, login, getProfile, authenticateToken };
+  return { register, login, socialLogin, getProfile, authenticateToken };
 }
 
 module.exports = { createAuthUseCases };

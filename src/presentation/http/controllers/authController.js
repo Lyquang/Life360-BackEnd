@@ -12,6 +12,11 @@ function createAuthController({ auth }) {
       res.json({ success: true, message: 'Login successful.', data });
     }),
 
+    socialLogin: asyncHandler(async (req, res) => {
+      const data = await auth.socialLogin(req.dto.body);
+      res.json({ success: true, message: 'Social login successful.', data });
+    }),
+
     me: asyncHandler(async (req, res) => {
       res.json({ success: true, data: await auth.getProfile(req.user._id) });
     }),

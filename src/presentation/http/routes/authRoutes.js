@@ -1,6 +1,6 @@
 const express = require('express');
 const { validate } = require('../middleware/validate');
-const { registerBody, loginBody } = require('../../dto/auth.schemas');
+const { registerBody, loginBody, socialLoginBody } = require('../../dto/auth.schemas');
 
 function createAuthRoutes({ controller, authenticate, authLimiter }) {
   const router = express.Router();
@@ -53,6 +53,30 @@ function createAuthRoutes({ controller, authenticate, authLimiter }) {
    *       429: { description: Too many attempts }
    */
   router.post('/login', authLimiter, validate({ body: loginBody }), controller.login);
+
+  /**
+   * @swagger
+   * /api/v1/auth/social-login:
+   *   post:
+   *     summary: Login or register with a social identity provider
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [provider, token]
+   *             properties:
+   *               provider: { type: string, enum: [google, apple, facebook], example: google }
+   *               token: { type: string, description: Provider ID token from the mobile client }
+   *     responses:
+   *       200: { description: "Login successful, returns { user, token, accessToken, refreshToken }" }
+   *       400: { $ref: '#/components/responses/ValidationError' }
+   *       401: { description: Invalid provider token }
+   *       429: { description: Too many attempts }
+   */
+  router.post('/social-login', authLimiter, validate({ body: socialLoginBody }), controller.socialLogin);
 
   /**
    * @swagger

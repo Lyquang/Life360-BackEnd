@@ -11,7 +11,11 @@
     "dev": "nodemon server.js",
     "test": "node --test --test-concurrency=1 $(find tests -name '*.test.js' | sort)",
     "lint": "node --check server.js $(find src -name '*.js' | tr '\\n' ' ')",
-    "seed": "node scripts/seed-fake-user.js"
+    "seed": "node scripts/seed-fake-user.js",
+    "context:skeleton": "node scripts/codebase-skeleton.js",
+    "context:graph": "npm run context:skeleton && node scripts/codebase-graph-html.js",
+    "context:trace": "node scripts/trace-flow.js",
+    "context:refresh": "npm run context:skeleton"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1143.0",
@@ -21,6 +25,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^8.7.0",
+    "google-auth-library": "^11.1.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",

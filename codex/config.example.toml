@@ -1,0 +1,10 @@
+# Copy this file to .codex/config.toml if you want project-scoped Codex MCP.
+# This workspace currently has .codex mounted read-only in the sandbox.
+
+[mcp_servers.memory]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-memory"]
+cwd = "."
+
+[mcp_servers.memory.env]
+MEMORY_FILE_PATH = "codex/memory.jsonl"
