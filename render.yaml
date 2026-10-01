@@ -21,6 +21,10 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       - key: CORS_ORIGIN
         value: "*"
       # Media upload (optional — leave empty to disable image messages)
