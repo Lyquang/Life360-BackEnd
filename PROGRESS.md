@@ -15,6 +15,7 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 | Done | Add agent workflow rules | Added `AGENTS.md` with context budget, tracing, architecture, and progress rules. |
 | Done | Validate generated context output | `npm run context:skeleton`, `npm run context:trace -- --file ...`, and `npm run context:trace -- --term conversationId` pass. |
 | Done | Implement Google OAuth social login | Added domain OAuth contract, Google provider adapter, social account repository/model, auth use case, REST endpoint, config, and tests. |
+| Done | Create iOS integration documentation | Added `API_INTEGRATION_IOS.md` covering REST APIs, Socket.io contracts, integration flows, and Swift Codable models. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -27,6 +28,7 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 - `scripts/trace-flow.js`: Traces term matches and file dependency edges.
 - `AGENTS.md`: Operating rules for future AI agent sessions.
 - `PROGRESS.md`: Human-readable progress and task state.
+- `API_INTEGRATION_IOS.md`: iOS-facing API and realtime integration guide.
 
 ## Technical Notes
 
