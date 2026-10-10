@@ -10,6 +10,7 @@ const userSocialAccountRepo = require('./infrastructure/repositories/userSocialA
 const passwordHasher = require('./infrastructure/security/passwordHasher');
 const { createTokenService } = require('./infrastructure/security/tokenService');
 const { createS3Storage } = require('./infrastructure/storage/s3Storage');
+const { createCloudflareR2StorageService } = require('./infrastructure/storage/CloudflareR2StorageService');
 const { createSocketRealtime } = require('./infrastructure/realtime/socketRealtime');
 const { createOAuthProviderFactory } = require('./infrastructure/oauth/oauthProviderFactory');
 const { createUnitOfWork } = require('./infrastructure/database/unitOfWork');
@@ -40,7 +41,11 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     tokenService: createTokenService(config.jwt),
     passwordHasher,
     oauthProviderFactory: createOAuthProviderFactory({ config }),
-    storage: config.storage ? createS3Storage(config.storage) : null,
+    storage: config.storage
+      ? config.storage.provider === 'cloudflare-r2'
+        ? createCloudflareR2StorageService(config.storage)
+        : createS3Storage(config.storage)
+      : null,
     logger,
   };
   const deps = { ...repos, ...services };

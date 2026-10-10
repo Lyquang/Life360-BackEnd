@@ -1,9 +1,10 @@
 const { z, objectId, httpsUrl } = require('./common');
-const { IMAGE_MIME_TYPES, MAX_IMAGE_DIMENSION, BLURHASH_REGEX } = require('../../domain/media');
+const { IMAGE_MIME_TYPES, VOICE_MIME_TYPES, MEDIA_TYPES, MAX_IMAGE_DIMENSION, BLURHASH_REGEX } = require('../../domain/media');
 
 const MAX_CONTENT_LENGTH = 2000;
 // Hard ceiling; the effective limit is UPLOAD_MAX_BYTES (enforced by the use case).
 const ABSOLUTE_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+const MAX_VOICE_DURATION_SECONDS = 15 * 60;
 
 const conversationIdParams = z.object({ conversationId: objectId });
 
@@ -31,6 +32,14 @@ const uploadTicketBody = z.object({
   contentLength: z.number().int().positive().max(ABSOLUTE_MAX_UPLOAD_BYTES),
 });
 
+const mediaUploadTicketBody = z.object({
+  conversationId: objectId,
+  mediaType: z.enum(MEDIA_TYPES),
+  extension: z.string().trim().toLowerCase().regex(/^[a-z0-9]{2,10}$/, 'Invalid extension.'),
+  mimeType: z.enum([...IMAGE_MIME_TYPES, ...VOICE_MIME_TYPES]),
+  fileSize: z.number().int().positive().max(ABSOLUTE_MAX_UPLOAD_BYTES),
+});
+
 const dimension = z.number().int().min(1).max(MAX_IMAGE_DIMENSION);
 
 const textMessage = z.object({
@@ -53,13 +62,23 @@ const imageMessage = z.object({
   }),
 });
 
-const sendMessagePayload = z.discriminatedUnion('type', [textMessage, imageMessage]);
+const voiceMessage = z.object({
+  conversationId: objectId,
+  type: z.literal('voice'),
+  mediaUrl: httpsUrl,
+  duration: z.number().positive().max(MAX_VOICE_DURATION_SECONDS),
+  fileSize: z.number().int().positive().max(ABSOLUTE_MAX_UPLOAD_BYTES),
+  mimeType: z.enum(VOICE_MIME_TYPES),
+});
+
+const sendMessagePayload = z.discriminatedUnion('type', [textMessage, imageMessage, voiceMessage]);
 
 // REST variant: conversationId comes from URL params, not body.
 // Strips conversationId from body fields so the use case gets it injected from params.
 const sendMessageBody = z.discriminatedUnion('type', [
   textMessage.omit({ conversationId: true }),
   imageMessage.omit({ conversationId: true }),
+  voiceMessage.omit({ conversationId: true }),
 ]);
 
 const markReadPayload = z.object({
@@ -79,6 +98,7 @@ module.exports = {
   updateConversationBody,
   openDirectBody,
   uploadTicketBody,
+  mediaUploadTicketBody,
   sendMessagePayload,
   sendMessageBody,
   markReadPayload,

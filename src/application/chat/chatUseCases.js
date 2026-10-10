@@ -1,6 +1,14 @@
 const { randomUUID } = require('crypto');
 const { Errors } = require('../../domain/errors');
-const { buildChatUploadKey, isChatUploadKeyOwnedBy } = require('../../domain/media');
+const {
+  IMAGE_MIME_TYPES,
+  VOICE_MIME_TYPES,
+  extensionForMimeType,
+  buildChatUploadKey,
+  buildChatMediaUploadKey,
+  isChatUploadKeyOwnedBy,
+  isChatMediaUploadKeyOwnedBy,
+} = require('../../domain/media');
 const { sameId } = require('../shared/policies');
 const { toMessageView, toMemberView, idOrNull } = require('./chatMappers');
 
@@ -24,6 +32,30 @@ function createChatUseCases({
   function requireStorage() {
     if (!storage) throw Errors.serviceUnavailable('Media storage is not configured on this server.');
     return storage;
+  }
+
+  function maxUploadBytesFor(store, mediaType) {
+    if (typeof store.maxUploadBytesFor === 'function') return store.maxUploadBytesFor(mediaType);
+    if (mediaType === 'voice' && store.maxVoiceBytes) return store.maxVoiceBytes;
+    if (mediaType === 'image' && store.maxImageBytes) return store.maxImageBytes;
+    return store.maxUploadBytes;
+  }
+
+  function assertMediaUploadInput({ mediaType, extension, mimeType, fileSize }, store) {
+    const allowedMimes = mediaType === 'image' ? IMAGE_MIME_TYPES : VOICE_MIME_TYPES;
+    if (!allowedMimes.includes(mimeType)) {
+      throw Errors.badRequest(`Unsupported ${mediaType} MIME type.`);
+    }
+
+    const expectedExtension = extensionForMimeType(mimeType);
+    if (!expectedExtension || extension !== expectedExtension) {
+      throw Errors.badRequest(`extension must be "${expectedExtension}" for ${mimeType}.`);
+    }
+
+    const maxBytes = maxUploadBytesFor(store, mediaType);
+    if (fileSize > maxBytes) {
+      throw Errors.badRequest(`File is too large. Maximum size is ${maxBytes} bytes.`);
+    }
   }
 
   async function buildConversationViews(userId, memberships) {
@@ -157,10 +189,23 @@ function createChatUseCases({
     const data = { conversationId, senderId: userId, type: message.type, content: message.content ?? '' };
     if (message.type === 'image') {
       const key = requireStorage().keyFromPublicUrl(message.attachmentUrl);
-      if (!isChatUploadKeyOwnedBy(key, { conversationId, userId })) {
+      if (
+        !isChatUploadKeyOwnedBy(key, { conversationId, userId }) &&
+        !isChatMediaUploadKeyOwnedBy(key, { conversationId, userId })
+      ) {
         throw Errors.badRequest('attachmentUrl must be the fileUrl of an upload ticket issued to you for this conversation.');
       }
       data.attachment = { url: message.attachmentUrl, key, ...message.metadata };
+    }
+    if (message.type === 'voice') {
+      const key = requireStorage().keyFromPublicUrl(message.mediaUrl);
+      if (!isChatMediaUploadKeyOwnedBy(key, { conversationId, userId })) {
+        throw Errors.badRequest('mediaUrl must be the publicUrl of an upload ticket issued to you for this conversation.');
+      }
+      data.mediaUrl = message.mediaUrl;
+      data.duration = message.duration;
+      data.fileSize = message.fileSize;
+      data.mimeType = message.mimeType;
     }
 
     const created = await messageRepo.create(data);
@@ -260,6 +305,24 @@ function createChatUseCases({
     };
   }
 
+  async function createMediaUploadTicket({ userId, conversationId, mediaType, extension, mimeType, fileSize }) {
+    const store = requireStorage();
+    assertMediaUploadInput({ mediaType, extension, mimeType, fileSize }, store);
+    await requireMembership(conversationId, userId);
+
+    const key = buildChatMediaUploadKey({ conversationId, userId, uuid: randomUUID(), mimeType });
+    const upload = await store.createPresignedUpload({ key, contentType: mimeType, contentLength: fileSize });
+    return {
+      uploadUrl: upload.url,
+      method: 'PUT',
+      headers: upload.headers,
+      key,
+      publicUrl: store.publicUrlFor(key),
+      expiresIn: store.urlTtlSeconds,
+      expiresAt: new Date(Date.now() + store.urlTtlSeconds * 1000).toISOString(),
+    };
+  }
+
   async function notifyTyping({ userId, userName, conversationId, isTyping, exceptSocketId }) {
     await requireMembership(conversationId, userId);
     realtime.emitToConversation(
@@ -296,6 +359,7 @@ function createChatUseCases({
     getUnreadCount,
     getUnreadSummary,
     createUploadTicket,
+    createMediaUploadTicket,
     notifyTyping,
     syncGroupConversations,
   };

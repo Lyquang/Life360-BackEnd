@@ -20,7 +20,15 @@ function createS3Storage(config) {
 
   return {
     maxUploadBytes: config.maxUploadBytes,
+    maxImageBytes: config.imageMaxBytes || config.maxUploadBytes,
+    maxVoiceBytes: config.voiceMaxBytes || config.maxUploadBytes,
     urlTtlSeconds: config.urlTtlSeconds,
+
+    maxUploadBytesFor(mediaType) {
+      if (mediaType === 'voice') return config.voiceMaxBytes || config.maxUploadBytes;
+      if (mediaType === 'image') return config.imageMaxBytes || config.maxUploadBytes;
+      return config.maxUploadBytes;
+    },
 
     publicUrlFor(key) {
       return publicPrefix + key;

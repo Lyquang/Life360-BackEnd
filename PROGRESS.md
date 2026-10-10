@@ -16,6 +16,9 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 | Done | Validate generated context output | `npm run context:skeleton`, `npm run context:trace -- --file ...`, and `npm run context:trace -- --term conversationId` pass. |
 | Done | Implement Google OAuth social login | Added domain OAuth contract, Google provider adapter, social account repository/model, auth use case, REST endpoint, config, and tests. |
 | Done | Create iOS integration documentation | Added `API_INTEGRATION_IOS.md` covering REST APIs, Socket.io contracts, integration flows, and Swift Codable models. |
+| Done | Create Google OAuth2 mobile testing documentation | Added `GOOGLE_OAUTH2_MOBILE_API_DOC.md` for mobile Google ID token setup, API testing, Swagger/cURL usage, and debug checklist. |
+| Done | Implement Cloudflare R2 image and voice upload flow | Added generalized media presigned URL endpoint, R2 storage config, voice chat messages, socket contract updates, docs, and tests. |
+| Done | Add local Cloudflare R2 account config | Added complete local Cloudflare R2 config for bucket `life360`, including account ID, API credentials, public development URL, upload TTL, and media size limits. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -29,6 +32,8 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 - `AGENTS.md`: Operating rules for future AI agent sessions.
 - `PROGRESS.md`: Human-readable progress and task state.
 - `API_INTEGRATION_IOS.md`: iOS-facing API and realtime integration guide.
+- `GOOGLE_OAUTH2_MOBILE_API_DOC.md`: Focused Google OAuth2 mobile login testing guide.
+- `Study/CLOUDFLARE_R2_MEDIA_UPLOAD.md`: R2 media upload architecture and implementation decisions.
 
 ## Technical Notes
 
@@ -36,6 +41,7 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 - The architecture follows `presentation -> application -> infrastructure`, with pure helpers in `domain`.
 - The local sandbox blocks writes to `.codex/`, so the Codex config is provided as `codex/config.example.toml`. Copy it to `.codex/config.toml` outside the sandbox if project-scoped Codex MCP config is needed.
 - Google OAuth follows the existing Clean Architecture flow: `authRoutes -> authController -> authUseCases -> oauthProviderFactory/user repositories -> Mongoose models`.
+- Cloudflare R2 media upload keeps backend out of the binary path: REST issues signed PUT URLs, clients upload to R2, and chat messages carry verified media URLs.
 
 ## Next Update Checklist
 

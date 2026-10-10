@@ -27,7 +27,26 @@ services:
         sync: false
       - key: CORS_ORIGIN
         value: "*"
-      # Media upload (optional — leave empty to disable image messages)
+      # Cloudflare R2 media upload (optional — leave empty to disable image/voice messages)
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_DOMAIN
+        sync: false
+      - key: R2_REGION
+        value: auto
+      - key: R2_UPLOAD_URL_TTL_SECONDS
+        value: "300"
+      - key: R2_IMAGE_MAX_BYTES
+        value: "10485760"
+      - key: R2_VOICE_MAX_BYTES
+        value: "26214400"
+      # Legacy media upload config (optional)
       - key: S3_BUCKET
         sync: false
       - key: S3_REGION

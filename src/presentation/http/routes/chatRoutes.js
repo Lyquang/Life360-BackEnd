@@ -7,6 +7,7 @@ const {
   updateConversationBody,
   openDirectBody,
   uploadTicketBody,
+  mediaUploadTicketBody,
   sendMessageBody,
 } = require('../../dto/chat.schemas');
 
@@ -265,6 +266,34 @@ function createChatRoutes({ controller, authenticate }) {
    *       503: { description: Storage not configured }
    */
   router.post('/upload-ticket', validate({ body: uploadTicketBody }), controller.uploadTicket);
+
+  /**
+   * @swagger
+   * /api/v1/chat/media/presigned-url:
+   *   post:
+   *     summary: Pre-signed URL to upload image or voice media directly to Cloudflare R2 / S3-compatible storage
+   *     tags: [Chat]
+   *     security: [{ bearerAuth: [] }]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [conversationId, mediaType, extension, mimeType, fileSize]
+   *             properties:
+   *               conversationId: { type: string }
+   *               mediaType: { type: string, enum: [image, voice] }
+   *               extension: { type: string, example: jpg }
+   *               mimeType: { type: string, example: image/jpeg }
+   *               fileSize: { type: integer, description: Bytes, must be within media limits }
+   *     responses:
+   *       201: { description: "{ uploadUrl, publicUrl, key, expiresIn, expiresAt, headers }" }
+   *       400: { description: Validation error / too large / unsupported MIME }
+   *       403: { description: Not a member of the conversation }
+   *       503: { description: Storage not configured }
+   */
+  router.post('/media/presigned-url', validate({ body: mediaUploadTicketBody }), controller.mediaPresignedUrl);
 
   return router;
 }

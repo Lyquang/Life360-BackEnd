@@ -68,6 +68,11 @@ function createChatController({ chat }) {
       const data = await chat.createUploadTicket({ userId: req.user._id, ...req.dto.body });
       res.status(201).json({ success: true, data });
     }),
+
+    mediaPresignedUrl: asyncHandler(async (req, res) => {
+      const data = await chat.createMediaUploadTicket({ userId: req.user._id, ...req.dto.body });
+      res.status(201).json({ success: true, data });
+    }),
   };
 }
 

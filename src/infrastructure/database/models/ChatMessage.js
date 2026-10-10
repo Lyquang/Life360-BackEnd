@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const MESSAGE_TYPES = ['text', 'image'];
+const MESSAGE_TYPES = ['text', 'image', 'voice'];
 
 const attachmentSchema = new mongoose.Schema(
   {
@@ -39,6 +39,24 @@ const chatMessageSchema = new mongoose.Schema(
     },
     attachment: {
       type: attachmentSchema,
+      default: null,
+    },
+    mediaUrl: {
+      type: String,
+      default: null,
+    },
+    duration: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+    fileSize: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+    mimeType: {
+      type: String,
       default: null,
     },
   },

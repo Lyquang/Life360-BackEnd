@@ -7,8 +7,8 @@ function afterCursor(conversationId, afterId) {
 }
 
 module.exports = {
-  create({ conversationId, senderId, type, content, attachment }) {
-    return ChatMessage.create({ conversationId, senderId, type, content, attachment });
+  create({ conversationId, senderId, type, content, attachment, mediaUrl, duration, fileSize, mimeType }) {
+    return ChatMessage.create({ conversationId, senderId, type, content, attachment, mediaUrl, duration, fileSize, mimeType });
   },
 
   findInConversation(messageId, conversationId) {

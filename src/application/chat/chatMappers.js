@@ -2,7 +2,7 @@ const idOrNull = (id) => (id ? id.toString() : null);
 
 function toMessageView(message, senderName = null) {
   const a = message.attachment;
-  return {
+  const view = {
     id: message._id.toString(),
     conversationId: message.conversationId.toString(),
     senderId: message.senderId.toString(),
@@ -21,6 +21,13 @@ function toMessageView(message, senderName = null) {
       : null,
     createdAt: message.createdAt,
   };
+  if (message.type === 'voice') {
+    view.mediaUrl = message.mediaUrl;
+    view.duration = message.duration;
+    view.fileSize = message.fileSize;
+    view.mimeType = message.mimeType;
+  }
+  return view;
 }
 
 function toMemberView(user) {

@@ -26,9 +26,20 @@ const envSchema = z.object({
   S3_FORCE_PATH_STYLE: z.enum(['true', 'false']).default('false'),
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
   UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(300),
+
+  R2_ACCOUNT_ID: optionalString,
+  R2_ACCESS_KEY_ID: optionalString,
+  R2_SECRET_ACCESS_KEY: optionalString,
+  R2_BUCKET_NAME: optionalString,
+  R2_PUBLIC_DOMAIN: optionalUrl,
+  R2_REGION: z.string().default('auto'),
+  R2_UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(300),
+  R2_IMAGE_MAX_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
+  R2_VOICE_MAX_BYTES: z.coerce.number().int().positive().default(25 * 1024 * 1024),
 });
 
 const STORAGE_KEYS = ['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_PUBLIC_BASE_URL'];
+const R2_STORAGE_KEYS = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME', 'R2_PUBLIC_DOMAIN'];
 
 class ConfigError extends Error {}
 
@@ -49,11 +60,15 @@ function loadConfig(env = process.env) {
   if (configuredStorageKeys.length > 0 && configuredStorageKeys.length < STORAGE_KEYS.length) {
     missing.push(...STORAGE_KEYS.filter((k) => !e[k]));
   }
+  const configuredR2StorageKeys = R2_STORAGE_KEYS.filter((k) => e[k]);
+  if (configuredR2StorageKeys.length > 0 && configuredR2StorageKeys.length < R2_STORAGE_KEYS.length) {
+    missing.push(...R2_STORAGE_KEYS.filter((k) => !e[k]));
+  }
   if (missing.length > 0) {
     throw new ConfigError(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
-  const storage = configuredStorageKeys.length
+  const legacyStorage = configuredStorageKeys.length
     ? {
         bucket: e.S3_BUCKET,
         region: e.S3_REGION,
@@ -64,6 +79,21 @@ function loadConfig(env = process.env) {
         forcePathStyle: e.S3_FORCE_PATH_STYLE === 'true',
         maxUploadBytes: e.UPLOAD_MAX_BYTES,
         urlTtlSeconds: e.UPLOAD_URL_TTL_SECONDS,
+      }
+    : null;
+
+  const r2Storage = configuredR2StorageKeys.length
+    ? {
+        provider: 'cloudflare-r2',
+        accountId: e.R2_ACCOUNT_ID,
+        bucket: e.R2_BUCKET_NAME,
+        region: e.R2_REGION,
+        accessKeyId: e.R2_ACCESS_KEY_ID,
+        secretAccessKey: e.R2_SECRET_ACCESS_KEY,
+        publicBaseUrl: e.R2_PUBLIC_DOMAIN.replace(/\/+$/, ''),
+        imageMaxBytes: e.R2_IMAGE_MAX_BYTES,
+        voiceMaxBytes: e.R2_VOICE_MAX_BYTES,
+        urlTtlSeconds: e.R2_UPLOAD_URL_TTL_SECONDS,
       }
     : null;
 
@@ -84,7 +114,7 @@ function loadConfig(env = process.env) {
     corsOrigin,
     publicUrl: e.PUBLIC_URL || e.RENDER_EXTERNAL_URL || `http://localhost:${e.PORT}`,
     authRateLimit: e.AUTH_RATE_LIMIT,
-    storage,
+    storage: r2Storage || legacyStorage,
   };
 }
 

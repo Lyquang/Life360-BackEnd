@@ -1124,6 +1124,61 @@ Response `201`:
 
 Common errors: `400`, `401`, `403`, `503`.
 
+### Create Media Presigned URL For Image Or Voice
+
+```http
+POST /chat/media/presigned-url
+Auth: Yes
+```
+
+This is the newer generalized media endpoint for Cloudflare R2 / S3-compatible direct uploads. It supports both images and voice notes.
+
+Body:
+
+| Field | Type | Required | Rules |
+| --- | --- | --- | --- |
+| `conversationId` | ObjectId String | Yes | User must be conversation member |
+| `mediaType` | String | Yes | `image` or `voice` |
+| `extension` | String | Yes | Must match MIME type, e.g. `jpg`, `png`, `m4a` |
+| `mimeType` | String | Yes | Images: `image/jpeg`, `image/png`, `image/webp`, `image/heic`, `image/heif`, `image/gif`; Voice: `audio/m4a`, `audio/mp4`, `audio/aac`, `audio/mpeg`, `audio/ogg`, `audio/webm`, `audio/wav` |
+| `fileSize` | Int | Yes | Bytes, must be within server media limit |
+
+Voice request:
+
+```json
+{
+  "conversationId": "66f333333333333333333333",
+  "mediaType": "voice",
+  "extension": "m4a",
+  "mimeType": "audio/mp4",
+  "fileSize": 123456
+}
+```
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "uploadUrl": "https://storage.example.com/presigned-put-url",
+    "method": "PUT",
+    "headers": {
+      "Content-Type": "audio/mp4",
+      "Content-Length": "123456"
+    },
+    "key": "chats/66f333333333333333333333/66f123456789abcdef012345/uuid.m4a",
+    "publicUrl": "https://media.example.com/chats/66f333333333333333333333/66f123456789abcdef012345/uuid.m4a",
+    "expiresIn": 300,
+    "expiresAt": "2026-10-10T08:15:00.000Z"
+  }
+}
+```
+
+After uploading bytes with HTTP PUT, send a Socket.io or REST chat message using `publicUrl` as `mediaUrl` for voice notes.
+
+Common errors: `400`, `401`, `403`, `503`.
+
 ## 8. Location History & Journey APIs
 
 ### Today Location Points
@@ -1333,6 +1388,19 @@ Image payload:
 }
 ```
 
+Voice payload:
+
+```json
+{
+  "conversationId": "66f333333333333333333333",
+  "type": "voice",
+  "mediaUrl": "https://media.example.com/chats/...",
+  "duration": 12.4,
+  "fileSize": 123456,
+  "mimeType": "audio/mp4"
+}
+```
+
 Ack success:
 
 ```json
@@ -1520,6 +1588,25 @@ No ack. Broadcasts to other conversation members.
 }
 ```
 
+Voice message example:
+
+```json
+{
+  "id": "66f888888888888888888888",
+  "conversationId": "66f333333333333333333333",
+  "senderId": "66f123456789abcdef012345",
+  "senderName": "Alice",
+  "type": "voice",
+  "content": "",
+  "attachment": null,
+  "mediaUrl": "https://media.example.com/chats/...",
+  "duration": 12.4,
+  "fileSize": 123456,
+  "mimeType": "audio/mp4",
+  "createdAt": "2026-10-10T08:10:00.000Z"
+}
+```
+
 #### `chat:read_receipt`
 
 ```json
@@ -1642,6 +1729,43 @@ Important:
 - `attachmentUrl` must be the `fileUrl` returned by upload ticket.
 - Backend rejects URLs not issued to the same user and conversation.
 - `blurhash`, `width`, and `height` are required for image message metadata.
+
+### Voice Note Upload Flow
+
+Step 1: Request a media upload URL.
+
+```http
+POST /chat/media/presigned-url
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "conversationId": "66f333333333333333333333",
+  "mediaType": "voice",
+  "extension": "m4a",
+  "mimeType": "audio/mp4",
+  "fileSize": 123456
+}
+```
+
+Step 2: Upload audio bytes directly to `data.uploadUrl` with exactly the returned `data.headers`.
+
+Step 3: Send the chat message.
+
+```json
+{
+  "conversationId": "66f333333333333333333333",
+  "type": "voice",
+  "mediaUrl": "<ticket.publicUrl>",
+  "duration": 12.4,
+  "fileSize": 123456,
+  "mimeType": "audio/mp4"
+}
+```
+
+Recommended iOS format: `audio/mp4` with extension `m4a`.
 
 ### Background Location Update Flow
 
@@ -1849,12 +1973,17 @@ struct ChatMessage: Codable, Identifiable {
     let type: ChatMessageType
     let content: String
     let attachment: ChatAttachment?
+    let mediaUrl: String?
+    let duration: Double?
+    let fileSize: Int?
+    let mimeType: String?
     let createdAt: Date
 }
 
 enum ChatMessageType: String, Codable {
     case text
     case image
+    case voice
 }
 
 struct ChatAttachment: Codable {
@@ -1880,6 +2009,16 @@ struct UploadTicket: Codable {
     let headers: [String: String]
     let key: String
     let fileUrl: String
+    let expiresIn: Int
+    let expiresAt: Date
+}
+
+struct MediaUploadTicket: Codable {
+    let uploadUrl: String
+    let method: String
+    let headers: [String: String]
+    let key: String
+    let publicUrl: String
     let expiresIn: Int
     let expiresAt: Date
 }

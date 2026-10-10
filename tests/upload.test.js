@@ -10,6 +10,8 @@ describe('Media upload tickets and image messages', { timeout: 120000 }, () => {
   let t, alice, bob, carol, family;
 
   const ticket = (user, body) => t.api('POST', '/api/v1/chat/upload-ticket', { token: user.token, body });
+  const mediaTicket = (user, body) =>
+    t.api('POST', '/api/v1/chat/media/presigned-url', { token: user.token, body });
   const imagePayload = (conversationId, attachmentUrl, extra = {}) => ({
     conversationId,
     type: 'image',
@@ -102,6 +104,63 @@ describe('Media upload tickets and image messages', { timeout: 120000 }, () => {
         chat.createUploadTicket({ userId: alice.id, conversationId: family.conversationId, contentType: 'image/jpeg', contentLength: 1 }),
         (error) => error.status === 503
       );
+    });
+
+    it('returns a generalized media ticket for images and voice notes', async () => {
+      const image = await mediaTicket(alice, {
+        conversationId: family.conversationId,
+        mediaType: 'image',
+        extension: 'jpg',
+        mimeType: 'image/jpeg',
+        fileSize: 204800,
+      });
+      assert.equal(image.status, 201, JSON.stringify(image.body));
+      assert.equal(image.body.data.method, 'PUT');
+      assert.deepEqual(image.body.data.headers, { 'Content-Type': 'image/jpeg', 'Content-Length': '204800' });
+      assert.match(
+        image.body.data.key,
+        new RegExp(`^chats/${family.conversationId}/${alice.id}/[0-9a-f-]{36}\\.jpg$`)
+      );
+      assert.equal(image.body.data.publicUrl, `https://cdn.test.local/${image.body.data.key}`);
+
+      const voice = await mediaTicket(alice, {
+        conversationId: family.conversationId,
+        mediaType: 'voice',
+        extension: 'm4a',
+        mimeType: 'audio/mp4',
+        fileSize: 123456,
+      });
+      assert.equal(voice.status, 201, JSON.stringify(voice.body));
+      assert.match(
+        voice.body.data.key,
+        new RegExp(`^chats/${family.conversationId}/${alice.id}/[0-9a-f-]{36}\\.m4a$`)
+      );
+      assert.equal(voice.body.data.publicUrl, `https://cdn.test.local/${voice.body.data.key}`);
+    });
+
+    it('validates generalized media ticket semantics and membership', async () => {
+      const base = {
+        conversationId: family.conversationId,
+        mediaType: 'voice',
+        extension: 'm4a',
+        mimeType: 'audio/mp4',
+        fileSize: 100,
+      };
+      const invalid = [
+        { ...base, mediaType: 'image' },
+        { ...base, extension: 'mp4' },
+        { ...base, mimeType: 'image/jpeg' },
+        { ...base, fileSize: 0 },
+        { ...base, fileSize: '100' },
+        { ...base, conversationId: 'nope' },
+      ];
+      for (const body of invalid) {
+        const res = await mediaTicket(alice, body);
+        assert.equal(res.status, 400, JSON.stringify(body));
+      }
+
+      const outsider = await mediaTicket(carol, base);
+      assert.equal(outsider.status, 403);
     });
   });
 
@@ -202,6 +261,88 @@ describe('Media upload tickets and image messages', { timeout: 120000 }, () => {
         assert.equal(ack.status, 400, field);
         assert.ok(ack.errors.some((e) => e.field === field), `${field}: ${JSON.stringify(ack.errors)}`);
       }
+      await t.disconnect(a);
+    });
+  });
+
+  describe('chat:send_message (voice)', () => {
+    it('stores and broadcasts a voice note', async () => {
+      const { publicUrl } = (
+        await mediaTicket(alice, {
+          conversationId: family.conversationId,
+          mediaType: 'voice',
+          extension: 'm4a',
+          mimeType: 'audio/mp4',
+          fileSize: 123456,
+        })
+      ).body.data;
+      const a = await t.connect(alice.token);
+      const b = await t.connect(bob.token);
+      const received = waitForEvent(b, 'chat:new_message');
+
+      const payload = {
+        conversationId: family.conversationId,
+        type: 'voice',
+        mediaUrl: publicUrl,
+        duration: 12.4,
+        fileSize: 123456,
+        mimeType: 'audio/mp4',
+      };
+      const ack = await emitWithAck(a, 'chat:send_message', payload);
+      assert.equal(ack.success, true, JSON.stringify(ack));
+      assert.equal(ack.data.type, 'voice');
+      assert.equal(ack.data.mediaUrl, publicUrl);
+      assert.equal(ack.data.duration, 12.4);
+      assert.equal(ack.data.fileSize, 123456);
+      assert.equal(ack.data.mimeType, 'audio/mp4');
+      assert.deepEqual(await received, ack.data);
+
+      const history = await t.api('GET', `/api/v1/conversations/${family.conversationId}/messages`, { token: bob.token });
+      assert.deepEqual(history.body.data.at(-1), ack.data);
+
+      await t.disconnect(a, b);
+    });
+
+    it('rejects voice URLs that were not issued to the sender for this conversation', async () => {
+      const aliceTicket = (
+        await mediaTicket(alice, {
+          conversationId: family.conversationId,
+          mediaType: 'voice',
+          extension: 'm4a',
+          mimeType: 'audio/mp4',
+          fileSize: 100,
+        })
+      ).body.data;
+      const bobTicket = (
+        await mediaTicket(bob, {
+          conversationId: family.conversationId,
+          mediaType: 'voice',
+          extension: 'm4a',
+          mimeType: 'audio/mp4',
+          fileSize: 100,
+        })
+      ).body.data;
+      const a = await t.connect(alice.token);
+
+      const invalid = [
+        bobTicket.publicUrl,
+        'https://evil.example.com/chats/x.m4a',
+        `${aliceTicket.publicUrl}?v=1`,
+        'https://cdn.test.local/chat/not-the-new-prefix/file.m4a',
+      ];
+      for (const mediaUrl of invalid) {
+        const ack = await emitWithAck(a, 'chat:send_message', {
+          conversationId: family.conversationId,
+          type: 'voice',
+          mediaUrl,
+          duration: 1,
+          fileSize: 100,
+          mimeType: 'audio/mp4',
+        });
+        assert.equal(ack.status, 400, mediaUrl);
+        assert.match(ack.message, /upload ticket/);
+      }
+
       await t.disconnect(a);
     });
   });

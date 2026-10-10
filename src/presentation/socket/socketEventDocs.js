@@ -13,6 +13,7 @@ const socketEventDocs = {
       payload: [
         '{ conversationId, type: "text", content: String(1..2000) }',
         '{ conversationId, type: "image", attachmentUrl: fileUrl from upload ticket, content?: caption, metadata: { width, height, blurhash, mimeType?, size? } }',
+        '{ conversationId, type: "voice", mediaUrl: publicUrl from media upload ticket, duration: seconds, fileSize: bytes, mimeType }',
       ],
       ack: '{ success: true, data: Message } | { success: false, status, code, message, errors? }',
       behavior: 'Persists, broadcasts chat:new_message to the conversation room (except the sending socket). Rate limit 20 msg / 10 s per connection.',
@@ -36,7 +37,7 @@ const socketEventDocs = {
     member_online: '{ userId, name, isOnline: true, timestamp }',
     member_offline: '{ userId, name, isOnline: false, lastSeenAt, timestamp }',
     group_digest: '{ type: "GROUP_DIGEST", groupId, groupName, intervalMinutes, members: [...], timestamp }',
-    'chat:new_message': '{ id, conversationId, senderId, senderName, type, content, attachment: { url, width, height, blurhash, mimeType, size } | null, createdAt }',
+    'chat:new_message': '{ id, conversationId, senderId, senderName, type, content, attachment: { url, width, height, blurhash, mimeType, size } | null, mediaUrl?, duration?, fileSize?, mimeType?, createdAt }',
     'chat:read_receipt': '{ conversationId, userId, lastReadMessageId, readAt }',
     'chat:typing': '{ conversationId, userId, name, isTyping }',
     'chat:conversation_updated': '{ conversationId, name, avatarUrl, updatedBy, updatedAt }',
