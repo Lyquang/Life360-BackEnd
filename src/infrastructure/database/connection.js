@@ -9,6 +9,7 @@ require('./models/GroupDigest');
 require('./models/Conversation');
 require('./models/ConversationMember');
 require('./models/ChatMessage');
+require('./models/RefreshSession');
 
 async function detectTransactionSupport() {
   const hello = await mongoose.connection.db.admin().command({ hello: 1 });

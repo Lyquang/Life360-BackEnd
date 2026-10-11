@@ -14,4 +14,18 @@ function createAuthLimiter(limit) {
   });
 }
 
-module.exports = { createAuthLimiter };
+function createRefreshLimiter(limit) {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      success: false,
+      code: 'RATE_LIMITED',
+      message: 'Too many refresh attempts. Please try again later.',
+    },
+  });
+}
+
+module.exports = { createAuthLimiter, createRefreshLimiter };

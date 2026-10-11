@@ -89,18 +89,27 @@ function createUseCases(profile) {
     userSocialAccountRepo,
     passwordHasher: {},
     tokenService: {
-      signAuthTokens(user) {
+      issueTokenPair(user) {
         return {
-          token: `access-${user._id}`,
           accessToken: `access-${user._id}`,
+          accessTokenHash: `access-hash-${user._id}`,
+          accessTokenExpiresAt: new Date(Date.now() + 60000),
           refreshToken: `refresh-${user._id}`,
+          refreshTokenHash: `refresh-hash-${user._id}`,
+          refreshTokenExpiresAt: new Date(Date.now() + 60000),
+          familyId: `family-${user._id}`,
+          expiresIn: 60,
         };
       },
-      decode() {
-        return null;
-      },
+      hashToken: (token) => `hash-${token}`,
     },
     cacheManager,
+    unitOfWork: { run: (work) => work(null) },
+    refreshSessionRepo: {
+      create: async () => ({}),
+      enforceActiveFamilyLimit: async () => ({ sessions: [], familyIds: [] }),
+    },
+    realtime: { disconnectSession: async () => {}, disconnectUser: async () => {} },
     oauthProviderFactory: {
       get(provider) {
         assert.equal(provider, profile.provider);
@@ -173,10 +182,16 @@ describe('SocialLoginUseCase', () => {
           assert.equal(token, 'access-token');
           return { id: user._id.toString(), exp: Math.floor(Date.now() / 1000) + 60 };
         },
-        signAuthTokens() {
+        issueTokenPair() {
           throw new Error('not used');
         },
+        hashToken(token) {
+          return `hash-${token}`;
+        },
       },
+      unitOfWork: { run: (work) => work(null) },
+      refreshSessionRepo: {},
+      realtime: { disconnectSession: async () => {}, disconnectUser: async () => {} },
     });
 
     await auth.logout({ userId: user._id, accessToken: 'access-token' });

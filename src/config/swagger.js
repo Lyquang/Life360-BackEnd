@@ -51,6 +51,20 @@ function createSwaggerSpec({ publicUrl, port }) {
           },
         },
         schemas: {
+          AuthTokenPair: {
+            type: 'object',
+            required: ['token', 'accessToken', 'refreshToken', 'expiresIn'],
+            properties: {
+              token: {
+                type: 'string',
+                deprecated: true,
+                description: 'Deprecated alias of accessToken kept for older mobile clients.',
+              },
+              accessToken: { type: 'string', description: 'Short-lived access JWT.' },
+              refreshToken: { type: 'string', description: 'Opaque single-use refresh token.' },
+              expiresIn: { type: 'integer', example: 900, description: 'Access token lifetime in seconds.' },
+            },
+          },
           Member: {
             type: 'object',
             properties: {

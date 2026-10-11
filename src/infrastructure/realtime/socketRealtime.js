@@ -2,6 +2,7 @@ const rooms = {
   user: (userId) => `user:${userId}`,
   group: (groupId) => `group:${groupId}`,
   conversation: (conversationId) => `conversation:${conversationId}`,
+  session: (familyId) => `session:${familyId}`,
 };
 
 /** Realtime port implemented with Socket.IO. Use cases only see these methods. */
@@ -41,6 +42,15 @@ function createSocketRealtime(io) {
 
     async countUserSockets(userId) {
       return (await io.in(rooms.user(userId)).fetchSockets()).length;
+    },
+
+    disconnectSession(familyId) {
+      if (!familyId) return Promise.resolve();
+      return io.in(rooms.session(familyId)).disconnectSockets(true);
+    },
+
+    disconnectUser(userId) {
+      return io.in(rooms.user(userId)).disconnectSockets(true);
     },
   };
 }

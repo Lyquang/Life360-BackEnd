@@ -7,7 +7,9 @@ function createAuthenticate(authUseCases) {
       if (!header || !header.startsWith('Bearer ')) {
         throw Errors.unauthorized('Access denied. No token provided.');
       }
-      req.user = await authUseCases.authenticateToken(header.slice('Bearer '.length));
+      const authenticated = await authUseCases.authenticateToken(header.slice('Bearer '.length));
+      req.user = authenticated.user;
+      req.auth = authenticated.auth;
       next();
     } catch (error) {
       next(error);

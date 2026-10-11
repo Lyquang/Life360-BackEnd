@@ -19,10 +19,14 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: JWT_REFRESH_EXPIRES_IN
-        value: 30d
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_TOKEN_TTL_DAYS
+        value: "30"
+      - key: AUTH_MAX_ACTIVE_SESSIONS
+        value: "10"
+      - key: REFRESH_RATE_LIMIT
+        value: "60"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGIN

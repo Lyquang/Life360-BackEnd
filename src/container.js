@@ -7,6 +7,7 @@ const conversationRepo = require('./infrastructure/repositories/conversationRepo
 const conversationMemberRepo = require('./infrastructure/repositories/conversationMemberRepository');
 const messageRepo = require('./infrastructure/repositories/messageRepository');
 const userSocialAccountRepo = require('./infrastructure/repositories/userSocialAccountRepository');
+const refreshSessionRepo = require('./infrastructure/repositories/refreshSessionRepository');
 const { createNoopCacheManager } = require('./infrastructure/cache/NoopCacheManager');
 const { createRedisCacheManager } = require('./infrastructure/cache/RedisCacheManager');
 const { createCachedUserRepository } = require('./infrastructure/cache/cachedUserRepository');
@@ -43,6 +44,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     conversationMemberRepo,
     messageRepo,
     userSocialAccountRepo,
+    refreshSessionRepo,
   };
   const services = {
     unitOfWork: createUnitOfWork({ supportsTransactions, logger }),
@@ -57,6 +59,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
       : null,
     cacheManager,
     locationCacheTtlSeconds: config.redis.locationTtlSeconds,
+    authMaxActiveSessions: config.authMaxActiveSessions,
     logger,
   };
   const deps = { ...repos, ...services };

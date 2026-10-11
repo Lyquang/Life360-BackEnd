@@ -1,6 +1,11 @@
 const { userProfileKey } = require('../../domain/cacheKeys');
 
 function createCachedUserRepository({ userRepo, cacheManager }) {
+  function restoreRepositoryShape(user) {
+    if (!user || user._id || !user.id) return user;
+    return { ...user, _id: user.id };
+  }
+
   async function invalidateUser(id) {
     await cacheManager.del(userProfileKey(id.toString()));
   }
@@ -15,7 +20,7 @@ function createCachedUserRepository({ userRepo, cacheManager }) {
     async findById(id) {
       const key = userProfileKey(id.toString());
       const cached = await cacheManager.get(key);
-      if (cached) return cached;
+      if (cached) return restoreRepositoryShape(cached);
 
       const user = await userRepo.findById(id);
       if (!user) {
@@ -34,6 +39,11 @@ function createCachedUserRepository({ userRepo, cacheManager }) {
       const user = await userRepo.updateSocialProfile(id, profile);
       await invalidateUser(id);
       return user;
+    },
+    async updatePassword(id, passwordHash, options) {
+      const result = await userRepo.updatePassword(id, passwordHash, options);
+      await invalidateUser(id);
+      return result;
     },
     async markOffline(id, at) {
       const result = await userRepo.markOffline(id, at);

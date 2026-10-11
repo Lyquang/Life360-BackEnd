@@ -52,7 +52,13 @@ async function startTestServer({ withStorage = true } = {}) {
       body: { name, email: `${name.toLowerCase()}.${counter}@test.local`, password: 'secret123' },
     });
     assert.equal(status, 201, JSON.stringify(body));
-    return { id: String(body.data.user.id), token: body.data.token, name };
+    return {
+      id: String(body.data.user.id),
+      token: body.data.token,
+      accessToken: body.data.accessToken,
+      refreshToken: body.data.refreshToken,
+      name,
+    };
   }
 
   async function createGroup(owner, name) {

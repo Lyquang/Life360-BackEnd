@@ -938,9 +938,10 @@ src/application/chat/chatUseCases.js
    - TTL 90s + jitter 30s
    - invalidate khi create/add member/update notification interval.
 5. Auth session/blacklist:
-   - login/register/social-login luu refresh session theo key `user:session:<userId>:<refreshTokenHash>`.
+   - MongoDB `refresh_sessions` la source of truth cho opaque refresh token, rotation va reuse detection.
+   - Redis `user:session:<userId>:<refreshTokenHash>` chi cache metadata; Redis down khong chan refresh.
    - `POST /api/v1/auth/logout` ghi `auth:blacklist:<accessTokenHash>` voi TTL bang thoi gian song con lai cua access token.
-   - `allDevices=true` xoa `user:session:<userId>:*` bang SCAN pattern.
+   - logout/logout-all revoke family trong MongoDB, sau do xoa cache va blacklist access token best effort.
 6. Location last known cache:
    - moi socket `update_location` ghi `location:last:<userId>` vao Redis voi TTL `REDIS_LOCATION_TTL_SECONDS`.
    - MongoDB write duoc throttle theo rule hien co: >= 50m hoac >= 30s.
@@ -980,7 +981,7 @@ Body optional:
 
 ```json
 {
-  "refreshToken": "<refresh-jwt>",
+  "refreshToken": "<opaque-refresh-token>",
   "allDevices": false
 }
 ```
@@ -1135,17 +1136,19 @@ sequenceDiagram
     participant AuthUC as authUseCases.login()
     participant UserRepo as UserRepository
     participant Token as tokenService
+    participant MongoDB as RefreshSession MongoDB
     participant Redis as RedisCacheManager
 
     Client->>AuthRoute: POST email/password
     AuthRoute->>AuthUC: login(dto)
     AuthUC->>UserRepo: findByEmailWithPassword(email)
     UserRepo-->>AuthUC: user with password
-    AuthUC->>Token: signAuthTokens(user)
-    Token-->>AuthUC: accessToken + refreshToken
-    AuthUC->>Redis: SET user:session:<userId>:<refreshTokenHash> EX refreshTTL
+    AuthUC->>Token: issueTokenPair(user, familyId)
+    Token-->>AuthUC: access JWT + opaque refresh token + hashes
+    AuthUC->>MongoDB: INSERT refresh_sessions (source of truth)
+    AuthUC->>Redis: cache session metadata (best effort)
     Redis-->>AuthUC: OK or no-op fallback
-    AuthUC-->>Client: user + token/accessToken/refreshToken
+    AuthUC-->>Client: user + token pair + expiresIn
 ```
 
 ### 8.6 Runtime flow - protected API va JWT blacklist

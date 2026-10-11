@@ -199,7 +199,8 @@ HTTP `200`:
     },
     "token": "<app-jwt-access-token>",
     "accessToken": "<app-jwt-access-token>",
-    "refreshToken": "<app-jwt-refresh-token>"
+    "refreshToken": "<opaque-single-use-refresh-token>",
+    "expiresIn": 900
   }
 }
 ```

@@ -49,6 +49,8 @@ Authorization: Bearer <token>
 
 Use `data.token` or `data.accessToken` from Login/Register/Social Login. Currently `token` and `accessToken` have the same value for backward compatibility.
 
+The access token is a short-lived JWT. The refresh token is an opaque, single-use value stored in Keychain. When an access token expires, call `POST /auth/refresh` once through a shared single-flight task and atomically replace both tokens.
+
 Socket.io authentication sends the same JWT in the handshake:
 
 ```swift
@@ -183,7 +185,8 @@ Response `201`:
     },
     "token": "<jwt>",
     "accessToken": "<jwt>",
-    "refreshToken": "<refresh-jwt>"
+    "refreshToken": "<opaque-refresh-token>",
+    "expiresIn": 900
   }
 }
 ```
@@ -203,6 +206,7 @@ Body:
 | --- | --- | --- |
 | `email` | String | Yes |
 | `password` | String | Yes |
+| `deviceName` | String | No | Device label, max 100 characters |
 
 Request:
 
@@ -223,7 +227,8 @@ Response `200`:
     "user": { "id": "66f123456789abcdef012345", "name": "Alice", "email": "alice@example.com", "isOnline": true },
     "token": "<jwt>",
     "accessToken": "<jwt>",
-    "refreshToken": "<refresh-jwt>"
+    "refreshToken": "<opaque-refresh-token>",
+    "expiresIn": 900
   }
 }
 ```
@@ -245,6 +250,7 @@ Body:
 | --- | --- | --- | --- |
 | `provider` | String | Yes | Currently use `"google"` |
 | `token` | String | Yes | Google ID token from iOS client |
+| `deviceName` | String | No | Device label, max 100 characters |
 
 Request:
 
@@ -271,7 +277,8 @@ Response `200`:
     },
     "token": "<jwt>",
     "accessToken": "<jwt>",
-    "refreshToken": "<refresh-jwt>"
+    "refreshToken": "<opaque-refresh-token>",
+    "expiresIn": 900
   }
 }
 ```
@@ -286,6 +293,43 @@ iOS Google Sign-In note:
 
 - Backend verifies token audience against `GOOGLE_CLIENT_ID` configured on the server.
 - The iOS app must request an ID token whose audience matches that backend Web OAuth Client ID.
+
+### Refresh Token
+
+```http
+POST /auth/refresh
+Auth: No
+```
+
+Request:
+
+```json
+{
+  "refreshToken": "<current-opaque-refresh-token>"
+}
+```
+
+Response `200` returns a completely new pair:
+
+```json
+{
+  "success": true,
+  "data": {
+    "token": "<new-access-jwt>",
+    "accessToken": "<new-access-jwt>",
+    "refreshToken": "<new-opaque-refresh-token>",
+    "expiresIn": 900
+  }
+}
+```
+
+The old refresh token becomes invalid immediately. All iOS requests must share one refresh task; concurrent refresh attempts with the same token trigger `REFRESH_TOKEN_REUSED` and revoke that device family. See `docs/REFRESH_TOKEN_MOBILE_API_DOC.md` for the Swift actor pattern.
+
+Errors:
+
+- `401 INVALID_REFRESH_TOKEN`: clear Keychain and return to Login.
+- `401 REFRESH_TOKEN_REUSED`: clear Keychain, disconnect Socket.io, and return to Login.
+- `429 RATE_LIMITED`: do not loop retry.
 
 ### Get Me
 
@@ -320,20 +364,20 @@ POST /auth/logout
 Auth: Yes
 ```
 
-Use this endpoint when the user signs out. The backend revokes the current access token through Redis when Redis is enabled. If a refresh token is supplied, the matching tracked session is removed as well.
+Use this endpoint when the user signs out. The backend blacklists the current access token and revokes the MongoDB-backed device family identified by the refresh token.
 
 Body:
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `refreshToken` | String | No | Send the current refresh token if the app stores one |
-| `allDevices` | Bool | No | `true` removes all tracked sessions for this user |
+| `allDevices` | Bool | No | Deprecated migration option; prefer `POST /auth/logout-all` |
 
 Request:
 
 ```json
 {
-  "refreshToken": "<refresh-jwt>",
+  "refreshToken": "<opaque-refresh-token>",
   "allDevices": false
 }
 ```
@@ -353,6 +397,31 @@ Response `200`:
 After a successful logout, delete the stored `accessToken` and `refreshToken` from Keychain and disconnect any active Socket.io session.
 
 Common errors: `401`.
+
+### Logout All Devices
+
+```http
+POST /auth/logout-all
+Auth: Yes
+```
+
+Revokes every token family and disconnects all active sockets for the current user. After success, clear Keychain and return to Login.
+
+### Change Password
+
+```http
+POST /auth/change-password
+Auth: Yes
+```
+
+```json
+{
+  "currentPassword": "secret123",
+  "newPassword": "newSecret456"
+}
+```
+
+A successful password change revokes every session, including the current one. Clear Keychain and require a fresh login.
 
 ## 4. Groups / Circles APIs
 

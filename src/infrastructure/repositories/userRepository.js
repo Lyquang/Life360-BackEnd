@@ -19,6 +19,10 @@ module.exports = {
     return User.findOne({ email }).select('+password');
   },
 
+  findByIdWithPassword(id) {
+    return User.findById(id).select('+password');
+  },
+
   findById(id) {
     return User.findById(id);
   },
@@ -36,6 +40,10 @@ module.exports = {
     if (name) update.name = name;
     if (avatarUrl !== undefined) update.avatar = avatarUrl;
     return User.findByIdAndUpdate(id, update, { new: true });
+  },
+
+  updatePassword(id, passwordHash, { session } = {}) {
+    return User.updateOne({ _id: id }, { $set: { password: passwordHash } }, { session });
   },
 
   markOffline(id, at) {

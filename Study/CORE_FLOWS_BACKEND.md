@@ -11,14 +11,15 @@ domain pure helpers
 
 ### 1.1 Bai toan nghiep vu va muc tieu ky thuat
 
-Nguoi dung mobile dang nhap bang Google thay vi gui password len backend. Backend phai verify Google ID Token voi Google, chuan hoa profile, tim hoac tao user trong MongoDB, lien ket social account, cap JWT access/refresh token cua app va luu refresh session vao Redis.
+Nguoi dung mobile dang nhap bang Google thay vi gui password len backend. Backend verify Google ID Token, upsert user, cap access JWT ngan han va opaque refresh token single-use. Refresh session duoc luu trong MongoDB; Redis chi cache metadata va blacklist access token.
 
 Muc tieu ky thuat:
 
 - Khong tin token tu client cho den khi `google-auth-library` verify thanh cong.
 - `aud` cua ID Token phai khop `GOOGLE_CLIENT_ID`.
 - User co the dang nhap lai bang social account hoac email da ton tai.
-- Refresh session duoc luu Redis voi TTL tu `refreshToken.exp`.
+- Refresh session MongoDB co TTL index; plaintext refresh token khong bao gio duoc luu.
+- Moi login tao `familyId`, toi da 10 active device families moi user.
 - Loi cau hinh Google tra `503`, token sai tra `401`.
 
 ### 1.2 Sequence Diagram
@@ -36,6 +37,7 @@ sequenceDiagram
     participant SocialRepo as UserSocialAccountRepository
     participant Mongo as MongoDB
     participant Token as TokenService
+    participant SessionRepo as RefreshSessionRepository
     participant Redis as Redis CacheManager
 
     Client->>Route: POST /api/v1/auth/social-login { provider, token }
@@ -78,11 +80,13 @@ sequenceDiagram
     end
     UseCase->>UserRepo: updateSocialProfile(userId, name/avatar)
     UserRepo->>Mongo: users.findByIdAndUpdate
-    UseCase->>Token: signAuthTokens(user)
-    Token-->>UseCase: accessToken + refreshToken
-    UseCase->>Redis: SET user:session:<userId>:<refreshHash> EX refreshTTL
+    UseCase->>Token: issueTokenPair(user, new familyId)
+    Token-->>UseCase: access JWT + opaque refresh token + hashes
+    UseCase->>SessionRepo: create active RefreshSession
+    SessionRepo->>Mongo: insert tokenHash, familyId, expiry, deviceInfo
+    UseCase->>Redis: cache session metadata (best effort)
     Note over Redis: Fail-soft: Redis error logs warning, app continues
-    UseCase-->>Controller: { user, token, accessToken, refreshToken }
+    UseCase-->>Controller: { user, token, accessToken, refreshToken, expiresIn }
     Controller-->>Client: 200 Social login successful
 ```
 
@@ -98,9 +102,10 @@ sequenceDiagram
 8. Neu chua co social account, tim user theo email; neu user chua ton tai thi auto-register user moi.
 9. Tao document `user_social_accounts` de lien ket Google account voi user.
 10. Cap nhat name/avatar moi nhat tu Google.
-11. `TokenService.signAuthTokens` tao access token va refresh token.
-12. Refresh session duoc luu Redis theo key `user:session:<userId>:<refreshTokenHash>`.
-13. Response tra ve token cua app, mobile luu vao Keychain.
+11. `TokenService.issueTokenPair` tao access JWT co `familyId` va refresh token opaque 48 byte.
+12. MongoDB luu duy nhat SHA-256 hash trong `refresh_sessions`; TTL index don token het han.
+13. Redis cache metadata best effort, khong tham gia quyet dinh token hop le.
+14. Response tra token pair va `expiresIn`; mobile thay ca hai token trong Keychain.
 
 ### 1.4 Code Snippet va ten file thuc te
 
@@ -118,7 +123,7 @@ async function socialLogin({ provider, token }) {
   const profile = normalizeSocialProfile(await oauthProvider.verifyToken(token));
   const socialAccount = await userSocialAccountRepo.findByProvider(profile.provider, profile.providerId);
   // find/create user, link social account, update profile
-  return authPayload(user, { tokenService, cacheManager });
+  return issueSession(user, { ...requestContext, name: deviceName || null });
 }
 ```
 
@@ -128,14 +133,11 @@ async function socialLogin({ provider, token }) {
 ticket = await client.verifyIdToken({ idToken: token, audience: clientId });
 ```
 
-`src/application/auth/authUseCases.js`
+`src/infrastructure/database/models/RefreshSession.js`
 
 ```js
-await cacheManager.setWithTTL(
-  userSessionKey(user._id.toString(), tokenHash(tokens.refreshToken)),
-  { userId: user._id.toString(), email: user.email, createdAt: new Date().toISOString() },
-  refreshTtl
-);
+refreshSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+refreshSessionSchema.index({ userId: 1, familyId: 1 });
 ```
 
 ### 1.5 Xu ly ngoai le va Edge Cases
@@ -145,7 +147,7 @@ await cacheManager.setWithTTL(
 - Email Google chua verified: HTTP `401`.
 - Race condition tao user cung email: catch duplicate key `11000`, sau do find lai theo email.
 - Social account ton tai nhung user bi xoa: HTTP `401`.
-- Redis down: `RedisCacheManager.safe()` log warning va fallback, login van thanh cong nhung session tracking/blacklist khong co cho den khi Redis hoi phuc.
+- Redis down: login va refresh van dung MongoDB source of truth; blacklist access JWT fail-open va co warning.
 - Mobile gui access token Google thay vi ID token: backend verify fail `401`.
 
 ### 1.6 Goc phong van ky thuat - STAR
@@ -154,9 +156,43 @@ await cacheManager.setWithTTL(
 
 **Task:** Thiet ke luong social login khong phu thuoc password, verify token ben thu ba, dong thoi van cap JWT noi bo va luu session.
 
-**Action:** Toi tach OAuth provider thanh adapter `GoogleOAuthProvider`, use case chi lam viec voi profile chuan hoa. Backend verify ID Token voi `google-auth-library`, upsert user/social account trong MongoDB, cap access/refresh token va luu refresh session vao Redis bang TTL.
+**Action:** Toi tach OAuth provider thanh adapter, verify ID Token bang `google-auth-library`, upsert user/social account, sau do tao access JWT va opaque refresh token. MongoDB luu hash/session family trong transaction; Redis chi tang toc va blacklist.
 
-**Result:** He thong dam bao token Google duoc verify dung audience, user co the auto-register, session co the revoke/track qua Redis, va sau nay co the them Apple/Facebook ma khong sua logic loi.
+**Result:** He thong verify dung audience, auto-register, rotate/revoke session theo thiet bi va co the them Apple/Facebook ma khong sua logic loi.
+
+### 1.7 Refresh Token Rotation Flow
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant API as POST /auth/refresh
+    participant Auth as authUseCases.refresh
+    participant SessionRepo as RefreshSessionRepository
+    participant MongoDB
+    participant Redis
+    participant Socket as SocketRealtime
+
+    Client->>API: current opaque refreshToken
+    API->>Auth: refresh(token, ip, userAgent)
+    Auth->>SessionRepo: findByTokenHash(SHA-256)
+    SessionRepo->>MongoDB: transaction
+    alt active and not expired
+        Auth->>SessionRepo: active -> rotated
+        Auth->>SessionRepo: insert replacement in same family
+        MongoDB-->>Auth: commit
+        Auth-->>Client: 200 new access + new refresh
+    else rotated or revoked
+        Auth->>SessionRepo: revoke every session in family
+        MongoDB-->>Auth: commit
+        Auth->>Redis: blacklist known access hashes (best effort)
+        Auth->>Socket: disconnectSession(familyId)
+        Auth-->>Client: 401 REFRESH_TOKEN_REUSED
+    else missing or expired
+        Auth-->>Client: 401 INVALID_REFRESH_TOKEN
+    end
+```
+
+MongoDB transaction va conditional update dam bao hai request dong thoi chi mot request rotate thanh cong. Policy strict khong grace window: request con lai duoc xem la reuse va revoke toan family. Chi hash token duoc luu; so sanh hash dung `timingSafeEqual`.
 
 ## 2. Real-time Chat va Media Upload Flow
 

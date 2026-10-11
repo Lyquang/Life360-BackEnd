@@ -18,7 +18,7 @@ Muc tieu ky thuat:
 
 - Google SDK nam trong Data service, khong ro ri vao Domain.
 - `LoginViewModel` chay tren `@MainActor` de cap nhat UI an toan.
-- Token app luu Keychain device-only.
+- Access JWT va opaque refresh token luu Keychain device-only.
 - Sau login thanh cong, socket realtime connect bang JWT.
 - Coordinator doi root state tu unauthenticated sang authenticated.
 
@@ -69,7 +69,7 @@ sequenceDiagram
                 API-->>AuthRepo: AuthDataDTO
                 AuthRepo-->>GoogleUC: AuthSession
                 GoogleUC->>Keychain: save(AuthSession)
-                Note over Keychain: Store JWT and user id/name/email in iOS Keychain
+                Note over Keychain: Store access + refresh token and user in Keychain
                 GoogleUC->>Socket: connect(token: session.token)
                 GoogleUC-->>VM: User
                 VM->>AuthCoord: onAuthenticated(user)
@@ -139,7 +139,7 @@ func save(_ session: AuthSession) {
 - Backend `503`: UI hien "Dich vu Google OAuth chua duoc cau hinh".
 - Backend `401`: UI hien "Token Google khong hop le hoac da het han".
 - Network fail: map thanh message mat mang.
-- API `401` voi protected request sau nay: `URLSessionAPIClient` goi `tokenProvider.invalidate(token:)`.
+- API `401` voi protected request: mobile can dung mot shared single-flight refresh task, atomic replace ca hai token, sau do retry request mot lan.
 - Keychain save that bai khong throw trong implementation hien tai; nen can monitoring neu production can stricter guarantee.
 
 ### 1.6 Goc phong van ky thuat - STAR
@@ -151,6 +151,36 @@ func save(_ session: AuthSession) {
 **Action:** Toi boc Google SDK trong `GoogleSignInService`, de `GoogleSignInUseCase` dieu phoi ID Token -> backend social-login -> Keychain save -> socket connect. `LoginViewModel` la `@MainActor`, chi quan ly UI state va callback coordinator.
 
 **Result:** Flow tach bach, de test/mock, token duoc luu an toan trong Keychain, va sau login app chuyen sang Main flow kem realtime connection.
+
+### 1.7 Refresh Token Rotation tren iOS
+
+```mermaid
+sequenceDiagram
+    participant Request as Protected API Request
+    participant Client as APIClient
+    participant Refresh as TokenRefreshCoordinator actor
+    participant Backend as POST /auth/refresh
+    participant Keychain
+    participant Socket
+
+    Request->>Client: send with expired access token
+    Client-->>Refresh: 401, request valid token pair
+    Note over Refresh: Only one in-flight refresh task for the whole app
+    Refresh->>Keychain: read current refresh token
+    Refresh->>Backend: POST opaque refresh token
+    alt 200
+        Backend-->>Refresh: new access + new refresh + expiresIn
+        Refresh->>Keychain: atomically replace both tokens
+        Refresh->>Socket: reconnect with new access JWT
+        Refresh-->>Client: retry original request once
+    else INVALID_REFRESH_TOKEN or REFRESH_TOKEN_REUSED
+        Refresh->>Keychain: clear session
+        Refresh->>Socket: disconnect
+        Refresh-->>Client: route to Login
+    end
+```
+
+Mobile hien tai luu session va access token trong Keychain, nhung can bo sung `TokenRefreshCoordinator` dung chung va luu `refreshToken`. Khong duoc tao refresh task rieng trong tung repository vi hai request song song se kich hoat reuse detection. Hop dong day du nam trong `docs/REFRESH_TOKEN_MOBILE_API_DOC.md`.
 
 ## 2. Real-time Chat va Media Upload Flow
 

@@ -15,7 +15,7 @@
 | Feature | Description |
 |---------|-------------|
 | 🔐 **Authentication** | JWT-based register/login, bcrypt password hashing, rate limiting |
-| ⚡ **Redis Cache & Sessions** | Optional Upstash Redis for token blacklist, refresh sessions, profile/member cache and last known location |
+| ⚡ **Redis Cache & Sessions** | Optional Upstash Redis for token blacklist, session metadata cache, profile/member cache and last known location |
 | 📍 **Real-time Location** | Live location sharing via Socket.IO with throttling (50m / 30s) |
 | 👨‍👩‍👧 **Circles (Groups)** | Create family groups, invite via 6-digit code, manage members |
 | 💬 **Real-time Chat** | 1-1 and group messaging, unread counts, read receipts, typing indicators |
@@ -108,7 +108,7 @@ npm run seed
 ```
 
 Server starts at `http://localhost:3000`  
-Swagger UI: `http://localhost:3000/api/docs`
+Swagger UI: `http://localhost:3000/api-docs`
 
 ---
 
@@ -120,9 +120,13 @@ All endpoints are prefixed with `/api/v1`. Authentication uses `Authorization: B
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/auth/register` | Register new user → `{ user, token }` |
-| `POST` | `/auth/login` | Login → `{ user, token }` |
-| `POST` | `/auth/logout` | Revoke current access token and optional refresh session |
+| `POST` | `/auth/register` | Register and issue access/refresh token pair |
+| `POST` | `/auth/login` | Login and issue access/refresh token pair |
+| `POST` | `/auth/social-login` | Google login and issue the same token pair |
+| `POST` | `/auth/refresh` | Atomically rotate a single-use refresh token |
+| `POST` | `/auth/logout` | Revoke the current device family |
+| `POST` | `/auth/logout-all` | Revoke every device family |
+| `POST` | `/auth/change-password` | Change password and revoke every session |
 | `GET`  | `/auth/me` | Current user profile |
 
 ### 👨‍👩‍👧 Groups (Circles)
@@ -285,7 +289,10 @@ socket.on('chat:new_message', (msg) => {
 | `PORT` | No | `3000` | HTTP port |
 | `MONGODB_URI` | Yes* | `mongodb://localhost:27017/...` | MongoDB connection string |
 | `JWT_SECRET` | Yes | `change_me` | Secret key for JWT |
-| `JWT_EXPIRES_IN` | No | `7d` | Token expiry |
+| `JWT_ACCESS_EXPIRES_IN` | No | `15m` | Access JWT expiry |
+| `REFRESH_TOKEN_TTL_DAYS` | No | `30` | Opaque refresh token lifetime in days |
+| `AUTH_MAX_ACTIVE_SESSIONS` | No | `10` | Maximum active device families per user |
+| `REFRESH_RATE_LIMIT` | No | `60` | Refresh requests / IP / 15 min |
 | `CORS_ORIGIN` | No | `*` | Allowed origins (comma-separated or `*`) |
 | `TZ` | No | `Asia/Ho_Chi_Minh` | Server timezone for history |
 | `AUTH_RATE_LIMIT` | No | `20` | Max auth requests / IP / 15 min |
@@ -307,6 +314,7 @@ socket.on('chat:new_message', (msg) => {
 | Model | Key Fields |
 |-------|-----------|
 | `User` | name, email, passwordHash, isOnline, lastKnownLocation, batteryLevel |
+| `RefreshSession` | userId, familyId, tokenHash, status, expiry, device info, replacement chain |
 | `Group` | name, admin, members[], inviteCode, notificationIntervalMinutes |
 | `Conversation` | type (group/direct), groupId, name, lastMessageId, lastMessageAt |
 | `ConversationMember` | conversationId, userId, lastReadMessageId |

@@ -6,8 +6,10 @@ function registerSocketServer(io, { auth, location, chat, realtime, logger = con
     try {
       const token = socket.handshake.auth?.token;
       if (typeof token !== 'string' || !token) throw new Error('missing token');
-      const user = await auth.authenticateToken(token);
+      const authenticated = await auth.authenticateToken(token);
+      const user = authenticated.user;
       socket.data.user = { id: user._id.toString(), name: user.name, batteryLevel: user.batteryLevel };
+      socket.data.familyId = authenticated.auth.familyId;
       next();
     } catch {
       next(new Error('Authentication error'));
@@ -20,6 +22,7 @@ function registerSocketServer(io, { auth, location, chat, realtime, logger = con
 
     // Handlers are registered synchronously so events sent right after connect are never dropped.
     socket.join(realtime.rooms.user(user.id));
+    if (socket.data.familyId) socket.join(realtime.rooms.session(socket.data.familyId));
     registerLocationGateway(socket, { location, logger });
     registerChatGateway(socket, { chat, logger });
 

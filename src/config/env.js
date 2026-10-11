@@ -9,12 +9,15 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(0).max(65535).default(3000),
   MONGODB_URI: optionalString,
   JWT_SECRET: optionalString,
-  JWT_EXPIRES_IN: z.string().default('7d'),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
+  JWT_ACCESS_EXPIRES_IN: optionalString,
+  JWT_EXPIRES_IN: optionalString,
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  AUTH_MAX_ACTIVE_SESSIONS: z.coerce.number().int().min(1).max(100).default(10),
   CORS_ORIGIN: z.string().default('*'),
   PUBLIC_URL: optionalUrl,
   RENDER_EXTERNAL_URL: optionalUrl,
   AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
+  REFRESH_RATE_LIMIT: z.coerce.number().int().positive().default(60),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -62,6 +65,9 @@ function loadConfig(env = process.env) {
 
   const missing = [];
   if (!e.JWT_SECRET) missing.push('JWT_SECRET');
+  if (isProduction && e.JWT_SECRET === 'change_me') {
+    throw new ConfigError('JWT_SECRET must not use the default value in production.');
+  }
   if (isProduction && !e.MONGODB_URI) missing.push('MONGODB_URI');
   if (e.REDIS_ENABLED === 'true' && !e.REDIS_URL) missing.push('REDIS_URL');
 
@@ -116,13 +122,19 @@ function loadConfig(env = process.env) {
     mongodbUri: e.MONGODB_URI || 'mongodb://localhost:27017/location-sharing-app',
     // Only local development may silently fall back to an in-memory database.
     allowInMemoryDatabase: e.NODE_ENV === 'development',
-    jwt: { secret: e.JWT_SECRET, expiresIn: e.JWT_EXPIRES_IN, refreshExpiresIn: e.JWT_REFRESH_EXPIRES_IN },
+    jwt: {
+      secret: e.JWT_SECRET,
+      accessExpiresIn: e.JWT_ACCESS_EXPIRES_IN || e.JWT_EXPIRES_IN || '15m',
+      refreshTtlDays: e.REFRESH_TOKEN_TTL_DAYS,
+    },
     oauth: {
       googleClientId: e.GOOGLE_CLIENT_ID,
     },
     corsOrigin,
     publicUrl: e.PUBLIC_URL || e.RENDER_EXTERNAL_URL || `http://localhost:${e.PORT}`,
     authRateLimit: e.AUTH_RATE_LIMIT,
+    refreshRateLimit: e.REFRESH_RATE_LIMIT,
+    authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,
     redis: {
       enabled: e.REDIS_ENABLED === 'true',
