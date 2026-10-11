@@ -15,6 +15,7 @@
 | Feature | Description |
 |---------|-------------|
 | 🔐 **Authentication** | JWT-based register/login, bcrypt password hashing, rate limiting |
+| ⚡ **Redis Cache & Sessions** | Optional Upstash Redis for token blacklist, refresh sessions, profile/member cache and last known location |
 | 📍 **Real-time Location** | Live location sharing via Socket.IO with throttling (50m / 30s) |
 | 👨‍👩‍👧 **Circles (Groups)** | Create family groups, invite via 6-digit code, manage members |
 | 💬 **Real-time Chat** | 1-1 and group messaging, unread counts, read receipts, typing indicators |
@@ -54,6 +55,7 @@ src/
 │   │   └── unitOfWork.js # Transaction wrapper
 │   ├── realtime/         # Socket.IO room management
 │   ├── repositories/     # Data access layer
+│   ├── cache/            # Redis cache manager + no-op fallback
 │   ├── security/         # JWT service, bcrypt hasher
 │   └── storage/          # S3/R2 presigned upload
 └── presentation/         # HTTP & WebSocket layer
@@ -78,6 +80,7 @@ src/
 ### Prerequisites
 - Node.js >= 20
 - MongoDB (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
+- Optional Redis ([Upstash Redis](https://upstash.com/) recommended)
 
 ### 1. Clone & Install
 ```bash
@@ -119,6 +122,7 @@ All endpoints are prefixed with `/api/v1`. Authentication uses `Authorization: B
 |--------|----------|-------------|
 | `POST` | `/auth/register` | Register new user → `{ user, token }` |
 | `POST` | `/auth/login` | Login → `{ user, token }` |
+| `POST` | `/auth/logout` | Revoke current access token and optional refresh session |
 | `GET`  | `/auth/me` | Current user profile |
 
 ### 👨‍👩‍👧 Groups (Circles)
@@ -147,7 +151,8 @@ All endpoints are prefixed with `/api/v1`. Authentication uses `Authorization: B
 | `GET`  | `/conversations/:id/messages` | Message history (cursor-based pagination) |
 | `POST` | `/conversations/:id/read` | Mark messages as read |
 | `GET`  | `/conversations/:id/unread` | Unread count for one conversation |
-| `POST` | `/chat/upload-ticket` | Get pre-signed S3/R2 URL to upload image |
+| `POST` | `/chat/upload-ticket` | Get legacy pre-signed S3/R2 URL to upload image |
+| `POST` | `/chat/media/presigned-url` | Get pre-signed R2 URL to upload image or voice note |
 
 ### 🗺️ Location History
 

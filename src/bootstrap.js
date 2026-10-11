@@ -30,6 +30,7 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
 
   const container = createContainer({ config, io, supportsTransactions: db.supportsTransactions, logger });
   const { useCases, services } = container;
+  if (services.cacheManager.connect) await services.cacheManager.connect();
 
   const synced = await useCases.chat.syncGroupConversations();
   logger.log(`💬 Group conversations in sync (${synced} circles)`);
@@ -56,6 +57,7 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
     async close() {
       scheduler.stop();
       await new Promise((resolve) => io.close(() => resolve()));
+      if (services.cacheManager.close) await services.cacheManager.close();
       await db.disconnect();
     },
   };

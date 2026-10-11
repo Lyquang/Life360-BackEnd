@@ -1,4 +1,5 @@
 const { haversineDistance, formatDuration } = require('../../domain/geo');
+const { lastLocationKey } = require('../../domain/cacheKeys');
 
 const THROTTLE_DISTANCE_METERS = 50;
 const THROTTLE_TIME_MS = 30 * 1000;
@@ -8,7 +9,15 @@ const STAY_ALERT_MILESTONES_MINUTES = [30, 60, 120, 240, 480, 1440];
  * Location sharing, SOS and presence. Keeps per-user in-memory state
  * (history throttling + "how long at this spot"), valid for a single instance.
  */
-function createLocationUseCases({ userRepo, groupRepo, locationHistoryRepo, realtime, logger = console }) {
+function createLocationUseCases({
+  userRepo,
+  groupRepo,
+  locationHistoryRepo,
+  realtime,
+  cacheManager,
+  locationCacheTtlSeconds = 300,
+  logger = console,
+}) {
   const lastSavedLocation = new Map();
   const durationTracker = new Map();
 
@@ -48,9 +57,22 @@ function createLocationUseCases({ userRepo, groupRepo, locationHistoryRepo, real
     const at = new Date(now);
     const { durationMinutes, durationSince, newMilestones } = trackDuration(userId, latitude, longitude, now);
 
-    await userRepo.updateLastKnownLocation(userId, { latitude, longitude, batteryLevel, durationMinutes, at });
+    await cacheManager.setWithTTL(
+      lastLocationKey(userId),
+      {
+        userId,
+        name: userName,
+        latitude,
+        longitude,
+        batteryLevel: batteryLevel ?? fallbackBatteryLevel,
+        durationMinutes,
+        recordedAt: at.toISOString(),
+      },
+      locationCacheTtlSeconds
+    );
 
     if (shouldSaveHistory(userId, latitude, longitude, now)) {
+      await userRepo.updateLastKnownLocation(userId, { latitude, longitude, batteryLevel, durationMinutes, at });
       await locationHistoryRepo.create({ userId, latitude, longitude, at });
       lastSavedLocation.set(userId, { latitude, longitude, timestamp: now });
     }

@@ -18,4 +18,11 @@ const socialLoginBody = z.object({
   token: z.string().trim().min(1).max(4096),
 });
 
-module.exports = { registerBody, loginBody, socialLoginBody };
+const logoutBody = z
+  .object({
+    refreshToken: z.string().trim().min(1).max(4096).optional(),
+    allDevices: z.boolean().optional(),
+  })
+  .default({});
+
+module.exports = { registerBody, loginBody, socialLoginBody, logoutBody };

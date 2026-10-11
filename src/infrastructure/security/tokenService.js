@@ -27,6 +27,9 @@ function createTokenService({ secret, expiresIn, refreshExpiresIn }) {
     verify(token) {
       return jwt.verify(token, secret, { algorithms: ['HS256'] });
     },
+    decode(token) {
+      return jwt.decode(token);
+    },
   };
 }
 

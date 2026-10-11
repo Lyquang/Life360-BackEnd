@@ -27,6 +27,21 @@ services:
         sync: false
       - key: CORS_ORIGIN
         value: "*"
+      # Redis cache/session/location (recommended: Upstash Redis; optional)
+      - key: REDIS_ENABLED
+        value: "false"
+      - key: REDIS_URL
+        sync: false
+      - key: REDIS_KEY_PREFIX
+        value: familytracker:
+      - key: REDIS_DEFAULT_TTL_SECONDS
+        value: "300"
+      - key: REDIS_CONNECT_TIMEOUT_MS
+        value: "5000"
+      - key: REDIS_MAX_RETRIES_PER_REQUEST
+        value: "2"
+      - key: REDIS_LOCATION_TTL_SECONDS
+        value: "300"
       # Cloudflare R2 media upload (optional — leave empty to disable image/voice messages)
       - key: R2_ACCOUNT_ID
         sync: false

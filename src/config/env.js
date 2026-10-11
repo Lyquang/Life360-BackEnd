@@ -17,6 +17,14 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
   GOOGLE_CLIENT_ID: optionalString,
 
+  REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
+  REDIS_URL: optionalString,
+  REDIS_KEY_PREFIX: z.string().default('familytracker:'),
+  REDIS_DEFAULT_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  REDIS_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+  REDIS_MAX_RETRIES_PER_REQUEST: z.coerce.number().int().min(0).max(10).default(2),
+  REDIS_LOCATION_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+
   S3_BUCKET: optionalString,
   S3_REGION: z.string().default('auto'),
   S3_ENDPOINT: optionalUrl,
@@ -55,6 +63,7 @@ function loadConfig(env = process.env) {
   const missing = [];
   if (!e.JWT_SECRET) missing.push('JWT_SECRET');
   if (isProduction && !e.MONGODB_URI) missing.push('MONGODB_URI');
+  if (e.REDIS_ENABLED === 'true' && !e.REDIS_URL) missing.push('REDIS_URL');
 
   const configuredStorageKeys = STORAGE_KEYS.filter((k) => e[k]);
   if (configuredStorageKeys.length > 0 && configuredStorageKeys.length < STORAGE_KEYS.length) {
@@ -115,6 +124,15 @@ function loadConfig(env = process.env) {
     publicUrl: e.PUBLIC_URL || e.RENDER_EXTERNAL_URL || `http://localhost:${e.PORT}`,
     authRateLimit: e.AUTH_RATE_LIMIT,
     storage: r2Storage || legacyStorage,
+    redis: {
+      enabled: e.REDIS_ENABLED === 'true',
+      url: e.REDIS_URL,
+      keyPrefix: e.REDIS_KEY_PREFIX,
+      defaultTtlSeconds: e.REDIS_DEFAULT_TTL_SECONDS,
+      connectTimeoutMs: e.REDIS_CONNECT_TIMEOUT_MS,
+      maxRetriesPerRequest: e.REDIS_MAX_RETRIES_PER_REQUEST,
+      locationTtlSeconds: e.REDIS_LOCATION_TTL_SECONDS,
+    },
   };
 }
 

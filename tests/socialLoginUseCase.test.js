@@ -52,9 +52,38 @@ function createFakeSocialAccountRepo() {
   };
 }
 
+function createMemoryCache() {
+  const store = new Map();
+  return {
+    store,
+    async get(key) {
+      return store.get(key) ?? null;
+    },
+    async setWithTTL(key, value) {
+      store.set(key, value);
+      return true;
+    },
+    async del(key) {
+      return store.delete(key) ? 1 : 0;
+    },
+    async delByPattern(pattern) {
+      const prefix = pattern.replace(/\*$/, '');
+      let count = 0;
+      for (const key of [...store.keys()]) {
+        if (key.startsWith(prefix)) {
+          store.delete(key);
+          count += 1;
+        }
+      }
+      return count;
+    },
+  };
+}
+
 function createUseCases(profile) {
   const userRepo = createFakeUserRepo();
   const userSocialAccountRepo = createFakeSocialAccountRepo();
+  const cacheManager = createMemoryCache();
   const auth = createAuthUseCases({
     userRepo,
     userSocialAccountRepo,
@@ -67,7 +96,11 @@ function createUseCases(profile) {
           refreshToken: `refresh-${user._id}`,
         };
       },
+      decode() {
+        return null;
+      },
     },
+    cacheManager,
     oauthProviderFactory: {
       get(provider) {
         assert.equal(provider, profile.provider);
@@ -76,7 +109,7 @@ function createUseCases(profile) {
     },
   });
 
-  return { auth, userRepo, userSocialAccountRepo };
+  return { auth, userRepo, userSocialAccountRepo, cacheManager };
 }
 
 describe('SocialLoginUseCase', () => {
@@ -119,5 +152,35 @@ describe('SocialLoginUseCase', () => {
     assert.equal(result.user.name, 'Bob Updated');
     assert.equal(userRepo.users.length, 1);
     assert.equal(userSocialAccountRepo.accounts.length, 1);
+  });
+
+  it('blacklists the current access token on logout', async () => {
+    const userRepo = createFakeUserRepo();
+    const user = await userRepo.create({ name: 'Alice', email: 'alice@example.com' });
+    const cacheManager = createMemoryCache();
+    const auth = createAuthUseCases({
+      userRepo,
+      userSocialAccountRepo: createFakeSocialAccountRepo(),
+      passwordHasher: {},
+      oauthProviderFactory: {},
+      cacheManager,
+      tokenService: {
+        verify(token) {
+          assert.equal(token, 'access-token');
+          return { id: user._id.toString(), exp: Math.floor(Date.now() / 1000) + 60 };
+        },
+        decode(token) {
+          assert.equal(token, 'access-token');
+          return { id: user._id.toString(), exp: Math.floor(Date.now() / 1000) + 60 };
+        },
+        signAuthTokens() {
+          throw new Error('not used');
+        },
+      },
+    });
+
+    await auth.logout({ userId: user._id, accessToken: 'access-token' });
+
+    await assert.rejects(() => auth.authenticateToken('access-token'), /Token has been revoked/);
   });
 });

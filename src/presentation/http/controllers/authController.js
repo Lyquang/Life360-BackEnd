@@ -17,6 +17,17 @@ function createAuthController({ auth }) {
       res.json({ success: true, message: 'Social login successful.', data });
     }),
 
+    logout: asyncHandler(async (req, res) => {
+      const accessToken = req.headers.authorization.slice('Bearer '.length);
+      const data = await auth.logout({
+        userId: req.user._id,
+        accessToken,
+        refreshToken: req.dto.body.refreshToken,
+        allDevices: req.dto.body.allDevices,
+      });
+      res.json({ success: true, message: 'Logout successful.', data });
+    }),
+
     me: asyncHandler(async (req, res) => {
       res.json({ success: true, data: await auth.getProfile(req.user._id) });
     }),

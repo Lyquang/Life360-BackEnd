@@ -313,6 +313,47 @@ Response `200`:
 
 Common errors: `401`.
 
+### Logout
+
+```http
+POST /auth/logout
+Auth: Yes
+```
+
+Use this endpoint when the user signs out. The backend revokes the current access token through Redis when Redis is enabled. If a refresh token is supplied, the matching tracked session is removed as well.
+
+Body:
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `refreshToken` | String | No | Send the current refresh token if the app stores one |
+| `allDevices` | Bool | No | `true` removes all tracked sessions for this user |
+
+Request:
+
+```json
+{
+  "refreshToken": "<refresh-jwt>",
+  "allDevices": false
+}
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Logout successful.",
+  "data": {
+    "loggedOut": true
+  }
+}
+```
+
+After a successful logout, delete the stored `accessToken` and `refreshToken` from Keychain and disconnect any active Socket.io session.
+
+Common errors: `401`.
+
 ## 4. Groups / Circles APIs
 
 ### Create Circle

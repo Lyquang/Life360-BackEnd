@@ -1,6 +1,6 @@
 const express = require('express');
 const { validate } = require('../middleware/validate');
-const { registerBody, loginBody, socialLoginBody } = require('../../dto/auth.schemas');
+const { registerBody, loginBody, socialLoginBody, logoutBody } = require('../../dto/auth.schemas');
 
 function createAuthRoutes({ controller, authenticate, authLimiter }) {
   const router = express.Router();
@@ -77,6 +77,27 @@ function createAuthRoutes({ controller, authenticate, authLimiter }) {
    *       429: { description: Too many attempts }
    */
   router.post('/social-login', authLimiter, validate({ body: socialLoginBody }), controller.socialLogin);
+
+  /**
+   * @swagger
+   * /api/v1/auth/logout:
+   *   post:
+   *     summary: Logout and revoke the current access token
+   *     tags: [Auth]
+   *     security: [{ bearerAuth: [] }]
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               refreshToken: { type: string, description: Optional refresh token to remove from the Redis session store }
+   *               allDevices: { type: boolean, default: false, description: Remove all tracked sessions for the user }
+   *     responses:
+   *       200: { description: Logged out }
+   *       401: { description: Unauthorized }
+   */
+  router.post('/logout', authenticate, validate({ body: logoutBody }), controller.logout);
 
   /**
    * @swagger

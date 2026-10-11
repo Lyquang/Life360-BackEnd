@@ -1,5 +1,6 @@
 const { randomUUID } = require('crypto');
 const { Errors } = require('../../domain/errors');
+const { mediaMetadataKey } = require('../../domain/cacheKeys');
 const {
   IMAGE_MIME_TYPES,
   VOICE_MIME_TYPES,
@@ -22,6 +23,11 @@ function createChatUseCases({
   userRepo,
   storage,
   realtime,
+  cacheManager = {
+    async setWithTTL() {
+      return false;
+    },
+  },
 }) {
   async function requireMembership(conversationId, userId) {
     const membership = await conversationMemberRepo.find(conversationId, userId);
@@ -196,6 +202,12 @@ function createChatUseCases({
         throw Errors.badRequest('attachmentUrl must be the fileUrl of an upload ticket issued to you for this conversation.');
       }
       data.attachment = { url: message.attachmentUrl, key, ...message.metadata };
+      await cacheManager.setWithTTL(
+        mediaMetadataKey(key),
+        { publicUrl: message.attachmentUrl, mediaType: 'image', ...message.metadata },
+        24 * 60 * 60,
+        { jitterSeconds: 300 }
+      );
     }
     if (message.type === 'voice') {
       const key = requireStorage().keyFromPublicUrl(message.mediaUrl);
@@ -206,6 +218,18 @@ function createChatUseCases({
       data.duration = message.duration;
       data.fileSize = message.fileSize;
       data.mimeType = message.mimeType;
+      await cacheManager.setWithTTL(
+        mediaMetadataKey(key),
+        {
+          publicUrl: message.mediaUrl,
+          mediaType: 'voice',
+          duration: message.duration,
+          fileSize: message.fileSize,
+          mimeType: message.mimeType,
+        },
+        24 * 60 * 60,
+        { jitterSeconds: 300 }
+      );
     }
 
     const created = await messageRepo.create(data);
@@ -312,12 +336,19 @@ function createChatUseCases({
 
     const key = buildChatMediaUploadKey({ conversationId, userId, uuid: randomUUID(), mimeType });
     const upload = await store.createPresignedUpload({ key, contentType: mimeType, contentLength: fileSize });
+    const publicUrl = store.publicUrlFor(key);
+    await cacheManager.setWithTTL(
+      mediaMetadataKey(key),
+      { publicUrl, mediaType, mimeType, fileSize, uploadIssuedAt: new Date().toISOString() },
+      60 * 60,
+      { jitterSeconds: 120 }
+    );
     return {
       uploadUrl: upload.url,
       method: 'PUT',
       headers: upload.headers,
       key,
-      publicUrl: store.publicUrlFor(key),
+      publicUrl,
       expiresIn: store.urlTtlSeconds,
       expiresAt: new Date(Date.now() + store.urlTtlSeconds * 1000).toISOString(),
     };

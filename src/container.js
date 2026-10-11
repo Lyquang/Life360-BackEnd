@@ -7,6 +7,10 @@ const conversationRepo = require('./infrastructure/repositories/conversationRepo
 const conversationMemberRepo = require('./infrastructure/repositories/conversationMemberRepository');
 const messageRepo = require('./infrastructure/repositories/messageRepository');
 const userSocialAccountRepo = require('./infrastructure/repositories/userSocialAccountRepository');
+const { createNoopCacheManager } = require('./infrastructure/cache/NoopCacheManager');
+const { createRedisCacheManager } = require('./infrastructure/cache/RedisCacheManager');
+const { createCachedUserRepository } = require('./infrastructure/cache/cachedUserRepository');
+const { createCachedGroupRepository } = require('./infrastructure/cache/cachedGroupRepository');
 const passwordHasher = require('./infrastructure/security/passwordHasher');
 const { createTokenService } = require('./infrastructure/security/tokenService');
 const { createS3Storage } = require('./infrastructure/storage/s3Storage');
@@ -24,9 +28,14 @@ const { createChatUseCases } = require('./application/chat/chatUseCases');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
 function createContainer({ config, io, supportsTransactions, logger = console }) {
+  const cacheManager =
+    config.redis.enabled && config.redis.url
+      ? createRedisCacheManager({ config: config.redis, logger })
+      : createNoopCacheManager({ reason: 'Redis is disabled or REDIS_URL is missing.' });
+
   const repos = {
-    userRepo,
-    groupRepo,
+    userRepo: createCachedUserRepository({ userRepo, cacheManager }),
+    groupRepo: createCachedGroupRepository({ groupRepo, cacheManager }),
     placeRepo,
     locationHistoryRepo,
     digestRepo,
@@ -46,6 +55,8 @@ function createContainer({ config, io, supportsTransactions, logger = console })
         ? createCloudflareR2StorageService(config.storage)
         : createS3Storage(config.storage)
       : null,
+    cacheManager,
+    locationCacheTtlSeconds: config.redis.locationTtlSeconds,
     logger,
   };
   const deps = { ...repos, ...services };
