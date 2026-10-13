@@ -58,6 +58,16 @@ module.exports = {
       'lastKnownLocation.durationMinutes': durationMinutes,
     };
     if (batteryLevel !== undefined) update.batteryLevel = batteryLevel;
-    return User.updateOne({ _id: id }, update);
+    return User.updateOne(
+      {
+        _id: id,
+        $or: [
+          { 'lastKnownLocation.updatedAt': null },
+          { 'lastKnownLocation.updatedAt': { $exists: false } },
+          { 'lastKnownLocation.updatedAt': { $lt: at } },
+        ],
+      },
+      { $set: update }
+    );
   },
 };

@@ -2,7 +2,8 @@
 const socketEventDocs = {
   client_to_server: {
     update_location: {
-      payload: '{ latitude: Number(-90..90), longitude: Number(-180..180), batteryLevel?: Number }',
+      payload:
+        '{ latitude: Number(-90..90), longitude: Number(-180..180), batteryLevel?: Number, recordedAt?: ISO8601, accuracy?: Number(>=0 meters) }',
       behavior: 'Saves last location (+ throttled history), broadcasts location_update / location_stay_alert to your circles',
     },
     sos_alert: {
@@ -30,7 +31,8 @@ const socketEventDocs = {
   },
   server_to_client: {
     'session:ready': '{ groupIds: String[], conversationIds: String[] } — rooms joined, safe to rely on broadcasts',
-    location_update: '{ userId, name, latitude, longitude, batteryLevel, timestamp, durationAtLocation, durationSince, durationFormatted }',
+    location_update:
+      '{ userId, name, latitude, longitude, batteryLevel, timestamp, recordedAt, accuracy?, durationAtLocation, durationSince, durationFormatted }',
     location_stay_alert: '{ type: "STAY_ALERT", userId, name, latitude, longitude, durationMinutes, durationFormatted, durationSince, groupId, groupName, message, timestamp }',
     sos_alert: '{ type: "SOS", userId, name, message, latitude, longitude, batteryLevel, groupId, groupName, timestamp }',
     sos_confirmed: '{ message, groupCount }',

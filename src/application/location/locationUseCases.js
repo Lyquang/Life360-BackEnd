@@ -3,6 +3,8 @@ const { lastLocationKey } = require('../../domain/cacheKeys');
 
 const THROTTLE_DISTANCE_METERS = 50;
 const THROTTLE_TIME_MS = 30 * 1000;
+const MAX_RECORDED_AT_FUTURE_MS = 60 * 1000;
+const MAX_RECORDED_AT_AGE_MS = 24 * 60 * 60 * 1000;
 const STAY_ALERT_MILESTONES_MINUTES = [30, 60, 120, 240, 480, 1440];
 
 /**
@@ -20,6 +22,24 @@ function createLocationUseCases({
 }) {
   const lastSavedLocation = new Map();
   const durationTracker = new Map();
+  let ignoredRecordedAtCount = 0;
+
+  function resolveRecordedAt(recordedAt, serverNow) {
+    if (!recordedAt) return new Date(serverNow);
+
+    const measuredAt = new Date(recordedAt);
+    let reason = null;
+    if (measuredAt.getTime() > serverNow + MAX_RECORDED_AT_FUTURE_MS) reason = 'too_far_in_future';
+    if (measuredAt.getTime() < serverNow - MAX_RECORDED_AT_AGE_MS) reason = 'too_old';
+    if (!reason) return measuredAt;
+
+    ignoredRecordedAtCount += 1;
+    logger.warn('Ignored out-of-range location recordedAt; using server time.', {
+      reason,
+      ignoredRecordedAtCount,
+    });
+    return new Date(serverNow);
+  }
 
   function shouldSaveHistory(userId, latitude, longitude, now) {
     const last = lastSavedLocation.get(userId);
@@ -52,22 +72,35 @@ function createLocationUseCases({
     };
   }
 
-  async function updateLocation({ userId, userName, socketId, latitude, longitude, batteryLevel, fallbackBatteryLevel }) {
+  async function updateLocation({
+    userId,
+    userName,
+    socketId,
+    latitude,
+    longitude,
+    batteryLevel,
+    fallbackBatteryLevel,
+    recordedAt,
+    accuracy,
+  }) {
     const now = Date.now();
-    const at = new Date(now);
+    const serverAt = new Date(now);
+    const at = resolveRecordedAt(recordedAt, now);
     const { durationMinutes, durationSince, newMilestones } = trackDuration(userId, latitude, longitude, now);
 
+    const cachedLocation = {
+      userId,
+      name: userName,
+      latitude,
+      longitude,
+      batteryLevel: batteryLevel ?? fallbackBatteryLevel,
+      durationMinutes,
+      recordedAt: at.toISOString(),
+    };
+    if (accuracy !== undefined) cachedLocation.accuracy = accuracy;
     await cacheManager.setWithTTL(
       lastLocationKey(userId),
-      {
-        userId,
-        name: userName,
-        latitude,
-        longitude,
-        batteryLevel: batteryLevel ?? fallbackBatteryLevel,
-        durationMinutes,
-        recordedAt: at.toISOString(),
-      },
+      cachedLocation,
       locationCacheTtlSeconds
     );
 
@@ -85,10 +118,12 @@ function createLocationUseCases({
       longitude,
       batteryLevel: batteryLevel ?? fallbackBatteryLevel,
       timestamp: at.toISOString(),
+      recordedAt: at.toISOString(),
       durationAtLocation: durationMinutes,
       durationSince,
       durationFormatted: formatDuration(durationMinutes),
     };
+    if (accuracy !== undefined) payload.accuracy = accuracy;
 
     for (const group of groups) {
       realtime.emitToGroup(group._id, 'location_update', payload, { exceptSocketId: socketId });
@@ -106,7 +141,7 @@ function createLocationUseCases({
           groupId: group._id,
           groupName: group.name,
           message: `${userName} đang ở một nơi được ${formatDuration(milestone)} rồi!`,
-          timestamp: at.toISOString(),
+          timestamp: serverAt.toISOString(),
         });
         logger.log(`⏱  Stay alert: ${userName} stayed ${formatDuration(milestone)} in group ${group.name}`);
       }

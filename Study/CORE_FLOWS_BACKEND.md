@@ -363,7 +363,7 @@ sequenceDiagram
     participant Realtime as SocketRealtime
     participant Room as Group Room Members
 
-    Client->>Gateway: update_location { latitude, longitude, batteryLevel }
+    Client->>Gateway: update_location { latitude, longitude, batteryLevel, recordedAt?, accuracy? }
     Gateway->>Gateway: Zod validate updateLocationPayload
     alt invalid payload
         Gateway-->>Client: error Invalid location payload
@@ -397,14 +397,15 @@ sequenceDiagram
 ### 3.3 Step-by-Step Breakdown
 
 1. Client emit `update_location` qua Socket.IO.
-2. `locationGateway` validate latitude/longitude/battery bang Zod.
-3. Use case tinh stay duration bang in-memory `durationTracker`.
-4. Vi tri moi nhat duoc ghi Redis `location:last:<userId>` voi TTL.
-5. `shouldSaveHistory` chi cho ghi MongoDB neu user di chuyen >= 50m hoac >= 30 giay.
-6. Khi persist, update `User.lastKnownLocation` va insert `LocationHistory`.
-7. Lay danh sach group user dang tham gia.
-8. Broadcast `location_update` den room `group:<groupId>`, tru nguoi gui.
-9. Neu user dung yen qua milestone 30/60/120/... phut thi emit `location_stay_alert`.
+2. `locationGateway` validate latitude/longitude/battery, ISO-8601 `recordedAt` va `accuracy >= 0` bang Zod.
+3. Timestamp GPS trong khoang 24 gio qua den 60 giay tuong lai duoc dung; ngoai khoang fallback gio server va log counter khong kem toa do.
+4. Use case tinh stay duration bang gio server trong in-memory `durationTracker`.
+5. Vi tri moi nhat duoc ghi Redis `location:last:<userId>` voi `recordedAt`, `accuracy` va TTL.
+6. `shouldSaveHistory` chi cho ghi MongoDB neu user di chuyen >= 50m hoac >= 30 giay.
+7. Khi persist, chi update `User.lastKnownLocation` neu timestamp moi hon; `LocationHistory` dung timestamp GPS hop le.
+8. Lay danh sach group user dang tham gia.
+9. Broadcast `location_update` den room `group:<groupId>`, tru nguoi gui.
+10. Neu user dung yen qua milestone 30/60/120/... phut thi emit `location_stay_alert`.
 
 ### 3.4 Code Snippet va ten file thuc te
 
@@ -439,6 +440,8 @@ if (shouldSaveHistory(userId, latitude, longitude, now)) {
 ### 3.5 Xu ly ngoai le va Edge Cases
 
 - Payload sai: socket emit `error` va khong ghi Redis/Mongo.
+- `recordedAt` qua cu/qua xa trong tuong lai: fallback gio server, khong loai bo ca diem.
+- Diem offline den muon: van co timestamp dung trong history nhung khong ghi de `User.lastKnownLocation` moi hon.
 - Redis down: warning, vi tri van co the broadcast va Mongo throttle van chay.
 - MongoDB write fail: gateway catch va emit `error Failed to update location`.
 - Nhieu device cung user: disconnect chi mark offline neu `realtime.countUserSockets(userId) == 0`.

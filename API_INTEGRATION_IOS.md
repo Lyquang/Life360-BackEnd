@@ -1432,7 +1432,9 @@ Payload:
 {
   "latitude": 10.7769,
   "longitude": 106.7009,
-  "batteryLevel": 80
+  "batteryLevel": 80,
+  "recordedAt": "2026-10-13T08:30:15.123Z",
+  "accuracy": 8.5
 }
 ```
 
@@ -1441,6 +1443,9 @@ Rules:
 - `latitude`: `-90...90`
 - `longitude`: `-180...180`
 - `batteryLevel` optional, clamped by backend to `0...100`
+- `recordedAt` optional ISO-8601 GPS fix time; accepted from 24 hours ago through 60 seconds in the future
+- `accuracy` optional horizontal accuracy in meters, must be `>= 0`
+- Out-of-window `recordedAt` falls back to server time without rejecting the point
 
 Behavior:
 
@@ -1598,6 +1603,8 @@ No ack. Broadcasts to other conversation members.
   "longitude": 106.7009,
   "batteryLevel": 80,
   "timestamp": "2026-10-01T08:00:00.000Z",
+  "recordedAt": "2026-10-01T08:00:00.000Z",
+  "accuracy": 8.5,
   "durationAtLocation": 12,
   "durationSince": "2026-10-01T07:48:00.000Z",
   "durationFormatted": "12 phút"

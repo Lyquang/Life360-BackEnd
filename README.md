@@ -190,7 +190,7 @@ const socket = io('http://localhost:3000', {
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `update_location` | `{ latitude, longitude, batteryLevel? }` | Send current GPS location |
+| `update_location` | `{ latitude, longitude, batteryLevel?, recordedAt?, accuracy? }` | Send current GPS fix; recorded time is ISO-8601 and accuracy is meters |
 | `sos_alert` | `{ message?, latitude?, longitude?, batteryLevel? }` | Broadcast SOS to all circles |
 | `chat:send_message` | `{ conversationId, type: "text", content }` | Send text message |
 | `chat:send_message` | `{ conversationId, type: "image", attachmentUrl, metadata }` | Send image message |

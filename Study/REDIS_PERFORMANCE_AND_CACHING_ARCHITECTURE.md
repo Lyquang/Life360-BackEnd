@@ -1220,12 +1220,13 @@ sequenceDiagram
     participant Mongo as MongoDB
     participant Realtime as Socket.IO rooms
 
-    Mobile->>Socket: update_location { latitude, longitude, batteryLevel }
+    Mobile->>Socket: update_location { latitude, longitude, batteryLevel, recordedAt?, accuracy? }
     Socket->>LocationUC: updateLocation(userId, payload)
-    LocationUC->>Redis: SET location:last:<userId> EX REDIS_LOCATION_TTL_SECONDS
+    LocationUC->>LocationUC: validate measured time (max age 24h, max future skew 60s)
+    LocationUC->>Redis: SET location:last:<userId> with recordedAt/accuracy EX TTL
     LocationUC->>LocationUC: shouldSaveHistory(>=50m or >=30s?)
     alt should save
-        LocationUC->>Mongo: updateLastKnownLocation + create history point
+        LocationUC->>Mongo: conditional updateLastKnownLocation + timestamped history point
     else high-frequency ping
         LocationUC-->>Mongo: skip MongoDB write
     end

@@ -378,7 +378,7 @@ sequenceDiagram
     alt filtered out
         Note over ShareUC: Save battery/network; do not emit
     else should send
-        ShareUC->>RealtimeRepo: sendLocation(point,batteryLevel)
+        ShareUC->>RealtimeRepo: sendLocation(point,batteryLevel,recordedAt,accuracy)
         alt socket connected
             RealtimeRepo->>Socket: emit update_location
             Socket->>Server: update_location
@@ -417,8 +417,8 @@ sequenceDiagram
 4. Stationary dung significant-change monitoring de GPS radio ngu.
 5. `DeviceLocationRepositoryImpl` map `CLLocation` sang `GeoPoint`.
 6. `ShareLocationUseCase` filter emit theo min distance/time va heartbeat.
-7. `SocketRealtimeRepository` emit `update_location`, offline thi queue coalesce key `location`.
-8. Incoming `location_update` duoc decode, broadcast qua `AsyncBroadcaster`.
+7. `SocketRealtimeRepository` emit `update_location` kem timestamp cua GPS fix va horizontal accuracy; offline thi queue coalesce key `location` nhung giu nguyen timestamp do.
+8. Incoming `location_update` decode `recordedAt`/`accuracy`, roi broadcast qua `AsyncBroadcaster`.
 9. `LiveMapViewModel @MainActor` upsert marker theo `member.id`.
 
 ### 3.5 Code Snippet va ten file thuc te
@@ -441,13 +441,18 @@ if let last = lastSent,
    now.timeIntervalSince(last.date) < minInterval {
     return
 }
-liveLocation.sendLocation(point, batteryLevel: deviceStatus.batteryLevel)
+liveLocation.sendLocation(
+    point,
+    batteryLevel: deviceStatus.batteryLevel,
+    recordedAt: location.timestamp,
+    accuracy: location.horizontalAccuracy >= 0 ? location.horizontalAccuracy : nil
+)
 ```
 
 `Mobile/FamilyTracker/Data/Repositories/SocketRealtimeRepository.swift`
 
 ```swift
-func sendLocation(_ point: GeoPoint, batteryLevel: Int?) {
+func sendLocation(_ point: GeoPoint, batteryLevel: Int?, recordedAt: Date, accuracy: Double?) {
     emitOrQueue(SocketEvent.updateLocation, payload, coalesceKey: "location")
 }
 ```
