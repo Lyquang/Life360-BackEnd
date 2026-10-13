@@ -110,6 +110,8 @@ npm run seed
 Server starts at `http://localhost:3000`  
 Swagger UI: `http://localhost:3000/api-docs`
 
+Mobile media integration: [`docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`](docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md)
+
 ---
 
 ## 🌐 REST API Reference

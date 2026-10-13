@@ -24,7 +24,7 @@ Tài liệu này dành cho iOS Swift Developer tích hợp app với Family Trac
 | Environment | REST Base URL | Socket.io URL |
 | --- | --- | --- |
 | Local Dev | `http://localhost:3000/api/v1` | `http://localhost:3000` |
-| Production | `https://life360-backend-latest.onrender.com/api/v1` | `https://life360-backend-latest.onrender.com` |
+| Production | `https://life360-backend-6v9n.onrender.com/api/v1` | `https://life360-backend-6v9n.onrender.com` |
 
 Health checks:
 
@@ -36,7 +36,7 @@ GET /api/v1/health
 Swagger UI:
 
 ```txt
-https://life360-backend-latest.onrender.com/api-docs
+https://life360-backend-6v9n.onrender.com/api-docs
 ```
 
 ### Authentication
@@ -1236,6 +1236,8 @@ Common errors: `400`, `401`, `403`, `503`.
 
 ### Create Media Presigned URL For Image Or Voice
 
+For a complete Swift implementation, signed-header rules, Socket payloads, and troubleshooting, see [`docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`](docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md).
+
 ```http
 POST /chat/media/presigned-url
 Auth: Yes
@@ -1387,7 +1389,7 @@ Connect to Socket Gateway URL, not `/api/v1`:
 
 ```swift
 let manager = SocketManager(
-    socketURL: URL(string: "https://life360-backend-latest.onrender.com")!,
+    socketURL: URL(string: "https://life360-backend-6v9n.onrender.com")!,
     config: [
         .log(false),
         .compress,
