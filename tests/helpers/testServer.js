@@ -19,7 +19,7 @@ const TEST_STORAGE_ENV = {
 /**
  * Boots the real server (in-memory MongoDB replica set → real transactions) on a random port.
  */
-async function startTestServer({ withStorage = true } = {}) {
+async function startTestServer({ withStorage = true, env = {} } = {}) {
   const replSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const config = loadConfig({
     NODE_ENV: 'test',
@@ -28,6 +28,7 @@ async function startTestServer({ withStorage = true } = {}) {
     PORT: '0',
     AUTH_RATE_LIMIT: '10000',
     ...(withStorage && TEST_STORAGE_ENV),
+    ...env,
   });
   const instance = await createServer(config, { logger: quietLogger });
   const port = await instance.listen(0);

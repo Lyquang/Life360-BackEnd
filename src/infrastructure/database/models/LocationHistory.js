@@ -35,6 +35,14 @@ const locationHistorySchema = new mongoose.Schema(
       default: Date.now,
       index: true,
     },
+    pointId: {
+      type: String,
+      trim: true,
+    },
+    accuracy: {
+      type: Number,
+      min: 0,
+    },
   },
   {
     timestamps: false,
@@ -44,6 +52,13 @@ const locationHistorySchema = new mongoose.Schema(
 // ─── Indexes ────────────────────────────────────────────────
 locationHistorySchema.index({ location: '2dsphere' });
 locationHistorySchema.index({ userId: 1, timestamp: -1 });
+locationHistorySchema.index(
+  { userId: 1, pointId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { pointId: { $type: 'string' } },
+  }
+);
 
 // ─── Transform output ───────────────────────────────────────
 locationHistorySchema.set('toJSON', {

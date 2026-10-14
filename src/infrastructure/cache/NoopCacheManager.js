@@ -11,6 +11,9 @@ function createNoopCacheManager({ enabled = false, reason = 'Redis is not config
     async setWithTTL() {
       return false;
     },
+    async setIfNewerTimestamp() {
+      return 0;
+    },
     async del() {
       return false;
     },

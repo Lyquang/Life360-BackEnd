@@ -458,6 +458,44 @@ if (shouldSaveHistory(userId, latitude, longitude, now)) {
 
 **Result:** UI van realtime, MongoDB chi nhan cac point co y nghia, cache Redis cung cap vi tri tuc thoi nhanh va he thong co du lieu history de phan tich journey.
 
+### 3.7 Offline Location Batch Sync (P6)
+
+Khi mobile reconnect, cac GPS fix da buffer duoc gui qua `POST /api/v1/locations/batch`. JWT middleware lay `userId`; Zod phan loai tung diem; use case sap xep theo `recordedAt`; repository bulk-upsert idempotent theo `(userId, pointId)`.
+
+```mermaid
+sequenceDiagram
+    actor Mobile
+    participant Auth as JWT Middleware
+    participant API as Location Batch Controller
+    participant UC as SyncLocationBatchUseCase
+    participant History as LocationHistoryRepository
+    participant Mongo as MongoDB
+    participant Redis as Redis or NoopCache
+
+    Mobile->>Auth: POST /locations/batch + Bearer token
+    Auth->>API: authenticated user + validated points
+    API->>UC: syncBatch(userId, points, rejected)
+    UC->>UC: Reject >24h or >60s future; stable sort
+    UC->>History: insertBatchIdempotent
+    History->>Mongo: unordered bulk upsert by userId + pointId
+    Mongo-->>UC: accepted + duplicates
+    UC->>Mongo: update lastKnownLocation only if newer
+    UC->>Redis: compare-and-set location:last by recordedAt
+    Note over UC: No durationTracker, stay alert, or Socket.IO broadcast
+    UC-->>Mobile: accepted + duplicates + rejected
+```
+
+Mobile chi xoa cac ID trong `accepted` hoac `duplicates`. Diem rejected co machine-readable code de client khong retry vo han. Batch khong ap dung throttle 50m/30s; no chi khoi phuc history. Sau reconnect, fresh GPS fix moi di qua socket de cap nhat ban do realtime.
+
+Files chinh:
+
+- `src/presentation/http/routes/locationRoutes.js`
+- `src/presentation/http/controllers/locationController.js`
+- `src/application/location/syncLocationBatchUseCase.js`
+- `src/infrastructure/repositories/locationHistoryRepository.js`
+- `src/infrastructure/database/models/LocationHistory.js`
+- `api-docs/LOCATION_UPDATE_API_DOC.md`
+
 ## 4. Emergency SOS Alert Flow
 
 ### 4.1 Bai toan nghiep vu va muc tieu ky thuat

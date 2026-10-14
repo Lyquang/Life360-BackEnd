@@ -25,6 +25,7 @@ const { createPlaceUseCases } = require('./application/places/placeUseCases');
 const { createHistoryUseCases } = require('./application/history/historyUseCases');
 const { createDigestUseCases } = require('./application/digests/digestUseCases');
 const { createLocationUseCases } = require('./application/location/locationUseCases');
+const { createSyncLocationBatchUseCase } = require('./application/location/syncLocationBatchUseCase');
 const { createChatUseCases } = require('./application/chat/chatUseCases');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
@@ -73,6 +74,13 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     location: createLocationUseCases(deps),
     chat: createChatUseCases(deps),
   };
+  useCases.location.syncBatch = createSyncLocationBatchUseCase({
+    ...deps,
+    policy: {
+      maxAgeMs: config.locationBatch.maxAgeMs,
+      maxFutureMs: config.locationBatch.maxFutureMs,
+    },
+  });
 
   return { repos, services, useCases, deps };
 }

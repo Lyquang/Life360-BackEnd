@@ -1379,6 +1379,48 @@ Journey algorithm:
 
 Common errors: `400`, `401`, `403`.
 
+### Offline Location Batch Sync
+
+```http
+POST /locations/batch
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Use this endpoint to persist GPS fixes buffered while the device was offline. Each point needs a stable client-generated UUID and the original measurement time:
+
+```json
+{
+  "points": [
+    {
+      "pointId": "08f68d38-6665-4f0f-8f48-bfa7cc449dc8",
+      "latitude": 10.7769,
+      "longitude": 106.7009,
+      "recordedAt": "2026-10-14T08:30:15.123Z",
+      "accuracy": 8.5,
+      "batteryLevel": 80
+    }
+  ]
+}
+```
+
+The server accepts at most 100 points, sorts them by `recordedAt`, and deduplicates by `(authenticatedUserId, pointId)`. Points may be at most 24 hours old or 60 seconds in the future.
+
+```json
+{
+  "success": true,
+  "data": {
+    "accepted": ["08f68d38-6665-4f0f-8f48-bfa7cc449dc8"],
+    "duplicates": [],
+    "rejected": []
+  }
+}
+```
+
+Remove local points only when their IDs are in `accepted` or `duplicates`. Validation failures appear in `rejected` without failing valid points in the same batch. Honor `Retry-After` on `429`; route `401` through the shared single-flight refresh flow.
+
+Batch sync never emits realtime events. After `session:ready`, upload buffered history through REST and send a newly measured current fix through socket `update_location`. Do not send the same buffered point through both paths. The complete contract and Swift DTOs are in `api-docs/LOCATION_UPDATE_API_DOC.md`.
+
 ## 9. Socket.io Realtime Contract
 
 ### Connection Flow

@@ -139,3 +139,132 @@ struct RealtimeLocationUpdate: Decodable, Sendable {
 ```
 
 Khi đệm offline, phải giữ nguyên `recordedAt` của `CLLocation.timestamp`; không tạo timestamp mới tại thời điểm retry.
+
+## 7. Đồng bộ nhiều điểm offline qua REST
+
+### Endpoint
+
+```http
+POST /api/v1/locations/batch
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Endpoint chỉ phục hồi lịch sử và cập nhật last-known location theo thời gian. Backend **không phát** `location_update`, không gọi duration tracker và không tạo stay alert từ batch.
+
+### Request
+
+```json
+{
+  "points": [
+    {
+      "pointId": "08f68d38-6665-4f0f-8f48-bfa7cc449dc8",
+      "latitude": 10.7769,
+      "longitude": 106.7009,
+      "recordedAt": "2026-10-14T08:30:15.123Z",
+      "accuracy": 8.5,
+      "batteryLevel": 80
+    }
+  ]
+}
+```
+
+| Field | Kiểu | Bắt buộc | Quy tắc |
+| --- | --- | --- | --- |
+| `points` | Array | Có | `1...100` phần tử |
+| `pointId` | UUID String | Có | UUID bền vững do mobile sinh; giữ nguyên khi retry |
+| `latitude` | Number | Có | `-90...90` |
+| `longitude` | Number | Có | `-180...180` |
+| `recordedAt` | ISO-8601 String | Có | Không cũ quá 24 giờ, không ở tương lai quá 60 giây |
+| `accuracy` | Number | Không | Mét, phải `>= 0` |
+| `batteryLevel` | Number | Không | Backend clamp về `0...100` |
+
+Không gửi `userId`. Backend luôn lấy user từ access token. Request body toàn hệ thống có giới hạn `100 KB`.
+
+### Response thành công hoặc thành công một phần
+
+```json
+{
+  "success": true,
+  "data": {
+    "accepted": ["08f68d38-6665-4f0f-8f48-bfa7cc449dc8"],
+    "duplicates": ["906d98d3-07ea-4aa3-8194-84bca59466ce"],
+    "rejected": [
+      {
+        "index": 2,
+        "pointId": "449e5aca-746a-463d-a78a-5888958216c8",
+        "code": "RECORDED_AT_TOO_OLD",
+        "reason": "recordedAt exceeds the maximum allowed age."
+      }
+    ]
+  }
+}
+```
+
+- `accepted`: điểm vừa được lưu.
+- `duplicates`: điểm đã tồn tại hoặc lặp trong cùng request; được xem là đã đồng bộ thành công.
+- `rejected`: điểm sai dữ liệu hoặc ngoài khoảng thời gian cho phép. `index` là vị trí trong request.
+- Mixed-validity batch vẫn trả HTTP `200` để các điểm tốt không bị mất.
+- Mobile chỉ xóa ngay các `pointId` nằm trong `accepted` hoặc `duplicates`.
+- Các code validation trong `rejected` là lỗi vĩnh viễn; mobile không retry vô hạn, nên loại bỏ hoặc đưa vào dead-letter/metric cục bộ.
+
+### Mã lỗi request
+
+| HTTP | Code | Mobile xử lý |
+| --- | --- | --- |
+| `400` | `VALIDATION_ERROR` | Sửa envelope; không retry nguyên trạng |
+| `400` | `BATCH_LIMIT_EXCEEDED` | Chia thành lô tối đa 100 điểm |
+| `401` | `UNAUTHORIZED` | Dùng refresh single-flight rồi retry một lần |
+| `413` | `PAYLOAD_TOO_LARGE` | Chia lô nhỏ hơn để body dưới 100 KB |
+| `429` | `RATE_LIMITED` | Giữ queue và chờ số giây trong `Retry-After` |
+| `500` | `INTERNAL_ERROR` | Giữ queue, retry với exponential backoff và jitter |
+
+Rate limit mặc định là 30 batch/phút cho mỗi user đã xác thực.
+
+### Thứ tự và idempotency
+
+- Backend sắp xếp stable theo `recordedAt` trước khi ghi.
+- Unique key là `(userId, pointId)`, nên timeout hoặc retry không tạo lịch sử trùng.
+- Điểm đến muộn vẫn vào history nhưng không ghi đè `User.lastKnownLocation` hoặc Redis nếu đã có điểm mới hơn.
+- Không áp dụng throttle realtime `50 m / 30 s` lên batch và hiện không thinning dữ liệu.
+
+### Quan hệ với realtime sau reconnect
+
+```text
+Buffered historical points  -> POST /locations/batch
+Fresh GPS fix after reconnect -> Socket update_location
+```
+
+Không gửi cùng một buffered point qua cả REST batch và socket. Batch không broadcast; mobile nên lấy một GPS fix hiện tại và gửi qua socket sau `session:ready` để bản đồ người thân cập nhật ngay.
+
+### Swift DTO tham khảo
+
+```swift
+struct BufferedLocationPoint: Codable, Sendable {
+    let pointId: UUID
+    let latitude: Double
+    let longitude: Double
+    let recordedAt: Date
+    let accuracy: Double?
+    let batteryLevel: Double?
+}
+
+struct LocationBatchRequest: Encodable, Sendable {
+    let points: [BufferedLocationPoint]
+}
+
+struct LocationBatchRejection: Decodable, Sendable {
+    let index: Int
+    let pointId: UUID?
+    let code: String
+    let reason: String
+}
+
+struct LocationBatchResult: Decodable, Sendable {
+    let accepted: [UUID]
+    let duplicates: [UUID]
+    let rejected: [LocationBatchRejection]
+}
+```
+
+Encoder phải dùng ISO-8601 cho `Date`. Khi server trả `429`, đọc header `Retry-After`; khi `401`, dùng chung refresh coordinator để tránh nhiều refresh chạy đồng thời.

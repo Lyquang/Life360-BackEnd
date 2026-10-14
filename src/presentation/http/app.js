@@ -3,17 +3,19 @@ const cors = require('cors');
 const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
 const { createAuthenticate } = require('./middleware/authenticate');
-const { createAuthLimiter, createRefreshLimiter } = require('./middleware/rateLimiter');
+const { createAuthLimiter, createRefreshLimiter, createLocationBatchLimiter } = require('./middleware/rateLimiter');
 const { createErrorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { createAuthController } = require('./controllers/authController');
 const { createGroupController } = require('./controllers/groupController');
 const { createHistoryController } = require('./controllers/historyController');
 const { createChatController } = require('./controllers/chatController');
+const { createLocationController } = require('./controllers/locationController');
 const { createAuthRoutes } = require('./routes/authRoutes');
 const { createGroupRoutes } = require('./routes/groupRoutes');
 const { createHistoryRoutes } = require('./routes/historyRoutes');
 const { createConversationRoutes, createChatRoutes } = require('./routes/chatRoutes');
 const { createSystemRoutes } = require('./routes/systemRoutes');
+const { createLocationRoutes } = require('./routes/locationRoutes');
 
 /** Mounts middleware and the /api/v1 routes on an existing Express app. */
 function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected, logger = console }) {
@@ -50,6 +52,12 @@ function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected,
   }));
   v1.use('/groups', createGroupRoutes({ controller: createGroupController(useCases), authenticate }));
   v1.use('/history', createHistoryRoutes({ controller: createHistoryController(useCases), authenticate }));
+  v1.use('/locations', createLocationRoutes({
+    controller: createLocationController(useCases),
+    authenticate,
+    batchLimiter: createLocationBatchLimiter(config.locationBatch.rateLimit),
+    maxPoints: config.locationBatch.maxPoints,
+  }));
   v1.use('/conversations', createConversationRoutes({ controller: chatController, authenticate }));
   v1.use('/chat', createChatRoutes({ controller: chatController, authenticate }));
 

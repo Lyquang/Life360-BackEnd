@@ -26,6 +26,7 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 | Done | Implement refresh token rotation | Added MongoDB-backed opaque single-use refresh tokens, atomic family rotation/reuse detection, logout-all, password-change revocation, device/session limits, Socket disconnect, Swagger/mobile docs, and integration tests. |
 | Done | Document Cloudflare R2 mobile integration | Added a standalone mobile API guide covering presigned tickets, raw PUT uploads, image/voice Socket and REST contracts, Swift models/services, errors, and testing. |
 | Done | Accept measured GPS time and accuracy | Added optional `recordedAt`/`accuracy` to `update_location`, bounded timestamp fallback, monotonic last-known writes, Mobile API docs, and integration coverage. |
+| Done | Implement offline location batch sync | Added authenticated `POST /api/v1/locations/batch`, partial per-point validation, UUID idempotency, monotonic MongoDB/Redis last-location updates, per-user rate limiting, no-broadcast behavior, mobile docs, and integration tests. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -46,6 +47,7 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 - `docs/REFRESH_TOKEN_MOBILE_API_DOC.md`: Mobile contract and Swift single-flight refresh guidance.
 - `docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`: Complete iOS contract for image and voice uploads through Cloudflare R2.
 - `api-docs/LOCATION_UPDATE_API_DOC.md`: Mobile Socket.IO contract for measured GPS timestamps and accuracy.
+- `Study/OFFLINE_LOCATION_BATCH_SYNC.md`: P6 architecture, decisions, data flow, risks, and rollback.
 
 ## Technical Notes
 
@@ -58,6 +60,7 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 - Redis integration is optional and fail-soft: `REDIS_ENABLED=false` uses a no-op cache, while `REDIS_ENABLED=true` expects an Upstash-style `rediss://` URL.
 - Redis keys follow domain naming in `src/domain/cacheKeys.js`; application code depends on cache abstractions, not directly on `ioredis`.
 - Refresh session correctness lives in MongoDB transactions; Redis remains best-effort for cache and access-token blacklist. Refresh tokens are opaque and only SHA-256 hashes are persisted.
+- Offline location batches are idempotent by `(userId, pointId)`, accept partial validity, never broadcast or trigger stay alerts, and keep last-known MongoDB/Redis state monotonic by `recordedAt`.
 
 ## Next Update Checklist
 

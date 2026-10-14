@@ -75,6 +75,23 @@ function createRedisCacheManager({ config, logger = console }) {
         return true;
       }, false);
     },
+    async setIfNewerTimestamp(key, value, field, ttlSeconds) {
+      const script = `
+        local current = redis.call('GET', KEYS[1])
+        if current then
+          local ok, decoded = pcall(cjson.decode, current)
+          if ok and decoded[ARGV[1]] and decoded[ARGV[1]] >= ARGV[2] then
+            return 0
+          end
+        end
+        redis.call('SET', KEYS[1], ARGV[3], 'EX', ARGV[4])
+        return 1
+      `;
+      return safe(
+        () => client.eval(script, 1, key, field, value[field], encode(value), Math.max(1, ttlSeconds)),
+        0
+      );
+    },
     async del(key) {
       return safe(() => client.del(key), 0);
     },

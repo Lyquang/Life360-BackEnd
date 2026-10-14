@@ -68,6 +68,7 @@ describe('update_location recordedAt and accuracy', { timeout: 120000 }, () => {
 
     const history = await LocationHistory.findOne({ userId: member.id }).lean();
     assert.equal(history.timestamp.toISOString(), measuredAt);
+    assert.equal(history.accuracy, 8.5);
     await t.disconnect(viewer, sender);
   });
 

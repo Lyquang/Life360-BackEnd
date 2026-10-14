@@ -106,7 +106,7 @@ function createLocationUseCases({
 
     if (shouldSaveHistory(userId, latitude, longitude, now)) {
       await userRepo.updateLastKnownLocation(userId, { latitude, longitude, batteryLevel, durationMinutes, at });
-      await locationHistoryRepo.create({ userId, latitude, longitude, at });
+      await locationHistoryRepo.create({ userId, latitude, longitude, at, accuracy });
       lastSavedLocation.set(userId, { latitude, longitude, timestamp: now });
     }
 

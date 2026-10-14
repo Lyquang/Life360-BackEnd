@@ -18,6 +18,9 @@ const envSchema = z.object({
   RENDER_EXTERNAL_URL: optionalUrl,
   AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
   REFRESH_RATE_LIMIT: z.coerce.number().int().positive().default(60),
+  LOCATION_BATCH_RATE_LIMIT: z.coerce.number().int().positive().default(30),
+  LOCATION_BATCH_MAX_POINTS: z.coerce.number().int().min(1).max(1000).default(100),
+  LOCATION_BATCH_MAX_AGE_HOURS: z.coerce.number().int().min(1).max(168).default(24),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -134,6 +137,12 @@ function loadConfig(env = process.env) {
     publicUrl: e.PUBLIC_URL || e.RENDER_EXTERNAL_URL || `http://localhost:${e.PORT}`,
     authRateLimit: e.AUTH_RATE_LIMIT,
     refreshRateLimit: e.REFRESH_RATE_LIMIT,
+    locationBatch: {
+      rateLimit: e.LOCATION_BATCH_RATE_LIMIT,
+      maxPoints: e.LOCATION_BATCH_MAX_POINTS,
+      maxAgeMs: e.LOCATION_BATCH_MAX_AGE_HOURS * 60 * 60 * 1000,
+      maxFutureMs: 60 * 1000,
+    },
     authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,
     redis: {

@@ -418,6 +418,7 @@ sequenceDiagram
 5. `DeviceLocationRepositoryImpl` map `CLLocation` sang `GeoPoint`.
 6. `ShareLocationUseCase` filter emit theo min distance/time va heartbeat.
 7. `SocketRealtimeRepository` emit `update_location` kem timestamp cua GPS fix va horizontal accuracy; offline thi queue coalesce key `location` nhung giu nguyen timestamp do.
+   Backend P6 da co `POST /api/v1/locations/batch`, nhung mobile hien tai chua co persistent multi-point buffer; P7 se thay coalesce queue bang `LocationBuffer` va batch sync theo contract trong `api-docs/LOCATION_UPDATE_API_DOC.md`.
 8. Incoming `location_update` decode `recordedAt`/`accuracy`, roi broadcast qua `AsyncBroadcaster`.
 9. `LiveMapViewModel @MainActor` upsert marker theo `member.id`.
 

@@ -50,13 +50,13 @@ module.exports = {
     return User.updateOne({ _id: id }, { isOnline: false, lastSeenAt: at });
   },
 
-  updateLastKnownLocation(id, { latitude, longitude, batteryLevel, durationMinutes, at }) {
+  updateLastKnownLocation(id, { latitude, longitude, batteryLevel, durationMinutes, at, updateLastSeen = true }) {
     const update = {
-      lastSeenAt: at,
       'lastKnownLocation.coordinates': [longitude, latitude],
       'lastKnownLocation.updatedAt': at,
-      'lastKnownLocation.durationMinutes': durationMinutes,
     };
+    if (updateLastSeen) update.lastSeenAt = at;
+    if (durationMinutes !== undefined) update['lastKnownLocation.durationMinutes'] = durationMinutes;
     if (batteryLevel !== undefined) update.batteryLevel = batteryLevel;
     return User.updateOne(
       {

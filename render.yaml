@@ -27,6 +27,12 @@ services:
         value: "10"
       - key: REFRESH_RATE_LIMIT
         value: "60"
+      - key: LOCATION_BATCH_RATE_LIMIT
+        value: "30"
+      - key: LOCATION_BATCH_MAX_POINTS
+        value: "100"
+      - key: LOCATION_BATCH_MAX_AGE_HOURS
+        value: "24"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGIN

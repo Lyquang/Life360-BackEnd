@@ -136,6 +136,7 @@ function createSwaggerSpec({ publicUrl, port }) {
         { name: 'Groups', description: 'Circles, members, digests' },
         { name: 'Places' },
         { name: 'History' },
+        { name: 'Locations', description: 'Offline location history synchronization' },
         { name: 'Chat', description: 'Conversations, messages, read receipts, media upload' },
       ],
     },
