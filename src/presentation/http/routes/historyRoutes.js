@@ -15,6 +15,10 @@ function createHistoryRoutes({ controller, authenticate }) {
    *     security: [{ bearerAuth: [] }]
    *     parameters:
    *       - $ref: '#/components/parameters/UserId'
+   *       - { in: query, name: from, schema: { type: string, format: date-time }, description: Range start; enables cursor mode }
+   *       - { in: query, name: to, schema: { type: string, format: date-time }, description: Range end; enables cursor mode }
+   *       - { in: query, name: limit, schema: { type: integer, default: 500, maximum: 1000 } }
+   *       - { in: query, name: cursor, schema: { type: string }, description: Opaque nextCursor from the previous page }
    *     responses:
    *       200: { description: "{ count, date, data: [{ id, latitude, longitude, timestamp }] }" }
    *       400: { $ref: '#/components/responses/ValidationError' }
@@ -35,6 +39,10 @@ function createHistoryRoutes({ controller, authenticate }) {
    *         name: date
    *         schema: { type: string, example: '2026-09-16' }
    *         description: YYYY-MM-DD, defaults to today
+   *       - in: query
+   *         name: detail
+   *         schema: { type: string, enum: [geometry] }
+   *         description: Opt in to timestamped points, gaps, distance and thinning metadata
    *     responses:
    *       200: { description: "{ date, userId, summary, journey }" }
    *       400: { $ref: '#/components/responses/ValidationError' }

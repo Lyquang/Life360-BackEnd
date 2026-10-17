@@ -14,7 +14,9 @@ Mobile gửi GPS fix qua Socket.IO event `update_location`. Backend kiểm tra d
   "longitude": 106.7009,
   "batteryLevel": 80,
   "recordedAt": "2026-10-13T08:30:15.123Z",
-  "accuracy": 8.5
+  "accuracy": 8.5,
+  "pointId": "08f68d38-6665-4f0f-8f48-bfa7cc449dc8",
+  "motionState": "walking"
 }
 ```
 
@@ -25,6 +27,8 @@ Mobile gửi GPS fix qua Socket.IO event `update_location`. Backend kiểm tra d
 | `batteryLevel` | Number | Không | Backend clamp về `0...100` |
 | `recordedAt` | String | Không | ISO-8601 có timezone, là thời điểm thiết bị đo GPS fix |
 | `accuracy` | Number | Không | Mét, phải `>= 0` |
+| `pointId` | UUID String | Không | Dùng cùng UUID nếu GPS fix này được retry qua batch |
+| `motionState` | String | Không | `stationary`, `walking`, `running`, `cycling`, `automotive`, `unknown` |
 
 Client cũ có thể tiếp tục chỉ gửi `latitude`, `longitude` và `batteryLevel`. Khi thiếu `recordedAt`, Backend dùng giờ nhận của server như trước đây.
 
@@ -64,6 +68,7 @@ Không gửi `accuracy` nếu Core Location trả số âm. Số âm hoặc sai 
   "timestamp": "2026-10-13T08:30:15.123Z",
   "recordedAt": "2026-10-13T08:30:15.123Z",
   "accuracy": 8.5,
+  "motionState": "walking",
   "durationAtLocation": 12,
   "durationSince": "2026-10-13T08:18:00.000Z",
   "durationFormatted": "12 phút"
@@ -80,6 +85,7 @@ Không gửi `accuracy` nếu Core Location trả số âm. Số âm hoặc sai 
 | `timestamp` | String | Có | Alias tương thích của `recordedAt` |
 | `recordedAt` | String | Có | Thời điểm GPS fix có hiệu lực |
 | `accuracy` | Number | Không | Độ chính xác ngang, mét |
+| `motionState` | String | Không | Trạng thái chuyển động do client cung cấp |
 | `durationAtLocation` | Integer | Có | Số phút tại khu vực hiện tại |
 | `durationSince` | String | Có | Mốc duration tracker của server |
 | `durationFormatted` | String | Có | Chuỗi thời lượng hiển thị |
@@ -92,7 +98,9 @@ Mobile mới nên dùng `recordedAt`. `timestamp` được giữ lại để kh�
 - `LocationHistory.timestamp` dùng thời gian GPS hợp lệ, giúp lịch sử sắp xếp theo thời điểm đo thay vì thời điểm đồng bộ.
 - `User.lastKnownLocation` chỉ cập nhật nếu `recordedAt` mới hơn `updatedAt` đang lưu. Điểm offline đến muộn vẫn có thể vào history nhưng không ghi đè marker mới nhất.
 - `durationTracker`, stay-alert và throttle runtime vẫn dùng giờ server. `accuracy` chưa ảnh hưởng duration hoặc ngưỡng lưu history.
-- History tiếp tục dùng ngưỡng hiện tại: di chuyển ít nhất 50 mét hoặc đủ 30 giây từ lần lưu trước.
+- Khi `LOCATION_HISTORY_DENSE_ENABLED=false`, history giữ quy tắc cũ: 50 mét **hoặc** 30 giây.
+- Khi bật dense history, server lưu khi đạt đồng thời khoảng thời gian và khoảng cách cấu hình, khi đổi `motionState`, hoặc khi đến heartbeat đứng yên. Mặc định rollout là 15 giây, 25 mét và heartbeat 300 giây.
+- Cùng một fix được chống trùng bằng `(userId, recordedAt, latitude, longitude)`; `pointId` tăng độ ổn định khi retry xuyên realtime/batch.
 
 ## 5. Payload lỗi
 
@@ -121,6 +129,8 @@ struct LocationUpdatePayload: Encodable, Sendable {
     let batteryLevel: Double?
     let recordedAt: String?
     let accuracy: Double?
+    let pointId: UUID?
+    let motionState: String?
 }
 
 struct RealtimeLocationUpdate: Decodable, Sendable {
@@ -132,6 +142,7 @@ struct RealtimeLocationUpdate: Decodable, Sendable {
     let timestamp: String
     let recordedAt: String
     let accuracy: Double?
+    let motionState: String?
     let durationAtLocation: Int
     let durationSince: String
     let durationFormatted: String
@@ -163,7 +174,8 @@ Endpoint chỉ phục hồi lịch sử và cập nhật last-known location the
       "longitude": 106.7009,
       "recordedAt": "2026-10-14T08:30:15.123Z",
       "accuracy": 8.5,
-      "batteryLevel": 80
+      "batteryLevel": 80,
+      "motionState": "walking"
     }
   ]
 }
@@ -178,6 +190,7 @@ Endpoint chỉ phục hồi lịch sử và cập nhật last-known location the
 | `recordedAt` | ISO-8601 String | Có | Không cũ quá 24 giờ, không ở tương lai quá 60 giây |
 | `accuracy` | Number | Không | Mét, phải `>= 0` |
 | `batteryLevel` | Number | Không | Backend clamp về `0...100` |
+| `motionState` | String | Không | Cùng enum với socket; hỗ trợ phát hiện chuyển trạng thái |
 
 Không gửi `userId`. Backend luôn lấy user từ access token. Request body toàn hệ thống có giới hạn `100 KB`.
 
@@ -224,7 +237,7 @@ Rate limit mặc định là 30 batch/phút cho mỗi user đã xác thực.
 ### Thứ tự và idempotency
 
 - Backend sắp xếp stable theo `recordedAt` trước khi ghi.
-- Unique key là `(userId, pointId)`, nên timeout hoặc retry không tạo lịch sử trùng.
+- Unique keys gồm `(userId, pointId)` và fingerprint `(userId, recordedAt, latitude, longitude)`, nên retry hoặc cùng fix đi qua socket rồi batch không tạo lịch sử trùng.
 - Điểm đến muộn vẫn vào history nhưng không ghi đè `User.lastKnownLocation` hoặc Redis nếu đã có điểm mới hơn.
 - Không áp dụng throttle realtime `50 m / 30 s` lên batch và hiện không thinning dữ liệu.
 
@@ -235,7 +248,7 @@ Buffered historical points  -> POST /locations/batch
 Fresh GPS fix after reconnect -> Socket update_location
 ```
 
-Không gửi cùng một buffered point qua cả REST batch và socket. Batch không broadcast; mobile nên lấy một GPS fix hiện tại và gửi qua socket sau `session:ready` để bản đồ người thân cập nhật ngay.
+Ưu tiên không gửi cùng buffered point qua cả REST batch và socket. Nếu xảy ra do retry/race, backend vẫn deduplicate cùng measured fix. Batch không broadcast; mobile nên lấy một GPS fix hiện tại và gửi qua socket sau `session:ready` để bản đồ người thân cập nhật ngay.
 
 ### Swift DTO tham khảo
 
@@ -247,6 +260,7 @@ struct BufferedLocationPoint: Codable, Sendable {
     let recordedAt: Date
     let accuracy: Double?
     let batteryLevel: Double?
+    let motionState: String?
 }
 
 struct LocationBatchRequest: Encodable, Sendable {

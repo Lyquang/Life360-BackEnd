@@ -33,6 +33,26 @@ services:
         value: "100"
       - key: LOCATION_BATCH_MAX_AGE_HOURS
         value: "24"
+      - key: LOCATION_HISTORY_DENSE_ENABLED
+        value: "false"
+      - key: LOCATION_HISTORY_MOVING_INTERVAL_SECONDS
+        value: "15"
+      - key: LOCATION_HISTORY_MOVING_DISTANCE_METERS
+        value: "25"
+      - key: LOCATION_HISTORY_IDLE_INTERVAL_SECONDS
+        value: "300"
+      - key: JOURNEY_GAP_THRESHOLD_SECONDS
+        value: "180"
+      - key: JOURNEY_MAX_POINTS_PER_SEGMENT
+        value: "1000"
+      - key: JOURNEY_SIMPLIFY_TOLERANCE_METERS
+        value: "8"
+      - key: HISTORY_RANGE_DEFAULT_LIMIT
+        value: "500"
+      - key: HISTORY_RANGE_MAX_LIMIT
+        value: "1000"
+      - key: HISTORY_RANGE_MAX_DAYS
+        value: "7"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGIN

@@ -33,10 +33,10 @@ Backend for a family safety and location-sharing application. It provides live m
 | Authentication            | Email/password registration and login, Google ID Token login, JWT access tokens, opaque refresh tokens, device metadata, logout and password change              |
 | Refresh security          | Strict single-use refresh-token rotation, reuse detection, session-family revocation, maximum 10 active device families per user                                 |
 | Family circles            | Create circles, join with a six-digit invite code, list members, online status, notification intervals and favorite places                                       |
-| Realtime location         | Socket.IO location updates with measured `recordedAt`, horizontal `accuracy`, battery level and monotonic last-known-location writes                             |
-| Offline location recovery | Idempotent `POST /locations/batch`, partial per-point validation, UUID deduplication and chronological persistence without realtime rebroadcast                  |
+| Realtime location         | Socket.IO fixes with `recordedAt`, accuracy, motion state, feature-flagged dense history and monotonic last-known writes                                        |
+| Offline location recovery | Idempotent `POST /locations/batch`, partial validation and cross-channel fix deduplication without realtime rebroadcast                                         |
 | Safety                    | Emergency SOS broadcasts and stay alerts at configured duration milestones                                                                                       |
-| Journey history           | Daily points, stay-point detection and moving segments                                                                                                           |
+| Journey history           | Opt-in timestamped route geometry, stable segment IDs, data gaps, distance/thinning and cursor-paginated raw ranges                                              |
 | Realtime chat             | Group and direct conversations, text/image/voice messages, unread counts, read receipts and typing indicators                                                    |
 | Media storage             | Direct image and voice upload to Cloudflare R2 with short-lived pre-signed PUT URLs; the Node.js server does not proxy binary files                              |
 | Redis                     | Optional Upstash-compatible cache, token blacklist, session metadata, profile/member cache, media metadata and last-known location; no-op fallback when disabled |
@@ -292,8 +292,8 @@ Standard success and error shapes:
 | Method | Endpoint                   | Description                                                                 |
 | ------ | -------------------------- | --------------------------------------------------------------------------- |
 | `POST` | `/locations/batch`         | Idempotently sync multiple offline points; never broadcasts realtime events |
-| `GET`  | `/history/:userId`         | Today's location points for self/shared-circle member                       |
-| `GET`  | `/history/:userId/journey` | Stay points and moving segments for a day                                   |
+| `GET`  | `/history/:userId`         | Today's points, or `from/to/limit/cursor` range pagination                  |
+| `GET`  | `/history/:userId/journey` | Daily stay/moving timeline; `detail=geometry` adds route and gap metadata   |
 
 ### System
 
@@ -324,7 +324,7 @@ socket.on("session:ready", ({ groupIds, conversationIds }) => {
 
 | Event               | Payload summary                                                  |
 | ------------------- | ---------------------------------------------------------------- |
-| `update_location`   | `{ latitude, longitude, batteryLevel?, recordedAt?, accuracy? }` |
+| `update_location`   | `{ latitude, longitude, batteryLevel?, recordedAt?, accuracy?, pointId?, motionState? }` |
 | `sos_alert`         | `{ message?, latitude?, longitude?, batteryLevel? }`             |
 | `chat:send_message` | Text, image or voice payload                                     |
 | `chat:mark_read`    | `{ conversationId, messageId? }`                                 |
@@ -405,7 +405,7 @@ Authorization: Bearer <accessToken>
 
 - Maximum 100 points per request by default.
 - Points are stably ordered by original `recordedAt`.
-- `(userId, pointId)` is unique, so retries cannot create duplicate history.
+- UUID and measured-fix fingerprints prevent duplicate history across retries and realtime/batch races.
 - Valid points are accepted even if other points in the same batch are rejected.
 - Points older than 24 hours or more than 60 seconds in the future are rejected individually.
 - Last-known MongoDB and Redis state is updated only by a newer point.
@@ -441,6 +441,21 @@ Mobile removes only IDs returned in `accepted` or `duplicates`.
 | `LOCATION_BATCH_RATE_LIMIT`    | `30`    | Requests per authenticated user per minute |
 | `LOCATION_BATCH_MAX_POINTS`    | `100`   | Maximum points per request                 |
 | `LOCATION_BATCH_MAX_AGE_HOURS` | `24`    | Oldest accepted `recordedAt`               |
+
+### Dense history, journey and range reads
+
+| Variable                                   | Default | Description                                      |
+| ------------------------------------------ | ------- | ------------------------------------------------ |
+| `LOCATION_HISTORY_DENSE_ENABLED`           | `false` | Enables the new persistence policy               |
+| `LOCATION_HISTORY_MOVING_INTERVAL_SECONDS` | `15`    | Minimum moving interval                          |
+| `LOCATION_HISTORY_MOVING_DISTANCE_METERS`  | `25`    | Minimum moving distance; combined with interval  |
+| `LOCATION_HISTORY_IDLE_INTERVAL_SECONDS`   | `300`   | Stationary history heartbeat                     |
+| `JOURNEY_GAP_THRESHOLD_SECONDS`            | `180`   | Marks missing-data links in geometry mode        |
+| `JOURNEY_MAX_POINTS_PER_SEGMENT`           | `1000`  | Maximum returned points after thinning           |
+| `JOURNEY_SIMPLIFY_TOLERANCE_METERS`        | `8`     | Initial Douglas-Peucker tolerance                 |
+| `HISTORY_RANGE_DEFAULT_LIMIT`              | `500`   | Default raw history page size                    |
+| `HISTORY_RANGE_MAX_LIMIT`                  | `1000`  | Maximum raw history page size                    |
+| `HISTORY_RANGE_MAX_DAYS`                   | `7`     | Maximum requested range width                    |
 
 ### Redis (optional)
 
@@ -486,7 +501,7 @@ Never commit `.env`, Google client secrets, R2 secret keys, Redis passwords, JWT
 | `Conversation`       | Group/direct metadata and last-message cursor                                      |
 | `ConversationMember` | Membership and last-read message cursor                                            |
 | `ChatMessage`        | Text/image/voice content, attachment/media metadata and indexes                    |
-| `LocationHistory`    | GeoJSON point, measured timestamp, accuracy and optional idempotency `pointId`     |
+| `LocationHistory`    | GeoJSON fix, measured timestamp, accuracy, motion state, UUID and dedupe fingerprint |
 | `GroupDigest`        | Periodic member status snapshot                                                    |
 
 ## Testing
@@ -496,7 +511,7 @@ npm run lint
 npm test
 ```
 
-The suite runs sequentially with Node's built-in test runner and MongoDB Memory Server replica sets. It covers REST, Socket.IO, transactions, Google social-login use cases, refresh rotation/reuse, media authorization, location timestamp handling, offline batch idempotency and rate limiting.
+The suite runs sequentially with Node's built-in test runner and MongoDB Memory Server replica sets. It covers REST, Socket.IO, transactions, Google social-login, refresh rotation/reuse, media authorization, dense/cross-channel location persistence, journey geometry, and cursor pagination.
 
 Useful repository-context commands:
 
@@ -527,6 +542,8 @@ RENDER_DEPLOY_HOOK_URL
 
 Render production requires at least `MONGODB_URI` and a secure `JWT_SECRET`. Add `GOOGLE_CLIENT_ID`, Redis and R2 variables only for the corresponding capabilities. `render.yaml` contains the expected variable names and non-secret defaults.
 
+For route-history rollout, deploy with `LOCATION_HISTORY_DENSE_ENABLED=false`, verify MongoDB indexes (especially `{ userId: 1, timestamp: 1, _id: 1 }`), smoke test legacy endpoints, then enable the flag and monitor storage/latency. Setting it back to `false` restores legacy write throttling without changing read contracts.
+
 Docker runtime:
 
 ```bash
@@ -545,6 +562,8 @@ The production image uses Node 20 Alpine, installs production dependencies only,
 | [`docs/REFRESH_TOKEN_MOBILE_API_DOC.md`](docs/REFRESH_TOKEN_MOBILE_API_DOC.md)             | Rotation, Keychain and single-flight refresh contract    |
 | [`docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`](docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md) | Image/voice direct-upload contract                       |
 | [`api-docs/LOCATION_UPDATE_API_DOC.md`](api-docs/LOCATION_UPDATE_API_DOC.md)               | Realtime and offline-batch location contract             |
+| [`api-docs/JOURNEY_ROUTE_API_DOC.md`](api-docs/JOURNEY_ROUTE_API_DOC.md)                   | iOS journey geometry and raw-history pagination contract |
+| [`Study/route-geometry-backend-interview-notes.md`](Study/route-geometry-backend-interview-notes.md) | Design trade-offs and interview preparation |
 | [`Study/CORE_FLOWS_BACKEND.md`](Study/CORE_FLOWS_BACKEND.md)                               | Backend sequence diagrams and architectural flows        |
 | [`Study/CORE_FLOWS_MOBILE.md`](Study/CORE_FLOWS_MOBILE.md)                                 | iOS Swift/SwiftUI integration flows                      |
 | [`PROGRESS.md`](PROGRESS.md)                                                               | Implemented tasks, decisions and important files         |
