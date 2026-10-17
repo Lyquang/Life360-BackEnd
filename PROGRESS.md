@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Set up a token-efficient repository understanding workflow with MCP memory configuration, skeleton generation, task tracking, and code flow tracing.
+Deliver truthful, gap-aware journey geometry and sufficiently dense location history without breaking existing mobile clients.
 
 ## Task Board
 
@@ -27,6 +27,9 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 | Done | Document Cloudflare R2 mobile integration | Added a standalone mobile API guide covering presigned tickets, raw PUT uploads, image/voice Socket and REST contracts, Swift models/services, errors, and testing. |
 | Done | Accept measured GPS time and accuracy | Added optional `recordedAt`/`accuracy` to `update_location`, bounded timestamp fallback, monotonic last-known writes, Mobile API docs, and integration coverage. |
 | Done | Implement offline location batch sync | Added authenticated `POST /api/v1/locations/batch`, partial per-point validation, UUID idempotency, monotonic MongoDB/Redis last-location updates, per-user rate limiting, no-broadcast behavior, mobile docs, and integration tests. |
+| Done | Refresh project README | Reconciled implemented features, Google OAuth mobile setup, refresh rotation, Redis/R2, offline location sync, API routes, environment variables, tests, Docker and Render/GHCR delivery with the current codebase. |
+| Done | Route geometry B0-B1 | Documented the verified history/journey behavior and added pure, tested domain primitives for route distance, gaps, thinning, ordering, deduplication, and dense-history persistence decisions. |
+| Pending | Route geometry B2-B5 | Wire dense persistence and deduplication, enrich journey output, add cursor-based range history, then publish mobile/deployment contracts. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -48,6 +51,9 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 - `docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`: Complete iOS contract for image and voice uploads through Cloudflare R2.
 - `api-docs/LOCATION_UPDATE_API_DOC.md`: Mobile Socket.IO contract for measured GPS timestamps and accuracy.
 - `Study/OFFLINE_LOCATION_BATCH_SYNC.md`: P6 architecture, decisions, data flow, risks, and rollback.
+- `Study/route-geometry-backend.md`: Verified journey/history behavior, geometry design, storage estimates, decisions, rollout, and rollback.
+- `src/domain/routeGeometry.js`: Pure route ordering, distance, gap analysis, link construction, and gap-safe thinning.
+- `src/domain/historyPersistence.js`: Pure configurable decision policy for dense history persistence.
 
 ## Technical Notes
 
@@ -61,6 +67,7 @@ Set up a token-efficient repository understanding workflow with MCP memory confi
 - Redis keys follow domain naming in `src/domain/cacheKeys.js`; application code depends on cache abstractions, not directly on `ioredis`.
 - Refresh session correctness lives in MongoDB transactions; Redis remains best-effort for cache and access-token blacklist. Refresh tokens are opaque and only SHA-256 hashes are persisted.
 - Offline location batches are idempotent by `(userId, pointId)`, accept partial validity, never broadcast or trigger stay alerts, and keep last-known MongoDB/Redis state monotonic by `recordedAt`.
+- Route geometry B1 is not wired to production yet; B2 must preserve the old realtime policy while its feature flag is off.
 
 ## Next Update Checklist
 
