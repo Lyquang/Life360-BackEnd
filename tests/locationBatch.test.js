@@ -64,6 +64,31 @@ describe('POST /api/v1/locations/batch', { timeout: 120000 }, () => {
     assert.equal(await LocationHistory.countDocuments({ userId: user.id, pointId: existing.pointId }), 1);
   });
 
+  it('deduplicates the same measured fix even when pointId changes', async () => {
+    const first = point({ motionState: 'walking' });
+    const sameFix = { ...first, pointId: randomUUID() };
+    const response = await t.api('POST', '/api/v1/locations/batch', {
+      token: user.token,
+      body: { points: [first, sameFix] },
+    });
+
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.equal(response.body.data.accepted.length, 1);
+    assert.equal(response.body.data.duplicates.length, 1);
+    assert.equal(
+      await LocationHistory.countDocuments({
+        userId: user.id,
+        timestamp: new Date(first.recordedAt),
+      }),
+      1
+    );
+    const stored = await LocationHistory.findOne({
+      userId: user.id,
+      timestamp: new Date(first.recordedAt),
+    }).lean();
+    assert.equal(stored.motionState, 'walking');
+  });
+
   it('keeps one history row when two retries arrive concurrently', async () => {
     const retried = point();
     const [first, second] = await Promise.all([
@@ -83,11 +108,12 @@ describe('POST /api/v1/locations/batch', { timeout: 120000 }, () => {
   it('accepts good points while reporting invalid and out-of-range points', async () => {
     const valid = point();
     const invalidAccuracy = point({ accuracy: -1 });
+    const invalidMotion = point({ motionState: 'flying' });
     const tooOld = point({ recordedAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString() });
     const future = point({ recordedAt: new Date(Date.now() + 2 * 60 * 1000).toISOString() });
     const response = await t.api('POST', '/api/v1/locations/batch', {
       token: user.token,
-      body: { points: [invalidAccuracy, valid, tooOld, future] },
+      body: { points: [invalidAccuracy, valid, tooOld, future, invalidMotion] },
     });
 
     assert.equal(response.status, 200, JSON.stringify(response.body));
@@ -98,6 +124,7 @@ describe('POST /api/v1/locations/batch', { timeout: 120000 }, () => {
         { index: 0, pointId: invalidAccuracy.pointId, code: 'INVALID_ACCURACY' },
         { index: 2, pointId: tooOld.pointId, code: 'RECORDED_AT_TOO_OLD' },
         { index: 3, pointId: future.pointId, code: 'RECORDED_AT_IN_FUTURE' },
+        { index: 4, pointId: invalidMotion.pointId, code: 'INVALID_MOTION_STATE' },
       ]
     );
   });

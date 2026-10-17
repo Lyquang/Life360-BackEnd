@@ -12,6 +12,7 @@ const locationBatchPoint = z.object({
   recordedAt: z.iso.datetime({ offset: true }).transform((value) => new Date(value)),
   accuracy: z.number().min(0).optional(),
   batteryLevel: batteryLevel.optional(),
+  motionState: z.enum(['stationary', 'walking', 'running', 'cycling', 'automotive', 'unknown']).optional(),
 });
 
 const ERROR_CODES = {
@@ -21,6 +22,7 @@ const ERROR_CODES = {
   recordedAt: 'INVALID_RECORDED_AT',
   accuracy: 'INVALID_ACCURACY',
   batteryLevel: 'INVALID_BATTERY_LEVEL',
+  motionState: 'INVALID_MOTION_STATE',
 };
 
 function createParseLocationBatch(maxPoints) {

@@ -39,9 +39,17 @@ const locationHistorySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    dedupeKey: {
+      type: String,
+      trim: true,
+    },
     accuracy: {
       type: Number,
       min: 0,
+    },
+    motionState: {
+      type: String,
+      enum: ['stationary', 'walking', 'running', 'cycling', 'automotive', 'unknown'],
     },
   },
   {
@@ -57,6 +65,13 @@ locationHistorySchema.index(
   {
     unique: true,
     partialFilterExpression: { pointId: { $type: 'string' } },
+  }
+);
+locationHistorySchema.index(
+  { userId: 1, dedupeKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { dedupeKey: { $type: 'string' } },
   }
 );
 

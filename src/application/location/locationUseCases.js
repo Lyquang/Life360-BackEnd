@@ -58,6 +58,7 @@ function createLocationUseCases({
       latitude: latest.location.coordinates[1],
       longitude: latest.location.coordinates[0],
       recordedAt: latest.timestamp,
+      motionState: latest.motionState,
     };
     lastSavedLocation.set(userId, loaded);
     return loaded;

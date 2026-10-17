@@ -105,6 +105,23 @@ describe('dense realtime location persistence', { timeout: 120000 }, () => {
     assert.equal(await LocationHistory.countDocuments({ userId: member.id }), 1);
     await t.disconnect(nextViewer, nextSender);
   });
+
+  it('deduplicates one GPS fix received through realtime and batch', async () => {
+    const { member, viewer, sender } = await setupMember('DenseCrossChannel');
+    const measuredAt = new Date(Date.now() - 60 * 1000);
+    const payload = fix(measuredAt, 20, { motionState: 'walking' });
+    await send(viewer, sender, payload);
+
+    const batch = await t.api('POST', '/api/v1/locations/batch', {
+      token: member.token,
+      body: { points: [payload] },
+    });
+    assert.equal(batch.status, 200, JSON.stringify(batch.body));
+    assert.deepEqual(batch.body.data.accepted, []);
+    assert.deepEqual(batch.body.data.duplicates, [payload.pointId]);
+    assert.equal(await LocationHistory.countDocuments({ userId: member.id }), 1);
+    await t.disconnect(viewer, sender);
+  });
 });
 
 describe('legacy realtime history feature flag', { timeout: 120000 }, () => {
