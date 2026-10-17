@@ -15,6 +15,7 @@ function createHistoryController({ history }) {
         requesterId: req.user._id,
         userId: req.dto.params.userId,
         date: req.dto.query.date,
+        detail: req.dto.query.detail,
       });
       res.json({ success: true, ...result });
     }),

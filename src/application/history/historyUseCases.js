@@ -5,13 +5,16 @@ const { sameId } = require('../shared/policies');
 
 function toPoint(entry) {
   return {
+    id: String(entry._id),
     latitude: entry.location.coordinates[1],
     longitude: entry.location.coordinates[0],
     timestamp: new Date(entry.timestamp),
+    recordedAt: new Date(entry.timestamp),
+    ...(entry.accuracy !== undefined && { accuracy: entry.accuracy }),
   };
 }
 
-function createHistoryUseCases({ groupRepo, locationHistoryRepo }) {
+function createHistoryUseCases({ groupRepo, locationHistoryRepo, journeyGeometryPolicy }) {
   async function assertCanView(requesterId, targetUserId) {
     if (sameId(requesterId, targetUserId)) return;
     if (!(await groupRepo.usersShareGroup(requesterId, targetUserId))) {
@@ -34,11 +37,18 @@ function createHistoryUseCases({ groupRepo, locationHistoryRepo }) {
     };
   }
 
-  async function getDayJourney({ requesterId, userId, date }) {
+  async function getDayJourney({ requesterId, userId, date, detail }) {
     await assertCanView(requesterId, userId);
     const { start, end } = localDayRange(date);
     const history = await locationHistoryRepo.listForUserBetween(userId, start, end);
-    return { date: formatLocalDate(start), userId, ...buildDayJourney(history.map(toPoint)) };
+    return {
+      date: formatLocalDate(start),
+      userId,
+      ...buildDayJourney(history.map(toPoint), {
+        geometry: detail === 'geometry',
+        ...journeyGeometryPolicy,
+      }),
+    };
   }
 
   return { getTodayHistory, getDayJourney };

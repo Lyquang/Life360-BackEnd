@@ -25,6 +25,9 @@ const envSchema = z.object({
   LOCATION_HISTORY_MOVING_INTERVAL_SECONDS: z.coerce.number().int().min(1).max(300).default(15),
   LOCATION_HISTORY_MOVING_DISTANCE_METERS: z.coerce.number().positive().max(1000).default(25),
   LOCATION_HISTORY_IDLE_INTERVAL_SECONDS: z.coerce.number().int().min(30).max(86400).default(300),
+  JOURNEY_GAP_THRESHOLD_SECONDS: z.coerce.number().int().min(30).max(86400).default(180),
+  JOURNEY_MAX_POINTS_PER_SEGMENT: z.coerce.number().int().min(10).max(10000).default(1000),
+  JOURNEY_SIMPLIFY_TOLERANCE_METERS: z.coerce.number().positive().max(1000).default(8),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -152,6 +155,11 @@ function loadConfig(env = process.env) {
       minIntervalMovingSeconds: e.LOCATION_HISTORY_MOVING_INTERVAL_SECONDS,
       minDistanceMovingMeters: e.LOCATION_HISTORY_MOVING_DISTANCE_METERS,
       maxIdleIntervalSeconds: e.LOCATION_HISTORY_IDLE_INTERVAL_SECONDS,
+    },
+    journeyGeometry: {
+      gapThresholdSeconds: e.JOURNEY_GAP_THRESHOLD_SECONDS,
+      maxPointsPerSegment: e.JOURNEY_MAX_POINTS_PER_SEGMENT,
+      simplifyToleranceMeters: e.JOURNEY_SIMPLIFY_TOLERANCE_METERS,
     },
     authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,

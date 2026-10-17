@@ -1,4 +1,11 @@
 const { haversineDistance } = require('./geo');
+const { createHash } = require('node:crypto');
+const {
+  analyzeRouteGaps,
+  simplifyRoute,
+  sortAndDedupeHistoryPoints,
+  totalDistanceMeters,
+} = require('./routeGeometry');
 
 const STAY_RADIUS_METERS = 80;
 const STAY_MIN_DURATION_MS = 5 * 60 * 1000;
@@ -67,11 +74,56 @@ function detectStayPoints(points) {
   return { stayPoints, usedIndices };
 }
 
-function toMovingSegment(segPoints) {
+function stableSegmentId(first) {
+  const identity = first.id || `${first.timestamp.toISOString()}:${first.latitude}:${first.longitude}`;
+  return `v1_${createHash('sha256').update(String(identity)).digest('base64url').slice(0, 22)}`;
+}
+
+function enrichedGeometry(segPoints, options) {
+  const gapThresholdSeconds = options.gapThresholdSeconds ?? 180;
+  const rawGaps = analyzeRouteGaps(segPoints, gapThresholdSeconds);
+  const simplified = simplifyRoute(segPoints, {
+    toleranceMeters: options.simplifyToleranceMeters ?? 8,
+    gapThresholdSeconds,
+    maxPoints: options.maxPointsPerSegment ?? 1000,
+  });
+  const returnedIndexByRawIndex = new Map(
+    simplified.originalIndices.map((rawIndex, returnedIndex) => [rawIndex, returnedIndex])
+  );
+  const gaps = rawGaps.gaps.map((gap) => ({
+    fromIndex: returnedIndexByRawIndex.get(gap.fromIndex),
+    toIndex: returnedIndexByRawIndex.get(gap.toIndex),
+    seconds: gap.seconds,
+    meters: gap.meters,
+  }));
+
+  return {
+    segmentId: stableSegmentId(segPoints[0]),
+    path: simplified.points.map((point) => ({
+      latitude: point.latitude,
+      longitude: point.longitude,
+    })),
+    points: simplified.points.map((point) => ({
+      latitude: point.latitude,
+      longitude: point.longitude,
+      recordedAt: point.timestamp.toISOString(),
+      ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
+    })),
+    pointCount: simplified.points.length,
+    originalPointCount: segPoints.length,
+    distanceMeters: totalDistanceMeters(segPoints),
+    maxGapSeconds: rawGaps.maxGapSeconds,
+    gaps,
+    thinned: simplified.thinned,
+    observedMovingSeconds: rawGaps.observedDurationSeconds,
+  };
+}
+
+function toMovingSegment(segPoints, options = {}) {
   const first = segPoints[0];
   const last = segPoints[segPoints.length - 1];
   const durationMinutes = Math.round((last.timestamp - first.timestamp) / 60000);
-  return {
+  const segment = {
     type: 'moving',
     fromLatitude: first.latitude,
     fromLongitude: first.longitude,
@@ -83,11 +135,13 @@ function toMovingSegment(segPoints) {
     durationFormatted: formatJourneyDuration(durationMinutes),
     path: segPoints.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
   };
+  if (options.geometry) Object.assign(segment, enrichedGeometry(segPoints, options));
+  return segment;
 }
 
-function buildMovingSegments(points, stayPoints, usedIndices) {
+function buildMovingSegments(points, stayPoints, usedIndices, options = {}) {
   if (stayPoints.length === 0) {
-    return points.length < 2 ? [] : [toMovingSegment(points)];
+    return points.length < 2 ? [] : [toMovingSegment(points, options)];
   }
 
   const boundaries = [
@@ -107,16 +161,17 @@ function buildMovingSegments(points, stayPoints, usedIndices) {
     }
     if (segPoints.length < 2) continue;
 
-    const segment = toMovingSegment(segPoints);
+    const segment = toMovingSegment(segPoints, options);
     if (segment.durationMinutes > 0) movingSegments.push(segment);
   }
   return movingSegments;
 }
 
 /** @returns {{ summary: object, journey: Array }} */
-function buildDayJourney(points) {
-  if (points.length === 0) {
-    return {
+function buildDayJourney(points, options = {}) {
+  const preparedPoints = options.geometry ? sortAndDedupeHistoryPoints(points) : points;
+  if (preparedPoints.length === 0) {
+    const empty = {
       summary: {
         totalPoints: 0,
         stayPointCount: 0,
@@ -127,10 +182,12 @@ function buildDayJourney(points) {
       },
       journey: [],
     };
+    if (options.geometry) empty.summary.observedMovingSeconds = 0;
+    return empty;
   }
 
-  const { stayPoints, usedIndices } = detectStayPoints(points);
-  const movingSegments = buildMovingSegments(points, stayPoints, usedIndices);
+  const { stayPoints, usedIndices } = detectStayPoints(preparedPoints);
+  const movingSegments = buildMovingSegments(preparedPoints, stayPoints, usedIndices, options);
 
   const journey = [
     ...stayPoints.map((sp) => ({ ...sp, _sortTime: new Date(sp.arrivedAt) })),
@@ -142,19 +199,26 @@ function buildDayJourney(points) {
   const totalStayMinutes = stayPoints.reduce((s, sp) => s + sp.durationMinutes, 0);
   const totalMovingMinutes = movingSegments.reduce((s, ms) => s + ms.durationMinutes, 0);
 
-  return {
+  const result = {
     summary: {
-      totalPoints: points.length,
+      totalPoints: preparedPoints.length,
       stayPointCount: stayPoints.length,
       totalStayMinutes,
       totalStayFormatted: formatJourneyDuration(totalStayMinutes),
       totalMovingMinutes,
       totalMovingFormatted: formatJourneyDuration(totalMovingMinutes),
-      firstSeenAt: points[0].timestamp.toISOString(),
-      lastSeenAt: points[points.length - 1].timestamp.toISOString(),
+      firstSeenAt: preparedPoints[0].timestamp.toISOString(),
+      lastSeenAt: preparedPoints[preparedPoints.length - 1].timestamp.toISOString(),
     },
     journey,
   };
+  if (options.geometry) {
+    result.summary.observedMovingSeconds = movingSegments.reduce(
+      (sum, segment) => sum + segment.observedMovingSeconds,
+      0
+    );
+  }
+  return result;
 }
 
 module.exports = { buildDayJourney, detectStayPoints, buildMovingSegments, formatJourneyDuration };
