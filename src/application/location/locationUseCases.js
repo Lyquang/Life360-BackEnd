@@ -1,5 +1,6 @@
 const { haversineDistance, formatDuration } = require('../../domain/geo');
 const { lastLocationKey } = require('../../domain/cacheKeys');
+const { shouldPersistHistoryPoint } = require('../../domain/historyPersistence');
 
 const THROTTLE_DISTANCE_METERS = 50;
 const THROTTLE_TIME_MS = 30 * 1000;
@@ -18,6 +19,7 @@ function createLocationUseCases({
   realtime,
   cacheManager,
   locationCacheTtlSeconds = 300,
+  historyPersistencePolicy = { denseEnabled: false },
   logger = console,
 }) {
   const lastSavedLocation = new Map();
@@ -41,11 +43,36 @@ function createLocationUseCases({
     return new Date(serverNow);
   }
 
-  function shouldSaveHistory(userId, latitude, longitude, now) {
+  function shouldSaveLegacyHistory(userId, latitude, longitude, now) {
     const last = lastSavedLocation.get(userId);
     if (!last) return true;
     if (now - last.timestamp >= THROTTLE_TIME_MS) return true;
     return haversineDistance(last.latitude, last.longitude, latitude, longitude) >= THROTTLE_DISTANCE_METERS;
+  }
+
+  async function getLatestSavedLocation(userId) {
+    if (lastSavedLocation.has(userId)) return lastSavedLocation.get(userId);
+    const latest = await locationHistoryRepo.findLatestForUser(userId);
+    if (!latest) return null;
+    const loaded = {
+      latitude: latest.location.coordinates[1],
+      longitude: latest.location.coordinates[0],
+      recordedAt: latest.timestamp,
+    };
+    lastSavedLocation.set(userId, loaded);
+    return loaded;
+  }
+
+  async function historyDecision({ userId, latitude, longitude, at, motionState, now }) {
+    if (!historyPersistencePolicy.denseEnabled) {
+      return { persist: shouldSaveLegacyHistory(userId, latitude, longitude, now), reason: 'legacy' };
+    }
+    const previous = await getLatestSavedLocation(userId);
+    return shouldPersistHistoryPoint(
+      previous,
+      { latitude, longitude, recordedAt: at, motionState },
+      historyPersistencePolicy
+    );
   }
 
   function trackDuration(userId, latitude, longitude, now) {
@@ -82,6 +109,8 @@ function createLocationUseCases({
     fallbackBatteryLevel,
     recordedAt,
     accuracy,
+    pointId,
+    motionState,
   }) {
     const now = Date.now();
     const serverAt = new Date(now);
@@ -98,16 +127,29 @@ function createLocationUseCases({
       recordedAt: at.toISOString(),
     };
     if (accuracy !== undefined) cachedLocation.accuracy = accuracy;
-    await cacheManager.setWithTTL(
+    if (motionState !== undefined) cachedLocation.motionState = motionState;
+    await cacheManager.setIfNewerTimestamp(
       lastLocationKey(userId),
       cachedLocation,
+      'recordedAt',
       locationCacheTtlSeconds
     );
 
-    if (shouldSaveHistory(userId, latitude, longitude, now)) {
-      await userRepo.updateLastKnownLocation(userId, { latitude, longitude, batteryLevel, durationMinutes, at });
-      await locationHistoryRepo.create({ userId, latitude, longitude, at, accuracy });
-      lastSavedLocation.set(userId, { latitude, longitude, timestamp: now });
+    const persistence = await historyDecision({ userId, latitude, longitude, at, motionState, now });
+    if (persistence.persist) {
+      if (persistence.reason !== 'lateArrival') {
+        await userRepo.updateLastKnownLocation(userId, { latitude, longitude, batteryLevel, durationMinutes, at });
+      }
+      await locationHistoryRepo.create({ userId, latitude, longitude, at, accuracy, pointId, motionState });
+      if (persistence.reason !== 'lateArrival') {
+        lastSavedLocation.set(userId, {
+          latitude,
+          longitude,
+          recordedAt: at,
+          motionState,
+          ...(historyPersistencePolicy.denseEnabled ? {} : { timestamp: now }),
+        });
+      }
     }
 
     const groups = await groupRepo.listSummariesByMember(userId);
@@ -124,6 +166,7 @@ function createLocationUseCases({
       durationFormatted: formatDuration(durationMinutes),
     };
     if (accuracy !== undefined) payload.accuracy = accuracy;
+    if (motionState !== undefined) payload.motionState = motionState;
 
     for (const group of groups) {
       realtime.emitToGroup(group._id, 'location_update', payload, { exceptSocketId: socketId });

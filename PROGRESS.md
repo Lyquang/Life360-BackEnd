@@ -29,7 +29,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 | Done | Implement offline location batch sync | Added authenticated `POST /api/v1/locations/batch`, partial per-point validation, UUID idempotency, monotonic MongoDB/Redis last-location updates, per-user rate limiting, no-broadcast behavior, mobile docs, and integration tests. |
 | Done | Refresh project README | Reconciled implemented features, Google OAuth mobile setup, refresh rotation, Redis/R2, offline location sync, API routes, environment variables, tests, Docker and Render/GHCR delivery with the current codebase. |
 | Done | Route geometry B0-B1 | Documented the verified history/journey behavior and added pure, tested domain primitives for route distance, gaps, thinning, ordering, deduplication, and dense-history persistence decisions. |
-| Pending | Route geometry B2-B5 | Wire dense persistence and deduplication, enrich journey output, add cursor-based range history, then publish mobile/deployment contracts. |
+| In Progress | Route geometry B2-B5 | B2a wires feature-flagged dense realtime persistence, MongoDB state recovery, optional motion metadata, and monotonic Redis writes; B2b deduplication/index work remains. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files

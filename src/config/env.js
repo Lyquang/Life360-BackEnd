@@ -21,6 +21,10 @@ const envSchema = z.object({
   LOCATION_BATCH_RATE_LIMIT: z.coerce.number().int().positive().default(30),
   LOCATION_BATCH_MAX_POINTS: z.coerce.number().int().min(1).max(1000).default(100),
   LOCATION_BATCH_MAX_AGE_HOURS: z.coerce.number().int().min(1).max(168).default(24),
+  LOCATION_HISTORY_DENSE_ENABLED: z.enum(['true', 'false']).default('false'),
+  LOCATION_HISTORY_MOVING_INTERVAL_SECONDS: z.coerce.number().int().min(1).max(300).default(15),
+  LOCATION_HISTORY_MOVING_DISTANCE_METERS: z.coerce.number().positive().max(1000).default(25),
+  LOCATION_HISTORY_IDLE_INTERVAL_SECONDS: z.coerce.number().int().min(30).max(86400).default(300),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -142,6 +146,12 @@ function loadConfig(env = process.env) {
       maxPoints: e.LOCATION_BATCH_MAX_POINTS,
       maxAgeMs: e.LOCATION_BATCH_MAX_AGE_HOURS * 60 * 60 * 1000,
       maxFutureMs: 60 * 1000,
+    },
+    locationHistory: {
+      denseEnabled: e.LOCATION_HISTORY_DENSE_ENABLED === 'true',
+      minIntervalMovingSeconds: e.LOCATION_HISTORY_MOVING_INTERVAL_SECONDS,
+      minDistanceMovingMeters: e.LOCATION_HISTORY_MOVING_DISTANCE_METERS,
+      maxIdleIntervalSeconds: e.LOCATION_HISTORY_IDLE_INTERVAL_SECONDS,
     },
     authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,

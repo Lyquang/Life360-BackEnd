@@ -42,4 +42,11 @@ module.exports = {
       .sort({ timestamp: 1 })
       .lean();
   },
+
+  findLatestForUser(userId) {
+    return LocationHistory.findOne({ userId })
+      .sort({ timestamp: -1, _id: -1 })
+      .select('_id location timestamp accuracy pointId')
+      .lean();
+  },
 };

@@ -60,6 +60,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
       : null,
     cacheManager,
     locationCacheTtlSeconds: config.redis.locationTtlSeconds,
+    historyPersistencePolicy: config.locationHistory,
     authMaxActiveSessions: config.authMaxActiveSessions,
     logger,
   };

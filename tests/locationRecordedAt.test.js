@@ -15,9 +15,11 @@ describe('update_location recordedAt and accuracy', { timeout: 120000 }, () => {
     t = await startTestServer();
     owner = await t.registerUser('LocationOwner');
     circle = await t.createGroup(owner, 'Location Contract');
-    t.instance.container.services.cacheManager.setWithTTL = async (key, value, ttlSeconds) => {
-      cacheWrites.push({ key, value, ttlSeconds });
-      return true;
+    t.instance.container.services.cacheManager.setIfNewerTimestamp = async (key, value, field, ttlSeconds) => {
+      const previous = cacheWrites.findLast((write) => write.key === key);
+      if (previous?.value[field] >= value[field]) return 0;
+      cacheWrites.push({ key, value, field, ttlSeconds });
+      return 1;
     };
   });
 
@@ -114,12 +116,20 @@ describe('update_location recordedAt and accuracy', { timeout: 120000 }, () => {
     const history = await LocationHistory.find({ userId: member.id }).sort({ timestamp: 1 }).lean();
     assert.equal(history.length, 2);
     assert.deepEqual(history.map((point) => point.timestamp.toISOString()), [olderAt, newerAt]);
+    const cached = cacheWrites.findLast((write) => write.key === lastLocationKey(member.id));
+    assert.equal(cached.value.recordedAt, newerAt);
     await t.disconnect(viewer, sender);
   });
 
   it('rejects invalid accuracy and malformed recordedAt values', async () => {
     const { viewer, sender } = await connectedMember('InvalidAccuracy');
-    for (const invalidFields of [{ accuracy: -1 }, { accuracy: '8.5' }, { recordedAt: 'not-a-date' }]) {
+    for (const invalidFields of [
+      { accuracy: -1 },
+      { accuracy: '8.5' },
+      { recordedAt: 'not-a-date' },
+      { pointId: 'not-a-uuid' },
+      { motionState: 'flying' },
+    ]) {
       const error = waitForEvent(sender, 'error');
       sender.emit('update_location', { latitude: 10.8, longitude: 106.8, ...invalidFields });
       const payload = await error;

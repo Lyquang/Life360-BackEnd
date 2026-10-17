@@ -1,386 +1,552 @@
-# 📍 Family Tracker — Backend API
+# FamilyTracker Backend
 
-> Real-time family location sharing backend built with **Node.js**, **Socket.IO**, **MongoDB** and **Express**.  
-> Supports live location tracking, SOS alerts, group circles, real-time chat, location history and journey analysis.
+Backend for a family safety and location-sharing application. It provides live member locations, offline location recovery, emergency SOS, family circles, realtime chat, image and voice messages, journey history, and multi-device authentication for the iOS application.
 
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-brightgreen)](https://nodejs.org)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-green)](https://mongoosejs.com)
-[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-black)](https://socket.io)
-[![Deploy on Render](https://img.shields.io/badge/Deploy-Render-purple)](https://render.com)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)](https://mongoosejs.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-010101?logo=socket.io)](https://socket.io/)
+[![Redis](https://img.shields.io/badge/Redis-ioredis-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Cloudflare R2](https://img.shields.io/badge/Media-Cloudflare_R2-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/r2/)
 
----
+## Contents
 
-## ✨ Key Features
+- [Implemented Features](#implemented-features)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Quick Start](#quick-start)
+- [Google OAuth Login](#google-oauth-login)
+- [Authentication and Session Security](#authentication-and-session-security)
+- [REST API](#rest-api)
+- [Socket.IO Contract](#socketio-contract)
+- [Media Upload Flow](#media-upload-flow)
+- [Offline Location Sync](#offline-location-sync)
+- [Environment Variables](#environment-variables)
+- [Testing](#testing)
+- [CI/CD and Deployment](#cicd-and-deployment)
+- [Documentation](#documentation)
 
-| Feature | Description |
-|---------|-------------|
-| 🔐 **Authentication** | JWT-based register/login, bcrypt password hashing, rate limiting |
-| ⚡ **Redis Cache & Sessions** | Optional Upstash Redis for token blacklist, session metadata cache, profile/member cache and last known location |
-| 📍 **Real-time Location** | Live location sharing via Socket.IO with throttling (50m / 30s) |
-| 👨‍👩‍👧 **Circles (Groups)** | Create family groups, invite via 6-digit code, manage members |
-| 💬 **Real-time Chat** | 1-1 and group messaging, unread counts, read receipts, typing indicators |
-| 🖼️ **Image Messages** | Direct-to-S3/R2 upload via pre-signed URLs, blurhash previews |
-| 🆘 **SOS Alert** | Emergency broadcast to all circles with location |
-| ⏱️ **Stay Alerts** | Auto-notify when a member stays at one place for 30m, 1h, 2h… |
-| 🗺️ **Journey Analysis** | Day journey with stay-point detection and moving segments |
-| 📋 **Group Digests** | Periodic status summaries broadcast to circle members |
-| ⭐ **Favorite Places** | Save and share named places per circle |
-| 🩺 **Health Check** | `/api/health` endpoint with DB status |
-| 📖 **Swagger Docs** | Auto-generated OpenAPI docs at `/api/docs` |
-| 🧪 **Tests** | Integration test suite with in-memory MongoDB |
+## Implemented Features
 
----
+| Area                      | Current implementation                                                                                                                                           |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication            | Email/password registration and login, Google ID Token login, JWT access tokens, opaque refresh tokens, device metadata, logout and password change              |
+| Refresh security          | Strict single-use refresh-token rotation, reuse detection, session-family revocation, maximum 10 active device families per user                                 |
+| Family circles            | Create circles, join with a six-digit invite code, list members, online status, notification intervals and favorite places                                       |
+| Realtime location         | Socket.IO location updates with measured `recordedAt`, horizontal `accuracy`, battery level and monotonic last-known-location writes                             |
+| Offline location recovery | Idempotent `POST /locations/batch`, partial per-point validation, UUID deduplication and chronological persistence without realtime rebroadcast                  |
+| Safety                    | Emergency SOS broadcasts and stay alerts at configured duration milestones                                                                                       |
+| Journey history           | Daily points, stay-point detection and moving segments                                                                                                           |
+| Realtime chat             | Group and direct conversations, text/image/voice messages, unread counts, read receipts and typing indicators                                                    |
+| Media storage             | Direct image and voice upload to Cloudflare R2 with short-lived pre-signed PUT URLs; the Node.js server does not proxy binary files                              |
+| Redis                     | Optional Upstash-compatible cache, token blacklist, session metadata, profile/member cache, media metadata and last-known location; no-op fallback when disabled |
+| API documentation         | Swagger UI, detailed mobile contracts and Swift integration models                                                                                               |
+| Delivery                  | Docker image, GitHub Actions lint/audit/tests, GHCR publishing and Render deploy-hook support                                                                    |
 
-## 🏗️ Architecture
+## Architecture
 
+The project follows a Clean Architecture-style dependency flow:
+
+```text
+presentation -> application -> domain ports/rules <- infrastructure
 ```
+
+```text
 src/
-├── application/          # Use cases (business logic)
-│   ├── auth/             # Register, login, token auth
-│   ├── chat/             # Messaging, conversations, upload tickets
-│   ├── digests/          # Group status digests scheduler
-│   ├── groups/           # Circle CRUD, invite codes
-│   ├── history/          # Location history & journey analysis
-│   ├── location/         # Real-time location, SOS, presence
-│   └── places/           # Favorite places
-├── domain/               # Pure business logic (no I/O)
-│   ├── errors.js         # Typed error factory
-│   ├── geo.js            # Haversine distance, duration formatting
-│   ├── journey.js        # Stay-point detection algorithm
-│   └── media.js          # Upload key builder & validator
-├── infrastructure/       # Data access & external services
-│   ├── database/
-│   │   ├── connection.js # MongoDB connection (with in-memory fallback)
-│   │   ├── models/       # Mongoose schemas (User, Group, Message, etc.)
-│   │   └── unitOfWork.js # Transaction wrapper
-│   ├── realtime/         # Socket.IO room management
-│   ├── repositories/     # Data access layer
-│   ├── cache/            # Redis cache manager + no-op fallback
-│   ├── security/         # JWT service, bcrypt hasher
-│   └── storage/          # S3/R2 presigned upload
-└── presentation/         # HTTP & WebSocket layer
-    ├── http/
-    │   ├── app.js        # Express app setup (CORS, Helmet, Swagger)
-    │   ├── controllers/  # Request handlers
-    │   ├── middleware/    # Auth, validation, error handling
-    │   └── routes/       # Route definitions
-    ├── socket/
-    │   ├── socketServer.js       # Socket.IO server setup
-    │   └── gateways/
-    │       ├── chatGateway.js    # Chat socket events
-    │       └── locationGateway.js # Location socket events
-    └── jobs/
-        └── digestScheduler.js   # Cron-like digest job
+├── domain/                  # Pure policies, errors, geo, OAuth, media and token rules
+├── application/             # Framework-independent use cases
+│   ├── auth/
+│   ├── chat/
+│   ├── digests/
+│   ├── groups/
+│   ├── history/
+│   ├── location/
+│   └── places/
+├── infrastructure/
+│   ├── cache/               # RedisCacheManager and NoopCacheManager
+│   ├── database/            # Mongoose models, connection and transactions
+│   ├── oauth/               # Google OAuth provider adapter and provider factory
+│   ├── realtime/            # Socket.IO room adapter
+│   ├── repositories/        # MongoDB repository adapters
+│   ├── security/            # JWT and bcrypt adapters
+│   └── storage/             # Cloudflare R2 / S3-compatible storage adapters
+├── presentation/
+│   ├── dto/                 # Zod request and event schemas
+│   ├── http/                # Express routes, controllers and middleware
+│   ├── jobs/                # Digest scheduler
+│   └── socket/              # Authenticated Socket.IO gateways
+├── config/                  # Environment validation and OpenAPI configuration
+└── container.js             # Composition root and dependency wiring
 ```
 
----
+Controllers and gateways validate input, pass authenticated context to use cases, and format responses. Business rules remain in application/domain code; Mongoose, Redis, JWT, Google Auth and R2 details stay in infrastructure adapters.
 
-## 🚀 Quick Start
+## Technology Stack
 
-### Prerequisites
-- Node.js >= 20
-- MongoDB (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
-- Optional Redis ([Upstash Redis](https://upstash.com/) recommended)
+| Technology            | Purpose                                                             |
+| --------------------- | ------------------------------------------------------------------- |
+| Node.js 20+           | Runtime; native watch mode for development                          |
+| Express 4             | REST API and middleware pipeline                                    |
+| Socket.IO 4           | Authenticated realtime rooms and events                             |
+| MongoDB + Mongoose 8  | Primary persistence, GeoJSON data, indexes and transactions         |
+| Redis + ioredis 6     | Optional cache, blacklist and ephemeral location/session state      |
+| Zod 4                 | Environment, HTTP payload and socket event validation               |
+| `jsonwebtoken`        | HS256 access JWT creation and verification                          |
+| `bcryptjs`            | Password hashing and verification                                   |
+| `google-auth-library` | Google ID Token signature, issuer, expiry and audience verification |
+| AWS SDK v3            | S3-compatible pre-signed uploads to Cloudflare R2                   |
+| Swagger/OpenAPI       | Interactive API reference at `/api-docs`                            |
+| Node test runner      | Sequential integration tests with MongoDB Memory Server             |
+| Docker + GHCR         | Reproducible production image and registry publishing               |
 
-### 1. Clone & Install
+## Quick Start
+
+### Requirements
+
+- Node.js 20 or newer
+- npm
+- MongoDB local instance or MongoDB Atlas
+- Optional: Redis/Upstash for caching and immediate access-token blacklist behavior
+- Optional: Cloudflare R2 for image and voice uploads
+- Optional: Google OAuth Web Client ID for Google login
+
+### Install and run
+
 ```bash
-git clone https://github.com/your-username/family-tracker-backend.git
-cd family-tracker-backend
+git clone https://github.com/Lyquang/Life360-BackEnd.git
+cd Life360-BackEnd
 npm install
-```
-
-### 2. Configure Environment
-```bash
 cp .env.example .env
-# Edit .env with your settings
-```
-
-### 3. Run
-```bash
-# Development (with auto-reload)
 npm run dev
-
-# Production
-npm start
-
-# Seed fake test user
-npm run seed
 ```
 
-Server starts at `http://localhost:3000`  
-Swagger UI: `http://localhost:3000/api-docs`
+Local endpoints:
 
-Mobile media integration: [`docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`](docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md)
+```text
+API base URL:  http://localhost:3000/api/v1
+Socket URL:    http://localhost:3000
+Swagger UI:    http://localhost:3000/api-docs
+OpenAPI JSON:  http://localhost:3000/api-docs.json
+Health check:  http://localhost:3000/api/health
+```
 
----
+In local development, an unreachable MongoDB can fall back to an in-memory replica set. Production does not use this fallback and requires a real MongoDB replica set such as Atlas.
 
-## 🌐 REST API Reference
+## Google OAuth Login
 
-All endpoints are prefixed with `/api/v1`. Authentication uses `Authorization: Bearer <token>`.
+Google login is implemented with a provider port/factory so Apple or Facebook adapters can be added without changing the core social-login use case. **Only Google currently has a working infrastructure adapter.** Although validation reserves `apple` and `facebook`, those providers return an unsupported-provider error until adapters are implemented.
 
-### 🔐 Auth
+### Google Cloud setup
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/auth/register` | Register and issue access/refresh token pair |
-| `POST` | `/auth/login` | Login and issue access/refresh token pair |
-| `POST` | `/auth/social-login` | Google login and issue the same token pair |
-| `POST` | `/auth/refresh` | Atomically rotate a single-use refresh token |
-| `POST` | `/auth/logout` | Revoke the current device family |
-| `POST` | `/auth/logout-all` | Revoke every device family |
-| `POST` | `/auth/change-password` | Change password and revoke every session |
-| `GET`  | `/auth/me` | Current user profile |
+1. Open Google Cloud Console and configure the OAuth consent screen.
+2. Create a **Web application** OAuth Client ID. This is the backend audience/server client ID.
+3. Create an **iOS** OAuth Client ID using the app's Bundle ID.
+4. Configure Google Sign-In on iOS with the iOS Client ID and set the Web Client ID as `serverClientID`, so the resulting ID Token uses the backend audience.
+5. On Render, set `GOOGLE_CLIENT_ID` to the Web Client ID and redeploy.
 
-### 👨‍👩‍👧 Groups (Circles)
+```env
+GOOGLE_CLIENT_ID=1234567890-example.apps.googleusercontent.com
+```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/groups` | Create a circle (atomically creates group chat) |
-| `GET`  | `/groups` | List my circles |
-| `POST` | `/groups/join` | Join circle by 6-digit invite code |
-| `GET`  | `/groups/:id/members` | Circle members with online status & battery |
-| `PATCH`| `/groups/:id/notification-interval` | Set digest interval (0=off, max 1440 min) |
-| `GET`  | `/groups/:id/digests` | Digest history (paginated) |
-| `GET`  | `/groups/:id/digests/latest` | Latest digest |
-| `POST` | `/groups/:id/places` | Add favorite place to circle |
-| `GET`  | `/groups/:id/places` | List circle's favorite places |
+The backend verifies a Google **ID Token**, not a Google access token or authorization code. The token's `aud` claim must equal the Web Client ID in `GOOGLE_CLIENT_ID`. The iOS Client ID identifies the native app; it is not the backend audience. A Google client secret is not required by this endpoint because the backend is validating an ID Token rather than exchanging an authorization code.
 
-### 💬 Conversations & Chat
+### Mobile-to-backend request
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET`  | `/conversations` | My conversations (newest first) |
-| `GET`  | `/conversations/unread-summary` | Total unread across all conversations |
-| `POST` | `/conversations/direct` | Get or create 1-1 chat with a circle member |
-| `GET`  | `/conversations/:id` | Conversation detail |
-| `PATCH`| `/conversations/:id` | Update group chat name/avatar |
-| `GET`  | `/conversations/:id/messages` | Message history (cursor-based pagination) |
-| `POST` | `/conversations/:id/read` | Mark messages as read |
-| `GET`  | `/conversations/:id/unread` | Unread count for one conversation |
-| `POST` | `/chat/upload-ticket` | Get legacy pre-signed S3/R2 URL to upload image |
-| `POST` | `/chat/media/presigned-url` | Get pre-signed R2 URL to upload image or voice note |
+```http
+POST /api/v1/auth/social-login
+Content-Type: application/json
+```
 
-### 🗺️ Location History
+```json
+{
+  "provider": "google",
+  "token": "GOOGLE_ID_TOKEN_FROM_MOBILE",
+  "deviceName": "Quang's iPhone"
+}
+```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET`  | `/history/:userId` | Today's location points |
-| `GET`  | `/history/:userId/journey` | Full-day journey (stay points + moving segments) |
+Backend flow:
 
-### 🩺 System
+```text
+iOS Google Sign-In
+  -> Google ID Token
+  -> POST /auth/social-login
+  -> GoogleOAuthProvider.verifyToken(token, audience)
+  -> find linked social account or match verified email
+  -> create/link/update user profile
+  -> create device session
+  -> return FamilyTracker access and refresh tokens
+```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET`  | `/api/health` | Health check with DB status |
-| `GET`  | `/api/v1/socket-info` | Socket event documentation |
-| `GET`  | `/api/docs` | Swagger UI |
+Successful response:
 
----
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "USER_OBJECT_ID",
+      "name": "Example User",
+      "email": "user@example.com",
+      "avatar": "https://lh3.googleusercontent.com/..."
+    },
+    "token": "ACCESS_JWT_COMPATIBILITY_ALIAS",
+    "accessToken": "ACCESS_JWT",
+    "refreshToken": "OPAQUE_SINGLE_USE_REFRESH_TOKEN",
+    "expiresIn": 900
+  }
+}
+```
 
-## 🔌 Socket.IO Events
+`token` is retained as a deprecated alias of `accessToken` for older clients. New mobile code should use `accessToken`.
 
-Connect with JWT token:
+Common OAuth errors:
+
+| Status                                     | Meaning                                                                                       |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `401 Invalid Google ID token`              | Expired token, wrong token type, invalid signature or `aud` does not match `GOOGLE_CLIENT_ID` |
+| `401 Google account email is not verified` | Google profile has no verified email                                                          |
+| `503 Google OAuth is not configured`       | `GOOGLE_CLIENT_ID` is missing on the running server                                           |
+
+## Authentication and Session Security
+
+- Access tokens are short-lived HS256 JWTs; default lifetime is 15 minutes.
+- Refresh tokens are opaque 48-byte random values. Only SHA-256 hashes are stored in MongoDB.
+- Every successful refresh returns a new access token and a new refresh token.
+- A refresh token is single-use. Reusing a rotated/revoked token revokes its entire device family.
+- Login/register/social-login accept optional `deviceName` up to 100 characters; the server also records IP and user agent.
+- A user may have at most 10 active device families. Creating the 11th evicts the oldest family.
+- `POST /auth/logout` revokes the current family; `POST /auth/logout-all` revokes all device families.
+- Password changes revoke all sessions and disconnect their active sockets.
+- Redis provides immediate access-token blacklist checks when enabled. MongoDB remains the source of truth for refresh sessions.
+- iOS should store access and refresh tokens in Keychain and serialize refresh calls with a single-flight coordinator.
+
+## REST API
+
+All application routes use the `/api/v1` prefix. Protected routes require:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+Standard success and error shapes:
+
+```json
+{ "success": true, "data": {} }
+```
+
+```json
+{
+  "success": false,
+  "code": "VALIDATION_ERROR",
+  "message": "Validation failed.",
+  "errors": [{ "field": "body.email", "message": "Invalid email" }]
+}
+```
+
+### Authentication
+
+| Method | Endpoint                | Auth | Description                                                                      |
+| ------ | ----------------------- | ---- | -------------------------------------------------------------------------------- |
+| `POST` | `/auth/register`        | No   | Register and create a device session                                             |
+| `POST` | `/auth/login`           | No   | Email/password login                                                             |
+| `POST` | `/auth/social-login`    | No   | Google ID Token login or registration                                            |
+| `POST` | `/auth/refresh`         | No   | Strictly rotate a single-use refresh token                                       |
+| `POST` | `/auth/logout`          | Yes  | Revoke current family and blacklist current access token when Redis is available |
+| `POST` | `/auth/logout-all`      | Yes  | Revoke all device families                                                       |
+| `POST` | `/auth/change-password` | Yes  | Change password and revoke all sessions                                          |
+| `GET`  | `/auth/me`              | Yes  | Return the current profile                                                       |
+
+### Circles, places and digests
+
+| Method  | Endpoint                                 | Description                                                |
+| ------- | ---------------------------------------- | ---------------------------------------------------------- |
+| `POST`  | `/groups`                                | Create a circle and its group conversation transactionally |
+| `GET`   | `/groups`                                | List the current user's circles                            |
+| `POST`  | `/groups/join`                           | Join using a six-digit invite code                         |
+| `GET`   | `/groups/:groupId/members`               | List members and status information                        |
+| `PATCH` | `/groups/:groupId/notification-interval` | Set digest interval; `0` disables it                       |
+| `GET`   | `/groups/:groupId/digests`               | Paginated digest history                                   |
+| `GET`   | `/groups/:groupId/digests/latest`        | Latest digest                                              |
+| `POST`  | `/groups/:groupId/places`                | Add a named safe/favorite place                            |
+| `GET`   | `/groups/:groupId/places`                | List circle places                                         |
+
+### Conversations and chat
+
+| Method  | Endpoint                                  | Description                                                 |
+| ------- | ----------------------------------------- | ----------------------------------------------------------- |
+| `GET`   | `/conversations`                          | Conversations with latest message and unread count          |
+| `GET`   | `/conversations/unread-summary`           | Total and per-conversation unread counts                    |
+| `POST`  | `/conversations/direct`                   | Idempotently open a direct chat with a shared-circle member |
+| `GET`   | `/conversations/:conversationId`          | Conversation details                                        |
+| `PATCH` | `/conversations/:conversationId`          | Update group chat name/avatar                               |
+| `GET`   | `/conversations/:conversationId/messages` | Cursor pagination with `before`                             |
+| `POST`  | `/conversations/:conversationId/messages` | REST alternative for text/image/voice sending               |
+| `POST`  | `/conversations/:conversationId/read`     | Advance the read cursor                                     |
+| `GET`   | `/conversations/:conversationId/unread`   | Unread count                                                |
+| `POST`  | `/chat/upload-ticket`                     | Legacy image upload ticket                                  |
+| `POST`  | `/chat/media/presigned-url`               | Cloudflare R2 image or voice upload ticket                  |
+
+### Location and history
+
+| Method | Endpoint                   | Description                                                                 |
+| ------ | -------------------------- | --------------------------------------------------------------------------- |
+| `POST` | `/locations/batch`         | Idempotently sync multiple offline points; never broadcasts realtime events |
+| `GET`  | `/history/:userId`         | Today's location points for self/shared-circle member                       |
+| `GET`  | `/history/:userId/journey` | Stay points and moving segments for a day                                   |
+
+### System
+
+| Method | Endpoint              | Description                          |
+| ------ | --------------------- | ------------------------------------ |
+| `GET`  | `/api/v1/health`      | Versioned health endpoint            |
+| `GET`  | `/api/health`         | Render/load-balancer health endpoint |
+| `GET`  | `/api/v1/socket-info` | Runtime Socket.IO event reference    |
+| `GET`  | `/api-docs`           | Swagger UI                           |
+| `GET`  | `/api-docs.json`      | OpenAPI JSON                         |
+
+## Socket.IO Contract
+
+Connect to the server root and provide the FamilyTracker access JWT in the handshake:
+
 ```js
-const socket = io('http://localhost:3000', {
-  auth: { token: 'YOUR_JWT_TOKEN' }
+const socket = io("http://localhost:3000", {
+  auth: { token: accessToken },
+  transports: ["websocket"],
+});
+
+socket.on("session:ready", ({ groupIds, conversationIds }) => {
+  // All user, group and conversation rooms are joined.
 });
 ```
 
-### Client → Server (emit)
+### Client to server
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `update_location` | `{ latitude, longitude, batteryLevel?, recordedAt?, accuracy? }` | Send current GPS fix; recorded time is ISO-8601 and accuracy is meters |
-| `sos_alert` | `{ message?, latitude?, longitude?, batteryLevel? }` | Broadcast SOS to all circles |
-| `chat:send_message` | `{ conversationId, type: "text", content }` | Send text message |
-| `chat:send_message` | `{ conversationId, type: "image", attachmentUrl, metadata }` | Send image message |
-| `chat:mark_read` | `{ conversationId, messageId? }` | Mark messages as read |
-| `chat:typing` | `{ conversationId, isTyping }` | Typing indicator |
+| Event               | Payload summary                                                  |
+| ------------------- | ---------------------------------------------------------------- |
+| `update_location`   | `{ latitude, longitude, batteryLevel?, recordedAt?, accuracy? }` |
+| `sos_alert`         | `{ message?, latitude?, longitude?, batteryLevel? }`             |
+| `chat:send_message` | Text, image or voice payload                                     |
+| `chat:mark_read`    | `{ conversationId, messageId? }`                                 |
+| `chat:typing`       | `{ conversationId, isTyping }`                                   |
 
-> **Rate limit:** `chat:send_message` — **20 messages / 10 seconds** per connection.
+`chat:send_message` is limited to 20 messages per 10 seconds per connection.
 
-### Server → Client (on)
+### Server to client
 
-| Event | Description |
-|-------|-------------|
-| `session:ready` | Rooms joined, safe to rely on broadcasts |
-| `location_update` | Member location updated |
-| `location_stay_alert` | Member at same location for 30m / 1h / 2h... |
-| `sos_alert` | Emergency alert from a circle member |
-| `sos_confirmed` | Your SOS was delivered |
-| `member_online` | Member connected |
-| `member_offline` | Member disconnected |
-| `group_digest` | Periodic group status summary |
-| `chat:new_message` | New message in a conversation |
-| `chat:read_receipt` | Someone read a message |
-| `chat:typing` | Typing indicator |
-| `chat:conversation_updated` | Conversation name/avatar changed |
-| `chat:error` | Socket error (when no ack provided) |
+| Event                              | Purpose                                                    |
+| ---------------------------------- | ---------------------------------------------------------- |
+| `session:ready`                    | Connection authenticated and all rooms joined              |
+| `location_update`                  | Live member location                                       |
+| `location_stay_alert`              | Member reached a stay-duration milestone                   |
+| `sos_alert` / `sos_confirmed`      | Emergency delivery and sender confirmation                 |
+| `member_online` / `member_offline` | Presence changes                                           |
+| `group_digest`                     | Periodic circle summary                                    |
+| `chat:new_message`                 | New text/image/voice message                               |
+| `chat:read_receipt`                | Read cursor update                                         |
+| `chat:typing`                      | Typing state                                               |
+| `chat:conversation_updated`        | Group chat metadata changed                                |
+| `chat:error`                       | Event failure when no acknowledgement callback is supplied |
 
----
+## Media Upload Flow
 
-## 💬 Send a Message — Complete Mobile Example
+Images and voice notes use direct-to-R2 upload. The backend signs the request and validates namespace ownership, but file bytes never pass through Express.
 
-```js
-// 1. Login (REST)
-const res = await fetch('http://localhost:3000/api/v1/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email: 'me@example.com', password: 'secret123' })
-});
-const { token } = await res.json();
-
-// 2. Open 1-1 conversation (REST)
-const convRes = await fetch('http://localhost:3000/api/v1/conversations/direct', {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ userId: 'OTHER_USER_ID' })
-});
-const { data: conversation } = await convRes.json();
-
-// 3. Connect Socket.IO
-const socket = io('http://localhost:3000', { auth: { token } });
-
-// 4. Wait for session ready, then send
-socket.on('session:ready', () => {
-  socket.emit('chat:send_message', {
-    conversationId: conversation.id,
-    type: 'text',
-    content: 'Hello!'
-  }, (ack) => {
-    // ack = { success: true, data: { id, content, createdAt, ... } }
-    console.log('Sent:', ack);
-  });
-});
-
-// 5. Receive incoming messages
-socket.on('chat:new_message', (msg) => {
-  console.log(`${msg.senderName}: ${msg.content}`);
-});
+```text
+1. POST /api/v1/chat/media/presigned-url
+2. PUT raw bytes directly to uploadUrl with the exact returned headers
+3. Send chat:send_message with publicUrl and media metadata
+4. Backend validates the issued key, persists the message and broadcasts it
 ```
 
----
+Ticket request:
 
-## 🖼️ Image Upload Flow
-
-```
-1. POST /api/v1/chat/upload-ticket
-   Body: { conversationId, contentType, contentLength }
-   → { uploadUrl, headers, fileUrl, expiresAt }
-
-2. PUT <uploadUrl>
-   Headers: (exact headers from step 1)
-   Body: (raw image bytes)
-
-3. socket.emit('chat:send_message', {
-     conversationId,
-     type: 'image',
-     attachmentUrl: fileUrl,
-     content: 'Optional caption',
-     metadata: { width, height, blurhash, mimeType, size }
-   })
+```json
+{
+  "conversationId": "CONVERSATION_OBJECT_ID",
+  "mediaType": "voice",
+  "extension": "m4a",
+  "mimeType": "audio/m4a",
+  "fileSize": 245760
+}
 ```
 
----
+Default limits are 10 MB for images, 25 MB for voice and 15 minutes for a voice message. Storage namespace:
 
-## ⚙️ Environment Variables
+```text
+chats/{conversationId}/{userId}/{uuid}.{extension}
+```
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `NODE_ENV` | No | `development` | `development` or `production` |
-| `PORT` | No | `3000` | HTTP port |
-| `MONGODB_URI` | Yes* | `mongodb://localhost:27017/...` | MongoDB connection string |
-| `JWT_SECRET` | Yes | `change_me` | Secret key for JWT |
-| `JWT_ACCESS_EXPIRES_IN` | No | `15m` | Access JWT expiry |
-| `REFRESH_TOKEN_TTL_DAYS` | No | `30` | Opaque refresh token lifetime in days |
-| `AUTH_MAX_ACTIVE_SESSIONS` | No | `10` | Maximum active device families per user |
-| `REFRESH_RATE_LIMIT` | No | `60` | Refresh requests / IP / 15 min |
-| `CORS_ORIGIN` | No | `*` | Allowed origins (comma-separated or `*`) |
-| `TZ` | No | `Asia/Ho_Chi_Minh` | Server timezone for history |
-| `AUTH_RATE_LIMIT` | No | `20` | Max auth requests / IP / 15 min |
-| `S3_BUCKET` | No | — | S3/R2 bucket (enables image upload) |
-| `S3_REGION` | No | `auto` | S3 region (`auto` for Cloudflare R2) |
-| `S3_ENDPOINT` | No | — | Custom S3 endpoint (Cloudflare R2) |
-| `S3_ACCESS_KEY_ID` | No | — | S3 access key |
-| `S3_SECRET_ACCESS_KEY` | No | — | S3 secret key |
-| `S3_PUBLIC_BASE_URL` | No | — | Public CDN base URL |
-| `UPLOAD_MAX_BYTES` | No | `10485760` | Max image size (10 MB) |
-| `UPLOAD_URL_TTL_SECONDS` | No | `300` | Pre-signed URL TTL (5 min) |
+The upload URL is temporary; `publicUrl` is the value used in the chat message. The upload PUT request does not use the FamilyTracker bearer token.
 
-> *In development, if `MONGODB_URI` is missing or unreachable, the server auto-falls back to an **in-memory MongoDB** instance.
+## Offline Location Sync
 
----
+Realtime GPS fixes use Socket.IO. Points buffered while offline use REST:
 
-## 🗄️ Data Models
+```http
+POST /api/v1/locations/batch
+Authorization: Bearer <accessToken>
+```
 
-| Model | Key Fields |
-|-------|-----------|
-| `User` | name, email, passwordHash, isOnline, lastKnownLocation, batteryLevel |
-| `RefreshSession` | userId, familyId, tokenHash, status, expiry, device info, replacement chain |
-| `Group` | name, admin, members[], inviteCode, notificationIntervalMinutes |
-| `Conversation` | type (group/direct), groupId, name, lastMessageId, lastMessageAt |
-| `ConversationMember` | conversationId, userId, lastReadMessageId |
-| `ChatMessage` | conversationId, senderId, type (text/image), content, attachment |
-| `LocationHistory` | userId, location (GeoJSON), timestamp |
-| `GroupDigest` | groupId, members[], intervalMinutes, sentAt |
-| `FavoritePlace` | groupId, name, category, location (GeoJSON) |
+```json
+{
+  "points": [
+    {
+      "pointId": "08f68d38-6665-4f0f-8f48-bfa7cc449dc8",
+      "latitude": 10.7769,
+      "longitude": 106.7009,
+      "recordedAt": "2026-10-15T08:30:15.123Z",
+      "accuracy": 8.5,
+      "batteryLevel": 80
+    }
+  ]
+}
+```
 
----
+- Maximum 100 points per request by default.
+- Points are stably ordered by original `recordedAt`.
+- `(userId, pointId)` is unique, so retries cannot create duplicate history.
+- Valid points are accepted even if other points in the same batch are rejected.
+- Points older than 24 hours or more than 60 seconds in the future are rejected individually.
+- Last-known MongoDB and Redis state is updated only by a newer point.
+- Batch sync never calls the stay-duration tracker and never broadcasts `location_update`.
+- After reconnect, mobile sends buffered history through REST and a newly measured current fix through Socket.IO.
 
-## 🧪 Testing
+Mobile removes only IDs returned in `accepted` or `duplicates`.
+
+## Environment Variables
+
+### Core and authentication
+
+| Variable                   | Required     | Default          | Description                                                     |
+| -------------------------- | ------------ | ---------------- | --------------------------------------------------------------- |
+| `NODE_ENV`                 | No           | `development`    | Runtime environment                                             |
+| `PORT`                     | No           | `3000`           | HTTP port                                                       |
+| `MONGODB_URI`              | Production   | Local URI        | MongoDB connection; production must support transactions        |
+| `JWT_SECRET`               | Yes          | None             | Generate a strong secret; `change_me` is rejected in production |
+| `JWT_ACCESS_EXPIRES_IN`    | No           | `15m`            | Access JWT lifetime                                             |
+| `REFRESH_TOKEN_TTL_DAYS`   | No           | `30`             | Opaque refresh-token lifetime                                   |
+| `AUTH_MAX_ACTIVE_SESSIONS` | No           | `10`             | Active device-family limit per user                             |
+| `AUTH_RATE_LIMIT`          | No           | `20`             | Register/login/social-login requests per IP per 15 minutes      |
+| `REFRESH_RATE_LIMIT`       | No           | `60`             | Refresh requests per IP per 15 minutes                          |
+| `GOOGLE_CLIENT_ID`         | Google login | None             | Google Web OAuth Client ID used as ID Token audience            |
+| `CORS_ORIGIN`              | No           | `*`              | `*` or comma-separated origins                                  |
+| `PUBLIC_URL`               | No           | Render/local URL | URL shown in Swagger and socket-info                            |
+| `TZ`                       | No           | Host timezone    | Configure `Asia/Ho_Chi_Minh` for project history semantics      |
+
+### Offline location batch
+
+| Variable                       | Default | Description                                |
+| ------------------------------ | ------- | ------------------------------------------ |
+| `LOCATION_BATCH_RATE_LIMIT`    | `30`    | Requests per authenticated user per minute |
+| `LOCATION_BATCH_MAX_POINTS`    | `100`   | Maximum points per request                 |
+| `LOCATION_BATCH_MAX_AGE_HOURS` | `24`    | Oldest accepted `recordedAt`               |
+
+### Redis (optional)
+
+| Variable                        | Default          | Description                                     |
+| ------------------------------- | ---------------- | ----------------------------------------------- |
+| `REDIS_ENABLED`                 | `false`          | Enables Redis adapters                          |
+| `REDIS_URL`                     | None             | `rediss://` connection URL, for example Upstash |
+| `REDIS_KEY_PREFIX`              | `familytracker:` | Namespace prefix                                |
+| `REDIS_DEFAULT_TTL_SECONDS`     | `300`            | General cache TTL                               |
+| `REDIS_CONNECT_TIMEOUT_MS`      | `5000`           | Connection timeout                              |
+| `REDIS_MAX_RETRIES_PER_REQUEST` | `2`              | ioredis request retries                         |
+| `REDIS_LOCATION_TTL_SECONDS`    | `300`            | Last-known location cache TTL                   |
+
+When Redis is disabled or unavailable, the server continues through MongoDB and `NoopCacheManager`; cache-dependent acceleration and immediate access-token blacklist checks are unavailable.
+
+### Cloudflare R2 (preferred media provider)
+
+| Variable                    | Required for media | Default    |
+| --------------------------- | ------------------ | ---------- |
+| `R2_ACCOUNT_ID`             | Yes                | None       |
+| `R2_ACCESS_KEY_ID`          | Yes                | None       |
+| `R2_SECRET_ACCESS_KEY`      | Yes                | None       |
+| `R2_BUCKET_NAME`            | Yes                | None       |
+| `R2_PUBLIC_DOMAIN`          | Yes                | None       |
+| `R2_REGION`                 | No                 | `auto`     |
+| `R2_UPLOAD_URL_TTL_SECONDS` | No                 | `300`      |
+| `R2_IMAGE_MAX_BYTES`        | No                 | `10485760` |
+| `R2_VOICE_MAX_BYTES`        | No                 | `26214400` |
+
+If R2 is not configured, normal API/chat features remain available and media ticket endpoints return `503 SERVICE_UNAVAILABLE`. Legacy `S3_*` variables remain supported for another S3-compatible provider; see `.env.example`.
+
+Never commit `.env`, Google client secrets, R2 secret keys, Redis passwords, JWT secrets, refresh tokens or ID tokens.
+
+## Data Models
+
+| Model                | Important fields                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `User`               | Email profile, presence, battery and GeoJSON last-known location                   |
+| `UserSocialAccount`  | Unique provider/providerId link and unique user/provider link                      |
+| `RefreshSession`     | Token hash, family, rotation/revocation chain, device/IP/user-agent and TTL expiry |
+| `Group`              | Admin, members, invite code and notification interval                              |
+| `FavoritePlace`      | Circle-owned named GeoJSON place                                                   |
+| `Conversation`       | Group/direct metadata and last-message cursor                                      |
+| `ConversationMember` | Membership and last-read message cursor                                            |
+| `ChatMessage`        | Text/image/voice content, attachment/media metadata and indexes                    |
+| `LocationHistory`    | GeoJSON point, measured timestamp, accuracy and optional idempotency `pointId`     |
+| `GroupDigest`        | Periodic member status snapshot                                                    |
+
+## Testing
 
 ```bash
+npm run lint
 npm test
 ```
 
-- Uses **in-memory MongoDB** — no external database required
-- Covers full HTTP + Socket.IO integration
-- Run with `--test-concurrency=1` for sequential isolation
+The suite runs sequentially with Node's built-in test runner and MongoDB Memory Server replica sets. It covers REST, Socket.IO, transactions, Google social-login use cases, refresh rotation/reuse, media authorization, location timestamp handling, offline batch idempotency and rate limiting.
 
----
-
-## 🚢 Deployment
-
-### Render (Recommended)
-
-`render.yaml` is included for one-click deployment:
-
-1. Push this repo to GitHub
-2. Create a new **Web Service** on [Render](https://render.com) → connect repo
-3. Set `MONGODB_URI` secret (MongoDB Atlas)
-4. Deploy → your API is live 🚀
-
-**Health check:** `GET /api/health`  
-**Region:** Singapore (`ap-southeast-1`)
-
-### Docker / Manual
+Useful repository-context commands:
 
 ```bash
-NODE_ENV=production \
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/family-tracker \
-JWT_SECRET=$(openssl rand -hex 32) \
-npm start
+npm run context:skeleton
+npm run context:trace -- --term socialLogin
+npm run context:graph
 ```
 
----
+The generated interactive code graph is written to `codex/context/graph.html`.
 
-## 📦 Tech Stack
+## CI/CD and Deployment
 
-| | Package | Purpose |
-|--|---------|---------|
-| 🌐 | `express` | HTTP server & routing |
-| ⚡ | `socket.io` | Real-time bidirectional events |
-| 🍃 | `mongoose` | MongoDB ODM |
-| 🔑 | `jsonwebtoken` | JWT auth |
-| 🔒 | `bcryptjs` | Password hashing |
-| ✅ | `zod` | Schema validation |
-| ☁️ | `@aws-sdk/client-s3` | S3/R2 image upload |
-| 🛡️ | `helmet` | Security headers |
-| 🚦 | `express-rate-limit` | Rate limiting |
-| 📖 | `swagger-jsdoc` | API documentation |
+GitHub Actions runs on pushes and pull requests for `main` and `develop`:
 
----
+1. Install with `npm ci`.
+2. Run syntax lint.
+3. Run `npm audit --audit-level=high`.
+4. Run the complete test suite.
+5. On push, build a Linux AMD64 Docker image and publish branch/SHA tags to GHCR.
+6. On a successful `main` build, call `RENDER_DEPLOY_HOOK_URL`.
 
-## 📄 License
+Required GitHub Actions secret for automatic Render deployment:
 
-MIT — feel free to use, modify and distribute.
+```text
+RENDER_DEPLOY_HOOK_URL
+```
+
+Render production requires at least `MONGODB_URI` and a secure `JWT_SECRET`. Add `GOOGLE_CLIENT_ID`, Redis and R2 variables only for the corresponding capabilities. `render.yaml` contains the expected variable names and non-secret defaults.
+
+Docker runtime:
+
+```bash
+docker build -t familytracker-backend .
+docker run --rm -p 3000:3000 --env-file .env familytracker-backend
+```
+
+The production image uses Node 20 Alpine, installs production dependencies only, runs as a non-root user and exposes `/api/health` as its health check.
+
+## Documentation
+
+| Document                                                                                   | Purpose                                                  |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| [`API_INTEGRATION_IOS.md`](API_INTEGRATION_IOS.md)                                         | Complete REST, Socket.IO and Swift integration reference |
+| [`Study/GOOGLE_OAUTH2_MOBILE_API_DOC.md`](Study/GOOGLE_OAUTH2_MOBILE_API_DOC.md)           | Google OAuth mobile setup and testing                    |
+| [`docs/REFRESH_TOKEN_MOBILE_API_DOC.md`](docs/REFRESH_TOKEN_MOBILE_API_DOC.md)             | Rotation, Keychain and single-flight refresh contract    |
+| [`docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`](docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md) | Image/voice direct-upload contract                       |
+| [`api-docs/LOCATION_UPDATE_API_DOC.md`](api-docs/LOCATION_UPDATE_API_DOC.md)               | Realtime and offline-batch location contract             |
+| [`Study/CORE_FLOWS_BACKEND.md`](Study/CORE_FLOWS_BACKEND.md)                               | Backend sequence diagrams and architectural flows        |
+| [`Study/CORE_FLOWS_MOBILE.md`](Study/CORE_FLOWS_MOBILE.md)                                 | iOS Swift/SwiftUI integration flows                      |
+| [`PROGRESS.md`](PROGRESS.md)                                                               | Implemented tasks, decisions and important files         |
+
+For the live contract of a running server, use `/api-docs` and `/api/v1/socket-info` from that deployment.
