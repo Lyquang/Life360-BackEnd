@@ -80,6 +80,29 @@ module.exports = {
       .lean();
   },
 
+  listRangePage({ userId, from, to, cursor, limit }) {
+    const range = { timestamp: { $gte: from, $lte: to } };
+    const filter = cursor
+      ? {
+          userId,
+          $and: [
+            range,
+            {
+              $or: [
+                { timestamp: { $gt: cursor.timestamp } },
+                { timestamp: cursor.timestamp, _id: { $gt: cursor.id } },
+              ],
+            },
+          ],
+        }
+      : { userId, ...range };
+    return LocationHistory.find(filter)
+      .sort({ timestamp: 1, _id: 1 })
+      .limit(limit + 1)
+      .select('_id location timestamp accuracy pointId')
+      .lean();
+  },
+
   findLatestForUser(userId) {
     return LocationHistory.findOne({ userId })
       .sort({ timestamp: -1, _id: -1 })

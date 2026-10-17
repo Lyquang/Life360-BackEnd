@@ -3,6 +3,14 @@ const { asyncHandler } = require('../middleware/asyncHandler');
 function createHistoryController({ history }) {
   return {
     today: asyncHandler(async (req, res) => {
+      if (req.dto.query.from || req.dto.query.to) {
+        const result = await history.getRangeHistory({
+          requesterId: req.user._id,
+          userId: req.dto.params.userId,
+          ...req.dto.query,
+        });
+        return res.json({ success: true, ...result });
+      }
       const { date, points } = await history.getTodayHistory({
         requesterId: req.user._id,
         userId: req.dto.params.userId,

@@ -28,6 +28,9 @@ const envSchema = z.object({
   JOURNEY_GAP_THRESHOLD_SECONDS: z.coerce.number().int().min(30).max(86400).default(180),
   JOURNEY_MAX_POINTS_PER_SEGMENT: z.coerce.number().int().min(10).max(10000).default(1000),
   JOURNEY_SIMPLIFY_TOLERANCE_METERS: z.coerce.number().positive().max(1000).default(8),
+  HISTORY_RANGE_DEFAULT_LIMIT: z.coerce.number().int().min(1).max(1000).default(500),
+  HISTORY_RANGE_MAX_LIMIT: z.coerce.number().int().min(1).max(5000).default(1000),
+  HISTORY_RANGE_MAX_DAYS: z.coerce.number().int().min(1).max(31).default(7),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -160,6 +163,11 @@ function loadConfig(env = process.env) {
       gapThresholdSeconds: e.JOURNEY_GAP_THRESHOLD_SECONDS,
       maxPointsPerSegment: e.JOURNEY_MAX_POINTS_PER_SEGMENT,
       simplifyToleranceMeters: e.JOURNEY_SIMPLIFY_TOLERANCE_METERS,
+    },
+    historyRange: {
+      defaultLimit: e.HISTORY_RANGE_DEFAULT_LIMIT,
+      maxLimit: e.HISTORY_RANGE_MAX_LIMIT,
+      maxRangeMs: e.HISTORY_RANGE_MAX_DAYS * 24 * 60 * 60 * 1000,
     },
     authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,

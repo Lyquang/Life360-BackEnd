@@ -60,6 +60,7 @@ const locationHistorySchema = new mongoose.Schema(
 // ─── Indexes ────────────────────────────────────────────────
 locationHistorySchema.index({ location: '2dsphere' });
 locationHistorySchema.index({ userId: 1, timestamp: -1 });
+locationHistorySchema.index({ userId: 1, timestamp: 1, _id: 1 });
 locationHistorySchema.index(
   { userId: 1, pointId: 1 },
   {

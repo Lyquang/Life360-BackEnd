@@ -2,6 +2,24 @@ const { z, objectId } = require('./common');
 const { isValidCalendarDate } = require('../../domain/dates');
 
 const userIdParams = z.object({ userId: objectId });
+const isoDateTime = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
+
+const historyQuery = z
+  .object({
+    from: isoDateTime.optional(),
+    to: isoDateTime.optional(),
+    limit: z.coerce.number().int().positive().optional(),
+    cursor: z.string().trim().min(1).optional(),
+  })
+  .superRefine((value, context) => {
+    if ((value.limit !== undefined || value.cursor !== undefined) && !value.from && !value.to) {
+      context.addIssue({
+        code: 'custom',
+        path: ['from'],
+        message: 'from or to is required when using limit or cursor.',
+      });
+    }
+  });
 
 const journeyQuery = z.object({
   date: z
@@ -12,4 +30,4 @@ const journeyQuery = z.object({
   detail: z.enum(['geometry']).optional(),
 });
 
-module.exports = { userIdParams, journeyQuery };
+module.exports = { userIdParams, historyQuery, journeyQuery };

@@ -1,6 +1,6 @@
 const express = require('express');
 const { validate } = require('../middleware/validate');
-const { userIdParams, journeyQuery } = require('../../dto/history.schemas');
+const { userIdParams, historyQuery, journeyQuery } = require('../../dto/history.schemas');
 
 function createHistoryRoutes({ controller, authenticate }) {
   const router = express.Router();
@@ -20,7 +20,7 @@ function createHistoryRoutes({ controller, authenticate }) {
    *       400: { $ref: '#/components/responses/ValidationError' }
    *       403: { description: Not yourself and no shared circle }
    */
-  router.get('/:userId', validate({ params: userIdParams }), controller.today);
+  router.get('/:userId', validate({ params: userIdParams, query: historyQuery }), controller.today);
 
   /**
    * @swagger
