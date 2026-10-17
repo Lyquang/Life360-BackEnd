@@ -84,7 +84,12 @@ describe('GET journey geometry integration', { timeout: 120000 }, () => {
   let outsider;
 
   before(async () => {
-    t = await startTestServer();
+    t = await startTestServer({
+      env: {
+        TZ: 'Asia/Ho_Chi_Minh',
+        JOURNEY_GAP_THRESHOLD_SECONDS: '240',
+      },
+    });
     owner = await t.registerUser('JourneyOwner');
     member = await t.registerUser('JourneyMember');
     outsider = await t.registerUser('JourneyOutsider');
@@ -108,6 +113,17 @@ describe('GET journey geometry integration', { timeout: 120000 }, () => {
     assert.equal(enriched.status, 200);
     assert.equal(enriched.body.journey[0].points.length, 2);
     assert.equal(enriched.body.journey[0].pointCount, 2);
+    assert.equal(enriched.body.timeZone, 'Asia/Ho_Chi_Minh');
+    assert.deepEqual(enriched.body.geometryPolicy, {
+      version: 2,
+      gapThresholdSeconds: 240,
+      gapIndexSpace: 'points',
+      toBoundary: 'inclusive',
+      stayRadiusMeters: 80,
+      minStayMinutes: 5,
+    });
+    assert.equal(legacy.body.timeZone, undefined);
+    assert.equal(legacy.body.geometryPolicy, undefined);
     assert.equal(
       (await t.api('GET', `/api/v1/history/${member.id}/journey?detail=geometry`, { token: outsider.token })).status,
       403

@@ -30,6 +30,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 | Done | Refresh project README | Reconciled implemented features, Google OAuth mobile setup, refresh rotation, Redis/R2, offline location sync, API routes, environment variables, tests, Docker and Render/GHCR delivery with the current codebase. |
 | Done | Route geometry B0-B1 | Documented the verified history/journey behavior and added pure, tested domain primitives for route distance, gaps, thinning, ordering, deduplication, and dense-history persistence decisions. |
 | Done | Route geometry B2-B5 | Added feature-flagged dense persistence, realtime/batch deduplication, opt-in journey geometry with gaps/thinning, cursor-paginated raw history, mobile contracts, deployment configuration, and interview notes. |
+| In Progress | Route geometry B6 mobile contract follow-up | Hybrid stay/gap decisions are approved. B6a adds top-level timezone/policy metadata and a raw-history `recordedAt` alias while preserving legacy response shapes; B6b hybrid stay quality is next. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -52,6 +53,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - `api-docs/LOCATION_UPDATE_API_DOC.md`: Mobile Socket.IO contract for measured GPS timestamps and accuracy.
 - `Study/OFFLINE_LOCATION_BATCH_SYNC.md`: P6 architecture, decisions, data flow, risks, and rollback.
 - `Study/route-geometry-backend.md`: Verified journey/history behavior, geometry design, storage estimates, decisions, rollout, and rollback.
+- `Study/route-geometry-mobile-contract-followup.md`: B6 plan for timezone, gap semantics, stay quality, timestamp naming, and payload negotiation.
 - `src/domain/routeGeometry.js`: Pure route ordering, distance, gap analysis, link construction, and gap-safe thinning.
 - `src/domain/historyPersistence.js`: Pure configurable decision policy for dense history persistence.
 
@@ -67,7 +69,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - Redis keys follow domain naming in `src/domain/cacheKeys.js`; application code depends on cache abstractions, not directly on `ioredis`.
 - Refresh session correctness lives in MongoDB transactions; Redis remains best-effort for cache and access-token blacklist. Refresh tokens are opaque and only SHA-256 hashes are persisted.
 - Offline location batches are idempotent by `(userId, pointId)`, accept partial validity, never broadcast or trigger stay alerts, and keep last-known MongoDB/Redis state monotonic by `recordedAt`.
-- Route geometry B1 is not wired to production yet; B2 must preserve the old realtime policy while its feature flag is off.
+- Route geometry B2-B5 is wired; dense persistence remains rollout-gated and legacy reads stay backward compatible.
 
 ## Next Update Checklist
 

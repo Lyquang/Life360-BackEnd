@@ -39,12 +39,30 @@ function serializeHistoryPoint(entry) {
     latitude: entry.location.coordinates[1],
     longitude: entry.location.coordinates[0],
     timestamp: entry.timestamp,
+    recordedAt: entry.timestamp,
     ...(entry.accuracy !== undefined && { accuracy: entry.accuracy }),
     ...(entry.pointId !== undefined && { pointId: entry.pointId }),
   };
 }
 
-function createHistoryUseCases({ groupRepo, locationHistoryRepo, journeyGeometryPolicy, historyRangePolicy }) {
+function publicGeometryPolicy(policy) {
+  return {
+    version: policy.version,
+    gapThresholdSeconds: policy.gapThresholdSeconds,
+    gapIndexSpace: policy.gapIndexSpace,
+    toBoundary: policy.toBoundary,
+    stayRadiusMeters: policy.stayRadiusMeters,
+    minStayMinutes: policy.minStayMinutes,
+  };
+}
+
+function createHistoryUseCases({
+  groupRepo,
+  locationHistoryRepo,
+  journeyGeometryPolicy,
+  historyRangePolicy,
+  historyTimeZone,
+}) {
   async function assertCanView(requesterId, targetUserId) {
     if (sameId(requesterId, targetUserId)) return;
     if (!(await groupRepo.usersShareGroup(requesterId, targetUserId))) {
@@ -102,6 +120,12 @@ function createHistoryUseCases({ groupRepo, locationHistoryRepo, journeyGeometry
       data: page.map(serializeHistoryPoint),
       nextCursor: hasMore ? encodeCursor(page.at(-1)) : null,
       range: { from: rangeFrom.toISOString(), to: rangeTo.toISOString() },
+      timeZone: historyTimeZone,
+      rangePolicy: {
+        fromBoundary: 'inclusive',
+        toBoundary: 'inclusive',
+        cursorBoundary: 'exclusive',
+      },
     };
   }
 
@@ -109,7 +133,7 @@ function createHistoryUseCases({ groupRepo, locationHistoryRepo, journeyGeometry
     await assertCanView(requesterId, userId);
     const { start, end } = localDayRange(date);
     const history = await locationHistoryRepo.listForUserBetween(userId, start, end);
-    return {
+    const result = {
       date: formatLocalDate(start),
       userId,
       ...buildDayJourney(history.map(toPoint), {
@@ -117,6 +141,11 @@ function createHistoryUseCases({ groupRepo, locationHistoryRepo, journeyGeometry
         ...journeyGeometryPolicy,
       }),
     };
+    if (detail === 'geometry') {
+      result.timeZone = historyTimeZone;
+      result.geometryPolicy = publicGeometryPolicy(journeyGeometryPolicy);
+    }
+    return result;
   }
 
   return { getTodayHistory, getRangeHistory, getDayJourney };

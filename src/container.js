@@ -62,6 +62,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     locationCacheTtlSeconds: config.redis.locationTtlSeconds,
     historyPersistencePolicy: config.locationHistory,
     journeyGeometryPolicy: config.journeyGeometry,
+    historyTimeZone: config.timeZone,
     historyRangePolicy: config.historyRange,
     authMaxActiveSessions: config.authMaxActiveSessions,
     logger,

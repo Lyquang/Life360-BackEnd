@@ -3,10 +3,19 @@ const { z } = require('zod');
 const emptyToUndefined = (schema) => z.preprocess((v) => (v === '' ? undefined : v), schema);
 const optionalString = emptyToUndefined(z.string().trim().min(1).optional());
 const optionalUrl = emptyToUndefined(z.url().optional());
+const validTimeZone = (value) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format();
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().int().min(0).max(65535).default(3000),
+  TZ: z.string().trim().min(1).default('Asia/Ho_Chi_Minh').refine(validTimeZone, 'Invalid IANA time zone.'),
   MONGODB_URI: optionalString,
   JWT_SECRET: optionalString,
   JWT_ACCESS_EXPIRES_IN: optionalString,
@@ -135,6 +144,7 @@ function loadConfig(env = process.env) {
     mongodbUri: e.MONGODB_URI || 'mongodb://localhost:27017/location-sharing-app',
     // Only local development may silently fall back to an in-memory database.
     allowInMemoryDatabase: e.NODE_ENV === 'development',
+    timeZone: e.TZ,
     jwt: {
       secret: e.JWT_SECRET,
       accessExpiresIn: e.JWT_ACCESS_EXPIRES_IN || e.JWT_EXPIRES_IN || '15m',
@@ -160,7 +170,12 @@ function loadConfig(env = process.env) {
       maxIdleIntervalSeconds: e.LOCATION_HISTORY_IDLE_INTERVAL_SECONDS,
     },
     journeyGeometry: {
+      version: 2,
       gapThresholdSeconds: e.JOURNEY_GAP_THRESHOLD_SECONDS,
+      gapIndexSpace: 'points',
+      toBoundary: 'inclusive',
+      stayRadiusMeters: 80,
+      minStayMinutes: 5,
       maxPointsPerSegment: e.JOURNEY_MAX_POINTS_PER_SEGMENT,
       simplifyToleranceMeters: e.JOURNEY_SIMPLIFY_TOLERANCE_METERS,
     },

@@ -17,6 +17,7 @@ describe('GET /api/v1/history/:userId range pagination', { timeout: 120000 }, ()
         HISTORY_RANGE_DEFAULT_LIMIT: '2',
         HISTORY_RANGE_MAX_LIMIT: '3',
         HISTORY_RANGE_MAX_DAYS: '7',
+        TZ: 'Asia/Ho_Chi_Minh',
       },
     });
     owner = await t.registerUser('RangeOwner');
@@ -59,6 +60,13 @@ describe('GET /api/v1/history/:userId range pagination', { timeout: 120000 }, ()
       assert.equal(response.status, 200, JSON.stringify(response.body));
       assert.ok(response.body.data.length <= 2);
       ids.push(...response.body.data.map((entry) => entry.id));
+      assert.ok(response.body.data.every((entry) => entry.recordedAt === entry.timestamp));
+      assert.equal(response.body.timeZone, 'Asia/Ho_Chi_Minh');
+      assert.deepEqual(response.body.rangePolicy, {
+        fromBoundary: 'inclusive',
+        toBoundary: 'inclusive',
+        cursorBoundary: 'exclusive',
+      });
       cursor = response.body.nextCursor;
     } while (cursor);
 
