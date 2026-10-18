@@ -3,7 +3,12 @@ const cors = require('cors');
 const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
 const { createAuthenticate } = require('./middleware/authenticate');
-const { createAuthLimiter, createRefreshLimiter, createLocationBatchLimiter } = require('./middleware/rateLimiter');
+const {
+  createAuthLimiter,
+  createRefreshLimiter,
+  createLocationBatchLimiter,
+  createLiveTrailReadLimiter,
+} = require('./middleware/rateLimiter');
 const { createErrorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { createAuthController } = require('./controllers/authController');
 const { createGroupController } = require('./controllers/groupController');
@@ -51,7 +56,11 @@ function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected,
     refreshLimiter: createRefreshLimiter(config.refreshRateLimit),
   }));
   v1.use('/groups', createGroupRoutes({ controller: createGroupController(useCases), authenticate }));
-  v1.use('/history', createHistoryRoutes({ controller: createHistoryController(useCases), authenticate }));
+  v1.use('/history', createHistoryRoutes({
+    controller: createHistoryController(useCases),
+    authenticate,
+    trailLimiter: createLiveTrailReadLimiter(config.liveTrail.readRateLimit),
+  }));
   v1.use('/locations', createLocationRoutes({
     controller: createLocationController(useCases),
     authenticate,

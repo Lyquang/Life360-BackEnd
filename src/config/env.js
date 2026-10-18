@@ -43,6 +43,7 @@ const envSchema = z.object({
   LIVE_TRAIL_ENABLED: z.enum(['true', 'false']).default('false'),
   LIVE_TRAIL_RETENTION_DAYS: z.coerce.number().int().min(1).max(30).default(7),
   LIVE_TRAIL_MAX_ACCURACY_METERS: z.coerce.number().positive().max(1000).default(100),
+  LIVE_TRAIL_READ_RATE_LIMIT: z.coerce.number().int().positive().default(60),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -192,6 +193,7 @@ function loadConfig(env = process.env) {
       timeZone: e.TZ,
       retentionMs: e.LIVE_TRAIL_RETENTION_DAYS * 24 * 60 * 60 * 1000,
       maxAccuracyMeters: e.LIVE_TRAIL_MAX_ACCURACY_METERS,
+      readRateLimit: e.LIVE_TRAIL_READ_RATE_LIMIT,
     },
     authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,

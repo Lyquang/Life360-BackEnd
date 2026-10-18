@@ -375,8 +375,20 @@ Kết quả triển khai và xác minh:
 
 ### T1b - REST snapshot/catch-up
 
+**Trạng thái:** Hoàn tất ngày 2026-10-18, endpoint vẫn chịu gate `LIVE_TRAIL_ENABLED`.
+
 - Query schema, use case, controller/route, limiter.
 - Pagination/revision/gap contract và authorization tests.
+
+Kết quả triển khai:
+
+- `GET /api/v1/history/:userId/journey/trail` hỗ trợ `date`, `afterSeq`, `revision`, `limit`; mặc định 200 và tối đa 500 point/trang.
+- `points` page tăng theo insertion `seq`; client phải sort toàn bộ dữ liệu đã tải theo `(recordedAt, seq)` để dựng path.
+- `afterSeq` bắt buộc có `revision`; mismatch trả `409 TRAIL_REVISION_CHANGED` kèm `trailId`, `currentRevision`, `lastSeq`.
+- Hybrid gaps dùng stable `{ fromSeq, toSeq, seconds, meters }`; same-region silence không được công bố là route gap.
+- Authorization dùng cùng `assertCanView` với history; limiter 60 request/phút mặc định, key theo requester.
+- Feature off trả 503, ngày chưa có trail trả 404; `matched` hiện luôn rỗng vì T3 chưa triển khai.
+- Implementation T1b hiện đọc chronological point set của cả trail để tính gap ổn định rồi trả cùng gap set trên mỗi page. Đây là O(n) theo point/day; phải benchmark và cân nhắc materialized gaps trước rollout tải lớn.
 
 ### T2 - Socket watch/delta
 

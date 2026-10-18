@@ -1,8 +1,8 @@
 const express = require('express');
 const { validate } = require('../middleware/validate');
-const { userIdParams, historyQuery, journeyQuery } = require('../../dto/history.schemas');
+const { userIdParams, historyQuery, journeyQuery, liveTrailQuery } = require('../../dto/history.schemas');
 
-function createHistoryRoutes({ controller, authenticate }) {
+function createHistoryRoutes({ controller, authenticate, trailLimiter }) {
   const router = express.Router();
   router.use(authenticate);
 
@@ -53,6 +53,36 @@ function createHistoryRoutes({ controller, authenticate }) {
    *       403: { description: Not yourself and no shared circle }
    */
   router.get('/:userId/journey', validate({ params: userIdParams, query: journeyQuery }), controller.journey);
+
+  /**
+   * @swagger
+   * /api/v1/history/{userId}/journey/trail:
+   *   get:
+   *     summary: Paginated raw live-trail snapshot or catch-up events
+   *     tags: [History]
+   *     security: [{ bearerAuth: [] }]
+   *     parameters:
+   *       - $ref: '#/components/parameters/UserId'
+   *       - { in: query, name: date, schema: { type: string, example: '2026-10-18' } }
+   *       - { in: query, name: afterSeq, schema: { type: integer, minimum: 0 }, description: Insertion cursor; requires revision }
+   *       - { in: query, name: revision, schema: { type: integer, minimum: 1 } }
+   *       - { in: query, name: limit, schema: { type: integer, default: 200, maximum: 500 } }
+   *     responses:
+   *       200: { description: Raw points ordered by seq plus stable fromSeq/toSeq gaps }
+   *       400: { $ref: '#/components/responses/ValidationError' }
+   *       401: { description: Missing or invalid access token }
+   *       403: { description: Not yourself and no shared circle }
+   *       404: { description: No trail exists for the requested date }
+   *       409: { description: TRAIL_REVISION_CHANGED; reload from the first page }
+   *       429: { description: Per-requester read limit exceeded; honor Retry-After }
+   *       503: { description: Live trail feature flag is disabled }
+   */
+  router.get(
+    '/:userId/journey/trail',
+    trailLimiter,
+    validate({ params: userIdParams, query: liveTrailQuery }),
+    controller.liveTrail
+  );
 
   return router;
 }

@@ -34,6 +34,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 | Planned / Deferred | Road map matching for journey geometry | B6b/B6c prerequisites are complete, but M0 deliberately keeps T1-T3 unmatched and defers T4 until raw-trail evaluation; OSRM is the first POC if matching is later approved. |
 | Approved / Gated | Live trail B7-0 and map-matching M0 | T1-T3 use raw trails with Noop/Fake matcher behind default-off flags. Real rollout is blocked on privacy toggle and Circle-leave hooks; T4/OSRM POC is deferred until raw-trail evaluation. |
 | Done / Gated | Live trail B7 T1a persistence | Added transaction-backed trail metadata/points, monotonic insertion cursors, late revision, idempotent realtime/batch projection, TTL/accuracy policy and fail-soft tests. `LIVE_TRAIL_ENABLED` remains false; T1b is next. |
+| Done / Gated | Live trail B7 T1b REST read | Added authorized snapshot/catch-up pagination, revision conflict recovery, stable seq-boundary gaps and per-requester limiting. Feature remains disabled by default; T2 socket watch is next. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -54,6 +55,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - `docs/REFRESH_TOKEN_MOBILE_API_DOC.md`: Mobile contract and Swift single-flight refresh guidance.
 - `docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`: Complete iOS contract for image and voice uploads through Cloudflare R2.
 - `api-docs/LOCATION_UPDATE_API_DOC.md`: Mobile Socket.IO contract for measured GPS timestamps and accuracy.
+- `api-docs/LIVE_TRAIL_API_DOC.md`: Mobile REST snapshot/catch-up contract, cursor/revision recovery and stable gap semantics.
 - `Study/OFFLINE_LOCATION_BATCH_SYNC.md`: P6 architecture, decisions, data flow, risks, and rollback.
 - `Study/route-geometry-backend.md`: Verified journey/history behavior, geometry design, storage estimates, decisions, rollout, and rollback.
 - `Study/route-geometry-mobile-contract-followup.md`: B6 plan for timezone, gap semantics, stay quality, timestamp naming, and payload negotiation.

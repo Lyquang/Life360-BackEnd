@@ -67,6 +67,11 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     journeyGeometryPolicy: config.journeyGeometry,
     historyTimeZone: config.timeZone,
     historyRangePolicy: config.historyRange,
+    liveTrailPolicy: {
+      ...config.liveTrail,
+      gapThresholdSeconds: config.journeyGeometry.gapThresholdSeconds,
+      stayRadiusMeters: config.journeyGeometry.stayRadiusMeters,
+    },
     authMaxActiveSessions: config.authMaxActiveSessions,
     logger,
   };

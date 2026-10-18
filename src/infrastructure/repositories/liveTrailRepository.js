@@ -90,4 +90,22 @@ module.exports = {
       duplicateCount: points.length - fresh.length,
     };
   },
+
+  findForUserDate(userId, localDate) {
+    return LiveTrail.findOne({ userId, localDate }).lean();
+  },
+
+  listPointsAfter({ trailId, afterSeq, limit }) {
+    return LiveTrailPoint.find({ trailId, seq: { $gt: afterSeq } })
+      .sort({ seq: 1 })
+      .limit(limit + 1)
+      .lean();
+  },
+
+  listPointsChronological(trailId) {
+    return LiveTrailPoint.find({ trailId })
+      .sort({ recordedAt: 1, seq: 1 })
+      .select('seq location recordedAt')
+      .lean();
+  },
 };

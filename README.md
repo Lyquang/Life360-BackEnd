@@ -294,6 +294,7 @@ Standard success and error shapes:
 | `POST` | `/locations/batch`         | Idempotently sync multiple offline points; never broadcasts realtime events |
 | `GET`  | `/history/:userId`         | Today's points, or `from/to/limit/cursor` range pagination                  |
 | `GET`  | `/history/:userId/journey` | Daily timeline; `detail=geometry&includePath=false` returns compact route and gap metadata |
+| `GET`  | `/history/:userId/journey/trail` | Gated live-trail snapshot/catch-up using `afterSeq`, `revision` and stable gaps |
 
 ### System
 
@@ -464,8 +465,9 @@ Mobile removes only IDs returned in `accepted` or `duplicates`.
 | `LIVE_TRAIL_ENABLED`             | `false` | Enables transaction-backed trail projection; keep off before rollout gates pass |
 | `LIVE_TRAIL_RETENTION_DAYS`      | `7`     | TTL retention for trail metadata and points                        |
 | `LIVE_TRAIL_MAX_ACCURACY_METERS` | `100`   | Drops lower-quality fixes from the live-trail projection           |
+| `LIVE_TRAIL_READ_RATE_LIMIT`      | `60`    | REST trail reads per authenticated requester per minute            |
 
-The T1a persistence foundation is implemented, but there is no public live-trail REST/watch contract yet. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when projection storage fails.
+T1a persistence and the T1b REST snapshot/catch-up contract are implemented; Socket watch/delta is not available until T2. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when projection storage fails.
 
 ### Redis (optional)
 
@@ -573,6 +575,7 @@ The production image uses Node 20 Alpine, installs production dependencies only,
 | [`docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`](docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md) | Image/voice direct-upload contract                       |
 | [`api-docs/LOCATION_UPDATE_API_DOC.md`](api-docs/LOCATION_UPDATE_API_DOC.md)               | Realtime and offline-batch location contract             |
 | [`api-docs/JOURNEY_ROUTE_API_DOC.md`](api-docs/JOURNEY_ROUTE_API_DOC.md)                   | iOS journey geometry and raw-history pagination contract |
+| [`api-docs/LIVE_TRAIL_API_DOC.md`](api-docs/LIVE_TRAIL_API_DOC.md)                         | Gated live-trail REST cursor, revision and gap contract   |
 | [`Study/route-geometry-backend-interview-notes.md`](Study/route-geometry-backend-interview-notes.md) | Design trade-offs and interview preparation |
 | [`Study/CORE_FLOWS_BACKEND.md`](Study/CORE_FLOWS_BACKEND.md)                               | Backend sequence diagrams and architectural flows        |
 | [`Study/CORE_FLOWS_MOBILE.md`](Study/CORE_FLOWS_MOBILE.md)                                 | iOS Swift/SwiftUI integration flows                      |

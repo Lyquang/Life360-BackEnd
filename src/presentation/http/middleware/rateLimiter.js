@@ -43,4 +43,24 @@ function createLocationBatchLimiter(limit) {
   });
 }
 
-module.exports = { createAuthLimiter, createRefreshLimiter, createLocationBatchLimiter };
+function createLiveTrailReadLimiter(limit) {
+  return rateLimit({
+    windowMs: 60 * 1000,
+    limit,
+    keyGenerator: (req) => req.user._id.toString(),
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      success: false,
+      code: 'RATE_LIMITED',
+      message: 'Too many live trail requests. Please retry later.',
+    },
+  });
+}
+
+module.exports = {
+  createAuthLimiter,
+  createRefreshLimiter,
+  createLocationBatchLimiter,
+  createLiveTrailReadLimiter,
+};

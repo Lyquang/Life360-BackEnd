@@ -1,6 +1,7 @@
 const { Errors } = require('../../domain/errors');
 const { buildDayJourney } = require('../../domain/journey');
 const { localDayRange, formatLocalDate } = require('../../domain/dates');
+const { buildLiveTrailGaps, localDateFor } = require('../../domain/liveTrail');
 const { sameId } = require('../shared/policies');
 
 function toPoint(entry) {
@@ -56,12 +57,26 @@ function publicGeometryPolicy(policy) {
   };
 }
 
+function serializeTrailPoint(point) {
+  return {
+    seq: point.seq,
+    latitude: point.location.coordinates[1],
+    longitude: point.location.coordinates[0],
+    recordedAt: point.recordedAt,
+    ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
+    ...(point.motionState !== undefined && { motionState: point.motionState }),
+    ...(point.pointId !== undefined && { pointId: point.pointId }),
+  };
+}
+
 function createHistoryUseCases({
   groupRepo,
   locationHistoryRepo,
   journeyGeometryPolicy,
   historyRangePolicy,
   historyTimeZone,
+  liveTrailRepo,
+  liveTrailPolicy,
 }) {
   async function assertCanView(requesterId, targetUserId) {
     if (sameId(requesterId, targetUserId)) return;
@@ -149,7 +164,51 @@ function createHistoryUseCases({
     return result;
   }
 
-  return { getTodayHistory, getRangeHistory, getDayJourney };
+  async function getLiveTrail({ requesterId, userId, date, afterSeq = 0, revision, limit }) {
+    if (!liveTrailPolicy.enabled) {
+      throw Errors.serviceUnavailable('Live trail is not enabled on this server.');
+    }
+    await assertCanView(requesterId, userId);
+    const localDate = date || localDateFor(new Date(), liveTrailPolicy.timeZone);
+    const trail = await liveTrailRepo.findForUserDate(userId, localDate);
+    if (!trail) throw Errors.notFound('Live trail was not found for this user and date.');
+    if (revision !== undefined && revision !== trail.revision) {
+      throw Errors.trailRevisionChanged({
+        trailId: String(trail._id),
+        currentRevision: trail.revision,
+        lastSeq: trail.lastSeq,
+      });
+    }
+
+    const rows = await liveTrailRepo.listPointsAfter({
+      trailId: trail._id,
+      afterSeq,
+      limit,
+    });
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const chronological = await liveTrailRepo.listPointsChronological(trail._id);
+    const gaps = buildLiveTrailGaps(
+      chronological.map(serializeTrailPoint),
+      liveTrailPolicy
+    );
+
+    return {
+      trailId: String(trail._id),
+      userId: String(userId),
+      date: localDate,
+      timeZone: trail.timeZone,
+      revision: trail.revision,
+      lastSeq: trail.lastSeq,
+      points: page.map(serializeTrailPoint),
+      gaps,
+      matched: [],
+      hasMore,
+      nextAfterSeq: hasMore ? page.at(-1).seq : null,
+    };
+  }
+
+  return { getTodayHistory, getRangeHistory, getDayJourney, getLiveTrail };
 }
 
 module.exports = { createHistoryUseCases };

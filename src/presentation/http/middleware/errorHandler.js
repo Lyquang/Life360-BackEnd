@@ -9,6 +9,7 @@ function createErrorHandler({ isProduction, logger = console }) {
         code: err.code,
         message: err.message,
         ...(err.details && { errors: err.details }),
+        ...(err.data && { data: err.data }),
       });
     }
     if (err.type === 'entity.parse.failed') {

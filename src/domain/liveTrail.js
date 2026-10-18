@@ -1,4 +1,5 @@
 const { createHash } = require('node:crypto');
+const { haversineDistance } = require('./geo');
 
 function localDateFor(recordedAt, timeZone) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -56,4 +57,35 @@ function prepareLiveTrailPoints(points, { timeZone, retentionMs, maxAccuracyMete
   }));
 }
 
-module.exports = { liveTrailDedupeKey, localDateFor, prepareLiveTrailPoints };
+function buildLiveTrailGaps(points, { gapThresholdSeconds, stayRadiusMeters }) {
+  const chronological = [...points].sort(
+    (left, right) =>
+      new Date(left.recordedAt) - new Date(right.recordedAt) || left.seq - right.seq
+  );
+  const gaps = [];
+  for (let index = 1; index < chronological.length; index++) {
+    const previous = chronological[index - 1];
+    const current = chronological[index];
+    const seconds = Math.max(
+      0,
+      (new Date(current.recordedAt) - new Date(previous.recordedAt)) / 1000
+    );
+    if (seconds <= gapThresholdSeconds) continue;
+    const meters = haversineDistance(
+      previous.latitude,
+      previous.longitude,
+      current.latitude,
+      current.longitude
+    );
+    if (meters <= stayRadiusMeters) continue;
+    gaps.push({ fromSeq: previous.seq, toSeq: current.seq, seconds, meters });
+  }
+  return gaps;
+}
+
+module.exports = {
+  buildLiveTrailGaps,
+  liveTrailDedupeKey,
+  localDateFor,
+  prepareLiveTrailPoints,
+};

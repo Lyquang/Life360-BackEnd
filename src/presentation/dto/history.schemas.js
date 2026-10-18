@@ -3,6 +3,10 @@ const { isValidCalendarDate } = require('../../domain/dates');
 
 const userIdParams = z.object({ userId: objectId });
 const isoDateTime = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
+const calendarDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
+  .refine(isValidCalendarDate, 'Invalid calendar date.');
 
 const historyQuery = z
   .object({
@@ -23,11 +27,7 @@ const historyQuery = z
 
 const journeyQuery = z
   .object({
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
-      .refine(isValidCalendarDate, 'Invalid calendar date.')
-      .optional(),
+    date: calendarDate.optional(),
     detail: z.enum(['geometry']).optional(),
     includePath: z.enum(['true', 'false']).transform((value) => value === 'true').optional(),
   })
@@ -41,4 +41,21 @@ const journeyQuery = z
     }
   });
 
-module.exports = { userIdParams, historyQuery, journeyQuery };
+const liveTrailQuery = z
+  .object({
+    date: calendarDate.optional(),
+    afterSeq: z.coerce.number().int().min(0).optional(),
+    revision: z.coerce.number().int().positive().optional(),
+    limit: z.coerce.number().int().min(1).max(500).default(200),
+  })
+  .superRefine((value, context) => {
+    if (value.afterSeq !== undefined && value.revision === undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['revision'],
+        message: 'revision is required when afterSeq is provided.',
+      });
+    }
+  });
+
+module.exports = { userIdParams, historyQuery, journeyQuery, liveTrailQuery };

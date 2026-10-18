@@ -60,6 +60,8 @@ services:
         value: "7"
       - key: LIVE_TRAIL_MAX_ACCURACY_METERS
         value: "100"
+      - key: LIVE_TRAIL_READ_RATE_LIMIT
+        value: "60"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGIN

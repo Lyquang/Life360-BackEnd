@@ -28,6 +28,15 @@ function createHistoryController({ history }) {
       });
       res.json({ success: true, ...result });
     }),
+
+    liveTrail: asyncHandler(async (req, res) => {
+      const result = await history.getLiveTrail({
+        requesterId: req.user._id,
+        userId: req.dto.params.userId,
+        ...req.dto.query,
+      });
+      res.json({ success: true, ...result });
+    }),
   };
 }
 
