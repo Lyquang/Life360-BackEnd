@@ -6,6 +6,7 @@ function createSyncLocationBatchUseCase({
   locationHistoryRepo,
   cacheManager,
   locationCacheTtlSeconds = 300,
+  liveTrailProjection,
   policy,
 }) {
   return async function syncLocationBatch({ userId, userName, fallbackBatteryLevel, points, rejected = [] }) {
@@ -69,6 +70,8 @@ function createSyncLocationBatchUseCase({
         );
       }
     }
+
+    await liveTrailProjection.project({ userId, points: unique });
 
     return {
       accepted: persisted.accepted,

@@ -1,0 +1,59 @@
+const { createHash } = require('node:crypto');
+
+function localDateFor(recordedAt, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(recordedAt);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function liveTrailDedupeKey({ latitude, longitude, recordedAt }) {
+  return createHash('sha256')
+    .update(`${recordedAt.getTime()}:${String(latitude)}:${String(longitude)}`)
+    .digest('base64url');
+}
+
+function prepareLiveTrailPoints(points, { timeZone, retentionMs, maxAccuracyMeters }) {
+  const grouped = new Map();
+  const seenPointIds = new Set();
+  const seenDedupeKeys = new Set();
+
+  for (const point of points) {
+    if (point.accuracy !== undefined && point.accuracy > maxAccuracyMeters) continue;
+    const recordedAt = point.recordedAt instanceof Date
+      ? point.recordedAt
+      : new Date(point.recordedAt);
+    const dedupeKey = liveTrailDedupeKey({ ...point, recordedAt });
+    if (
+      seenDedupeKeys.has(dedupeKey) ||
+      (point.pointId && seenPointIds.has(point.pointId))
+    ) continue;
+    seenDedupeKeys.add(dedupeKey);
+    if (point.pointId) seenPointIds.add(point.pointId);
+
+    const localDate = localDateFor(recordedAt, timeZone);
+    const prepared = {
+      latitude: point.latitude,
+      longitude: point.longitude,
+      recordedAt,
+      dedupeKey,
+      expiresAt: new Date(recordedAt.getTime() + retentionMs),
+      ...(point.pointId && { pointId: point.pointId }),
+      ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
+      ...(point.motionState !== undefined && { motionState: point.motionState }),
+    };
+    if (!grouped.has(localDate)) grouped.set(localDate, []);
+    grouped.get(localDate).push(prepared);
+  }
+
+  return [...grouped.entries()].map(([localDate, groupedPoints]) => ({
+    localDate,
+    points: groupedPoints,
+  }));
+}
+
+module.exports = { liveTrailDedupeKey, localDateFor, prepareLiveTrailPoints };

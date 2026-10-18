@@ -40,6 +40,9 @@ const envSchema = z.object({
   HISTORY_RANGE_DEFAULT_LIMIT: z.coerce.number().int().min(1).max(1000).default(500),
   HISTORY_RANGE_MAX_LIMIT: z.coerce.number().int().min(1).max(5000).default(1000),
   HISTORY_RANGE_MAX_DAYS: z.coerce.number().int().min(1).max(31).default(7),
+  LIVE_TRAIL_ENABLED: z.enum(['true', 'false']).default('false'),
+  LIVE_TRAIL_RETENTION_DAYS: z.coerce.number().int().min(1).max(30).default(7),
+  LIVE_TRAIL_MAX_ACCURACY_METERS: z.coerce.number().positive().max(1000).default(100),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -183,6 +186,12 @@ function loadConfig(env = process.env) {
       defaultLimit: e.HISTORY_RANGE_DEFAULT_LIMIT,
       maxLimit: e.HISTORY_RANGE_MAX_LIMIT,
       maxRangeMs: e.HISTORY_RANGE_MAX_DAYS * 24 * 60 * 60 * 1000,
+    },
+    liveTrail: {
+      enabled: e.LIVE_TRAIL_ENABLED === 'true',
+      timeZone: e.TZ,
+      retentionMs: e.LIVE_TRAIL_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+      maxAccuracyMeters: e.LIVE_TRAIL_MAX_ACCURACY_METERS,
     },
     authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,

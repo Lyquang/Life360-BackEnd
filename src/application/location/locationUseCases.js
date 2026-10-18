@@ -20,6 +20,7 @@ function createLocationUseCases({
   cacheManager,
   locationCacheTtlSeconds = 300,
   historyPersistencePolicy = { denseEnabled: false },
+  liveTrailProjection,
   logger = console,
 }) {
   const lastSavedLocation = new Map();
@@ -152,6 +153,11 @@ function createLocationUseCases({
         });
       }
     }
+
+    await liveTrailProjection.project({
+      userId,
+      points: [{ latitude, longitude, recordedAt: at, accuracy, pointId, motionState }],
+    });
 
     const groups = await groupRepo.listSummariesByMember(userId);
     const payload = {

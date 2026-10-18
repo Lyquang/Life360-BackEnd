@@ -8,6 +8,7 @@ const conversationMemberRepo = require('./infrastructure/repositories/conversati
 const messageRepo = require('./infrastructure/repositories/messageRepository');
 const userSocialAccountRepo = require('./infrastructure/repositories/userSocialAccountRepository');
 const refreshSessionRepo = require('./infrastructure/repositories/refreshSessionRepository');
+const liveTrailRepo = require('./infrastructure/repositories/liveTrailRepository');
 const { createNoopCacheManager } = require('./infrastructure/cache/NoopCacheManager');
 const { createRedisCacheManager } = require('./infrastructure/cache/RedisCacheManager');
 const { createCachedUserRepository } = require('./infrastructure/cache/cachedUserRepository');
@@ -26,6 +27,7 @@ const { createHistoryUseCases } = require('./application/history/historyUseCases
 const { createDigestUseCases } = require('./application/digests/digestUseCases');
 const { createLocationUseCases } = require('./application/location/locationUseCases');
 const { createSyncLocationBatchUseCase } = require('./application/location/syncLocationBatchUseCase');
+const { createLiveTrailProjection } = require('./application/location/liveTrailProjection');
 const { createChatUseCases } = require('./application/chat/chatUseCases');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
@@ -46,6 +48,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     messageRepo,
     userSocialAccountRepo,
     refreshSessionRepo,
+    liveTrailRepo,
   };
   const services = {
     unitOfWork: createUnitOfWork({ supportsTransactions, logger }),
@@ -67,7 +70,12 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     authMaxActiveSessions: config.authMaxActiveSessions,
     logger,
   };
-  const deps = { ...repos, ...services };
+  const baseDeps = { ...repos, ...services };
+  services.liveTrailProjection = createLiveTrailProjection({
+    ...baseDeps,
+    policy: config.liveTrail,
+  });
+  const deps = { ...baseDeps, liveTrailProjection: services.liveTrailProjection };
 
   const useCases = {
     auth: createAuthUseCases(deps),
