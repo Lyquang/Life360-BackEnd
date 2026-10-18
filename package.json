@@ -15,7 +15,8 @@
     "context:skeleton": "node scripts/codebase-skeleton.js",
     "context:graph": "npm run context:skeleton && node scripts/codebase-graph-html.js",
     "context:trace": "node scripts/trace-flow.js",
-    "context:refresh": "npm run context:skeleton"
+    "context:refresh": "npm run context:skeleton",
+    "benchmark:live-trail": "node scripts/benchmark-live-trail.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1143.0",

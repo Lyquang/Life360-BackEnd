@@ -433,11 +433,23 @@ Chỉ cân nhắc sau khi đánh giá raw trail trên dữ liệu thật. Nếu 
 
 ### T5 - Docs/deployment
 
-- `api-docs/LIVE_TRAIL_API_DOC.md`, Swagger, socket docs, Journey/Location docs.
-- README, `.env.example`, `render.yaml`, study interview notes, context graph, progress.
-- Load smoke test và số đo thật.
+- **Trạng thái:** hoàn tất tài liệu và local synthetic smoke ngày 2026-10-19; production vẫn gated.
+- `api-docs/LIVE_TRAIL_API_DOC.md` là mobile contract canonical. Swagger có schema đầy đủ cho point, gap, match và REST snapshot; `/api/v1/socket-info` mô tả các event.
+- README, `.env.example`, `render.yaml`, context graph và `PROGRESS.md` đã đồng bộ. Tất cả cờ raw trail/matcher vẫn mặc định `false`.
+- `npm run benchmark:live-trail` tạo 100 trail x 20 point không cần MongoDB/network. Lần đo local cuối trên Node v26.7.0: delta publisher nhận 2.000 point, phát 100 event, payload lớn nhất 2.899 byte trong 22,47 ms; matcher queue concurrency 4 lưu/phát 600 window trong 9,03 ms.
+- Các số trên chỉ là regression baseline cho code in-process. Chúng **không** đo MongoDB transaction/index I/O, Socket.IO serialization/network, Render CPU, mobile fan-out hoặc provider map matching; không được dùng làm SLA/capacity production.
 
-Mỗi split chạy full `npm test`, `npm run lint`, `git diff --check`; commit riêng, không push nếu chưa được yêu cầu.
+#### Checklist rollout
+
+1. Deploy code với `LIVE_TRAIL_ENABLED=false`, `LIVE_TRAIL_MATCHER_ENABLED=false`, provider `noop`.
+2. Xác nhận MongoDB là replica set hỗ trợ transaction, index trail/point/match đã build và retention/quota đáp ứng 7 ngày.
+3. Hoàn thành setting tạm ẩn vị trí và hook rời/bị xóa Circle để đóng watch ngay; đây là blocker bắt buộc cho user thật.
+4. Chạy full regression, synthetic benchmark và staging load test qua MongoDB + Socket.IO thật; đo p95/p99, CPU, memory, transaction abort và event fan-out.
+5. Bật raw `LIVE_TRAIL_ENABLED=true` ở staging, giữ matcher tắt, đánh giá vệt từ dữ liệu thiết bị thật.
+6. Chỉ rollout production theo nhóm nhỏ sau khi đạt load/privacy gates. T4/OSRM cần approval riêng.
+7. Rollback bằng `LIVE_TRAIL_ENABLED=false`; nếu chỉ matcher lỗi thì tắt `LIVE_TRAIL_MATCHER_ENABLED`, raw trail vẫn là fallback.
+
+T5 chạy full `npm test`, `npm run lint`, benchmark và `git diff --check`. Không commit để giữ working tree cho review theo yêu cầu hiện tại.
 
 ## 13. Cần tôi quyết định
 

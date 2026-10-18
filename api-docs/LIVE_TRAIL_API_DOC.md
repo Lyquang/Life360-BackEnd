@@ -82,6 +82,7 @@ GET /api/v1/history/USER_ID/journey/trail?date=2026-10-18&afterSeq=200&revision=
 - Interval vượt `gapThresholdSeconds` chỉ là route gap khi hai đầu xa hơn stay radius.
 - Khoảng im lặng tại cùng khu vực không được trả như gap để mobile không vẽ stay thành đường đứt.
 - T1b trả gap set của toàn trail trên mỗi page. Mobile nên merge/dedupe bằng `(fromSeq,toSeq)`.
+- `matched` cũng là tập match của toàn revision hiện tại và được trả lại trên mỗi page. Mobile upsert/dedupe bằng `segmentId`; không append mù theo page.
 
 ## 5. Revision conflict
 
@@ -331,3 +332,11 @@ Lease kiểm tra quyền mặc định mỗi 60 giây. Feature production vẫn 
 5. Nhận reset hoặc HTTP 409: xóa revision cũ và tải snapshot từ trang đầu.
 6. Nhận closed: ngừng watch và dừng hiển thị dữ liệu live của target.
 7. Reconnect Socket.IO: chờ `session:ready`, catch-up REST trước rồi watch lại; watch registry không tồn tại qua disconnect.
+
+## 12. Trạng thái rollout
+
+- Production phải giữ `LIVE_TRAIL_ENABLED=false` và `LIVE_TRAIL_MATCHER_ENABLED=false` cho đến khi có setting tạm ẩn vị trí và hook đóng watch ngay khi rời/bị xóa khỏi Circle.
+- `LIVE_TRAIL_MATCHER_PROVIDER=fake` chỉ dành cho test/staging và bị từ chối trong `NODE_ENV=production`.
+- Khi feature được duyệt, bật raw live trail trên staging trước; matcher vẫn tắt để đánh giá đường GPS thật trên thiết bị.
+- Trước production phải xác nhận MongoDB deployment hỗ trợ transaction/replica set, index đã tạo, quota đủ và đo tải qua MongoDB + Socket.IO thật.
+- Rollback raw trail bằng `LIVE_TRAIL_ENABLED=false`. Luồng `location_update`, batch offline và history hiện tại vẫn hoạt động vì projection/publisher fail-soft.

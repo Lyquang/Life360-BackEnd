@@ -68,7 +68,11 @@ function createHistoryRoutes({ controller, authenticate, trailLimiter }) {
    *       - { in: query, name: revision, schema: { type: integer, minimum: 1 } }
    *       - { in: query, name: limit, schema: { type: integer, default: 200, maximum: 500 } }
    *     responses:
-   *       200: { description: Raw points ordered by seq plus stable fromSeq/toSeq gaps }
+   *       200:
+   *         description: Raw points ordered by seq, stable gaps and current-revision matcher results
+   *         content:
+   *           application/json:
+   *             schema: { $ref: '#/components/schemas/LiveTrailResponse' }
    *       400: { $ref: '#/components/responses/ValidationError' }
    *       401: { description: Missing or invalid access token }
    *       403: { description: Not yourself and no shared circle }

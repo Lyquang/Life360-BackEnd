@@ -37,6 +37,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 | Done / Gated | Live trail B7 T1b REST read | Added authorized snapshot/catch-up pagination, revision conflict recovery, stable seq-boundary gaps and per-requester limiting. Feature remains disabled by default; T2 socket watch is next. |
 | Done / Gated | Live trail B7 T2 Socket watch/delta | Added authorized per-trail rooms, five-watch cap, per-socket limiter, 60-second permission lease, bounded cursor deltas, late/batch resets, stale-current suppression, cleanup and integration coverage. Feature remains disabled pending privacy/member-removal hooks and load gates. |
 | Done / Gated | Live trail B7 T3 matcher framework | Added the provider port, Noop/Fake adapters, gap/accuracy-safe overlapping windows, provisional/final lifecycle, revision-scoped durable matches, bounded queue, timeout/circuit fallback, REST/Socket match updates and tests. No real provider; matcher remains disabled. |
+| Done / Gated | Live trail B7 T5 docs and deployment readiness | Added complete Swagger/mobile contracts, rollout and rollback gates, Render/env documentation and a reproducible synthetic benchmark. Production remains blocked on privacy/Circle-leave hooks and real MongoDB/Socket.IO load tests. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -75,6 +76,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - `src/application/location/liveTrailMatchingService.js`: Bounded asynchronous matching queue, timeout and circuit breaker.
 - `src/infrastructure/database/models/LiveTrail.js`: Trail, point and revision-scoped match persistence.
 - `src/infrastructure/matching/`: Noop production fallback and deterministic test-only FakeMatcher.
+- `scripts/benchmark-live-trail.js`: Synthetic delta/matcher queue regression benchmark; deliberately excludes database and network capacity.
 
 ## Technical Notes
 
@@ -95,6 +97,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - Offline batches never emit trail deltas; any accepted batch projection emits `journey:trail_reset` so clients reload canonical ordering through REST.
 - B7 T2 verification on 2026-10-18: all 155 tests passed with `--test-concurrency=1`; lint and `git diff --check` passed.
 - B7 T3 verification on 2026-10-19: all 165 tests passed; matcher failure/timeout leaves raw trail available, and no real provider is enabled.
+- B7 T5 local smoke on 2026-10-19: 2,000 points produced 100 bounded deltas (max 2,899 bytes) in 22.47 ms; FakeMatcher persisted/published 600 windows in 9.03 ms at concurrency 4. These in-process numbers are not a production SLA.
 
 ## Next Update Checklist
 

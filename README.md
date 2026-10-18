@@ -547,9 +547,12 @@ Never commit `.env`, Google client secrets, R2 secret keys, Redis passwords, JWT
 ```bash
 npm run lint
 npm test
+npm run benchmark:live-trail
 ```
 
 The suite runs sequentially with Node's built-in test runner and MongoDB Memory Server replica sets. It covers REST, Socket.IO, transactions, Google social-login, refresh rotation/reuse, media authorization, dense/cross-channel location persistence, journey geometry, and cursor pagination.
+
+`benchmark:live-trail` is a deterministic local smoke benchmark for the in-process delta publisher and FakeMatcher queue. It excludes MongoDB, network transport and a real matcher provider, so its output is a regression baseline rather than a production capacity claim.
 
 Useful repository-context commands:
 
@@ -581,6 +584,8 @@ RENDER_DEPLOY_HOOK_URL
 Render production requires at least `MONGODB_URI` and a secure `JWT_SECRET`. Add `GOOGLE_CLIENT_ID`, Redis and R2 variables only for the corresponding capabilities. `render.yaml` contains the expected variable names and non-secret defaults.
 
 For route-history rollout, deploy with `LOCATION_HISTORY_DENSE_ENABLED=false`, verify MongoDB indexes (especially `{ userId: 1, timestamp: 1, _id: 1 }`), smoke test legacy endpoints, then enable the flag and monitor storage/latency. Setting it back to `false` restores legacy write throttling without changing read contracts.
+
+For live-trail rollout, deploy first with both live-trail flags disabled. Before enabling it for real users, implement immediate privacy-toggle and Circle-leave watch closure, verify MongoDB transaction/replica-set support and quotas, then load-test the real database and Socket.IO path. Enable raw `LIVE_TRAIL_ENABLED` on staging first while keeping the matcher disabled. Roll back by setting `LIVE_TRAIL_ENABLED=false`; existing location/history flows remain fail-soft and independent.
 
 Docker runtime:
 
