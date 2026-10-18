@@ -42,7 +42,12 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
     isDatabaseConnected,
     logger,
   });
-  registerSocketServer(io, { ...useCases, realtime: services.realtime, logger });
+  registerSocketServer(io, {
+    ...useCases,
+    realtime: services.realtime,
+    liveTrailPolicy: services.liveTrailPolicy,
+    logger,
+  });
   const scheduler = startDigestScheduler({ digests: useCases.digests, intervalMs: digestIntervalMs, logger });
 
   return {
@@ -56,6 +61,7 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
     },
     async close() {
       scheduler.stop();
+      services.liveTrailDeltaPublisher.close();
       await new Promise((resolve) => io.close(() => resolve()));
       if (services.cacheManager.close) await services.cacheManager.close();
       await db.disconnect();

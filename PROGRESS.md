@@ -2,7 +2,7 @@
 
 ## Current Goal
 
-Deliver truthful, gap-aware journey geometry and sufficiently dense location history without breaking existing mobile clients.
+Deliver a gated, cursor-safe live journey trail without breaking existing location and offline-sync clients.
 
 ## Task Board
 
@@ -35,6 +35,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 | Approved / Gated | Live trail B7-0 and map-matching M0 | T1-T3 use raw trails with Noop/Fake matcher behind default-off flags. Real rollout is blocked on privacy toggle and Circle-leave hooks; T4/OSRM POC is deferred until raw-trail evaluation. |
 | Done / Gated | Live trail B7 T1a persistence | Added transaction-backed trail metadata/points, monotonic insertion cursors, late revision, idempotent realtime/batch projection, TTL/accuracy policy and fail-soft tests. `LIVE_TRAIL_ENABLED` remains false; T1b is next. |
 | Done / Gated | Live trail B7 T1b REST read | Added authorized snapshot/catch-up pagination, revision conflict recovery, stable seq-boundary gaps and per-requester limiting. Feature remains disabled by default; T2 socket watch is next. |
+| Done / Gated | Live trail B7 T2 Socket watch/delta | Added authorized per-trail rooms, five-watch cap, per-socket limiter, 60-second permission lease, bounded cursor deltas, late/batch resets, stale-current suppression, cleanup and integration coverage. Feature remains disabled pending privacy/member-removal hooks and load gates. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -66,6 +67,9 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - `src/domain/historyPersistence.js`: Pure configurable decision policy for dense history persistence.
 - `src/domain/liveTrail.js`: Pure live-trail date, retention, quality and deduplication policy.
 - `src/infrastructure/repositories/liveTrailRepository.js`: Transactional seq/revision persistence adapter.
+- `src/application/history/liveTrailWatchUseCases.js`: Authorization and lease revalidation for trail watches.
+- `src/application/location/liveTrailDeltaPublisher.js`: Bounded single-instance delta aggregation and reset publication.
+- `src/presentation/socket/gateways/liveTrailGateway.js`: Socket watch/unwatch validation, limits, rooms and cleanup.
 
 ## Technical Notes
 
@@ -82,6 +86,9 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - Route geometry B2-B6d is wired; dense persistence remains rollout-gated and legacy reads stay backward compatible.
 - Geometry B6b treats long same-region silence as an inferred stay and long far movement as a route gap; legacy journey output remains unchanged.
 - Live trail T1a writes are disabled by default and fail independently from the existing location broadcast/history flow.
+- Live trail T2 is single-instance: watch rooms and pending delta buffers are in memory. Horizontal scale requires a Socket.IO Redis adapter and distributed limiter/coordination.
+- Offline batches never emit trail deltas; any accepted batch projection emits `journey:trail_reset` so clients reload canonical ordering through REST.
+- B7 T2 verification on 2026-10-18: all 155 tests passed with `--test-concurrency=1`; lint and `git diff --check` passed.
 
 ## Next Update Checklist
 

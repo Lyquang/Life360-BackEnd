@@ -1,7 +1,8 @@
 const { registerLocationGateway } = require('./gateways/locationGateway');
 const { registerChatGateway } = require('./gateways/chatGateway');
+const { registerLiveTrailGateway } = require('./gateways/liveTrailGateway');
 
-function registerSocketServer(io, { auth, location, chat, realtime, logger = console }) {
+function registerSocketServer(io, { auth, location, chat, liveTrailWatch, realtime, liveTrailPolicy, logger = console }) {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
@@ -25,6 +26,12 @@ function registerSocketServer(io, { auth, location, chat, realtime, logger = con
     if (socket.data.familyId) socket.join(realtime.rooms.session(socket.data.familyId));
     registerLocationGateway(socket, { location, logger });
     registerChatGateway(socket, { chat, logger });
+    registerLiveTrailGateway(socket, {
+      liveTrailWatch,
+      realtime,
+      policy: liveTrailPolicy,
+      logger,
+    });
 
     socket.on('disconnect', (reason) => {
       logger.log(`🔴 User disconnected: ${user.name} (${user.id}) - ${reason}`);

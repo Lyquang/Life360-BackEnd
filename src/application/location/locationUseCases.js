@@ -21,6 +21,7 @@ function createLocationUseCases({
   locationCacheTtlSeconds = 300,
   historyPersistencePolicy = { denseEnabled: false },
   liveTrailProjection,
+  liveTrailDeltaPublisher,
   logger = console,
 }) {
   const lastSavedLocation = new Map();
@@ -154,10 +155,13 @@ function createLocationUseCases({
       }
     }
 
-    await liveTrailProjection.project({
+    const trailProjection = await liveTrailProjection.project({
       userId,
       points: [{ latitude, longitude, recordedAt: at, accuracy, pointId, motionState }],
     });
+    liveTrailDeltaPublisher.publishRealtime({ userId, projection: trailProjection });
+    const isLateTrailUpdate = trailProjection.results.some((result) => result.lateArrival);
+    if (isLateTrailUpdate) return;
 
     const groups = await groupRepo.listSummariesByMember(userId);
     const payload = {

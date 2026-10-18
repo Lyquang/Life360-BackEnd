@@ -28,6 +28,16 @@ const socketEventDocs = {
       payload: '{ conversationId, isTyping: Boolean }',
       behavior: 'Broadcasts chat:typing to other members (no ack)',
     },
+    'journey:watch': {
+      payload: '{ userId: MongoObjectId, date?: "YYYY-MM-DD" }',
+      ack: '{ ok: true, trailId, userId, date, revision, lastSeq } | { ok: false, status, code, message, errors? }',
+      behavior: 'Authorizes the requester, joins journey:trail:<trailId>, and starts a renewable watch lease. Snapshot data is loaded through REST.',
+    },
+    'journey:unwatch': {
+      payload: '{ userId: MongoObjectId, date?: "YYYY-MM-DD" }',
+      ack: '{ ok: true, removed: Boolean } | { ok: false, status, code, message, errors? }',
+      behavior: 'Leaves the trail room and removes the per-socket watch registration.',
+    },
   },
   server_to_client: {
     'session:ready': '{ groupIds: String[], conversationIds: String[] } — rooms joined, safe to rely on broadcasts',
@@ -44,6 +54,9 @@ const socketEventDocs = {
     'chat:typing': '{ conversationId, userId, name, isTyping }',
     'chat:conversation_updated': '{ conversationId, name, avatarUrl, updatedBy, updatedAt }',
     'chat:error': '{ event, success: false, status, code, message, errors? } — only when the client emitted without an ack',
+    'journey:trail_delta': '{ userId, trailId, revision, afterSeq, fromSeq, toSeq, points[], matchedUpdates: [] }',
+    'journey:trail_reset': '{ userId, trailId, revision } — discard the old revision and reload the REST snapshot',
+    'journey:trail_closed': '{ userId, trailId, reason: "permission_revoked" | "trail_expired" }',
     error: '{ message, errors? } — invalid location / SOS payloads',
   },
 };

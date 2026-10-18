@@ -24,10 +24,12 @@ const { createAuthUseCases } = require('./application/auth/authUseCases');
 const { createGroupUseCases } = require('./application/groups/groupUseCases');
 const { createPlaceUseCases } = require('./application/places/placeUseCases');
 const { createHistoryUseCases } = require('./application/history/historyUseCases');
+const { createLiveTrailWatchUseCases } = require('./application/history/liveTrailWatchUseCases');
 const { createDigestUseCases } = require('./application/digests/digestUseCases');
 const { createLocationUseCases } = require('./application/location/locationUseCases');
 const { createSyncLocationBatchUseCase } = require('./application/location/syncLocationBatchUseCase');
 const { createLiveTrailProjection } = require('./application/location/liveTrailProjection');
+const { createLiveTrailDeltaPublisher } = require('./application/location/liveTrailDeltaPublisher');
 const { createChatUseCases } = require('./application/chat/chatUseCases');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
@@ -80,13 +82,23 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     ...baseDeps,
     policy: config.liveTrail,
   });
-  const deps = { ...baseDeps, liveTrailProjection: services.liveTrailProjection };
+  services.liveTrailDeltaPublisher = createLiveTrailDeltaPublisher({
+    realtime: services.realtime,
+    policy: config.liveTrail,
+    logger,
+  });
+  const deps = {
+    ...baseDeps,
+    liveTrailProjection: services.liveTrailProjection,
+    liveTrailDeltaPublisher: services.liveTrailDeltaPublisher,
+  };
 
   const useCases = {
     auth: createAuthUseCases(deps),
     groups: createGroupUseCases(deps),
     places: createPlaceUseCases(deps),
     history: createHistoryUseCases(deps),
+    liveTrailWatch: createLiveTrailWatchUseCases(deps),
     digests: createDigestUseCases(deps),
     location: createLocationUseCases(deps),
     chat: createChatUseCases(deps),

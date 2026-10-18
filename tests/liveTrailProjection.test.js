@@ -5,7 +5,7 @@ const { performance } = require('node:perf_hooks');
 const { prepareLiveTrailPoints } = require('../src/domain/liveTrail');
 const { createLiveTrailProjection } = require('../src/application/location/liveTrailProjection');
 const { LiveTrail, LiveTrailPoint } = require('../src/infrastructure/database/models/LiveTrail');
-const { startTestServer, waitForEvent } = require('./helpers/testServer');
+const { startTestServer, waitForEvent, expectNoEvent } = require('./helpers/testServer');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -108,9 +108,9 @@ describe('live trail T1a transaction projection', { timeout: 120000 }, () => {
     const late = fix(new Date(measuredAt.getTime() - 60000), {
       latitude: first.latitude + 0.0001,
     });
-    received = waitForEvent(receiverSocket, 'location_update');
+    const noStaleLocation = expectNoEvent(receiverSocket, 'location_update', 250);
     senderSocket.emit('update_location', late);
-    await received;
+    await noStaleLocation;
     trail = await LiveTrail.findById(trail._id).lean();
     const points = await LiveTrailPoint.find({ trailId: trail._id }).sort({ seq: 1 }).lean();
     assert.equal(trail.revision, 2);

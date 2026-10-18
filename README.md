@@ -460,14 +460,20 @@ Mobile removes only IDs returned in `accepted` or `duplicates`.
 
 ### Live trail foundation (gated)
 
-| Variable                         | Default | Description                                                        |
-| -------------------------------- | ------- | ------------------------------------------------------------------ |
-| `LIVE_TRAIL_ENABLED`             | `false` | Enables transaction-backed trail projection; keep off before rollout gates pass |
-| `LIVE_TRAIL_RETENTION_DAYS`      | `7`     | TTL retention for trail metadata and points                        |
-| `LIVE_TRAIL_MAX_ACCURACY_METERS` | `100`   | Drops lower-quality fixes from the live-trail projection           |
-| `LIVE_TRAIL_READ_RATE_LIMIT`      | `60`    | REST trail reads per authenticated requester per minute            |
+| Variable                                  | Default | Description                                                        |
+| ----------------------------------------- | ------- | ------------------------------------------------------------------ |
+| `LIVE_TRAIL_ENABLED`                      | `false` | Enables trail projection/read/watch; keep off before rollout gates pass |
+| `LIVE_TRAIL_RETENTION_DAYS`               | `7`     | TTL retention for trail metadata and points                        |
+| `LIVE_TRAIL_MAX_ACCURACY_METERS`          | `100`   | Drops lower-quality fixes from the live-trail projection           |
+| `LIVE_TRAIL_READ_RATE_LIMIT`              | `60`    | REST trail reads per authenticated requester per minute            |
+| `LIVE_TRAIL_MAX_WATCHES_PER_SOCKET`       | `5`     | Maximum distinct trail watches on one socket                       |
+| `LIVE_TRAIL_WATCH_ACTIONS_PER_MINUTE`     | `30`    | Per-socket watch/unwatch action limit                              |
+| `LIVE_TRAIL_WATCH_LEASE_SECONDS`          | `60`    | Interval for permission revalidation                               |
+| `LIVE_TRAIL_DELTA_MAX_POINTS`             | `50`    | Maximum raw points in one Socket.IO delta                          |
+| `LIVE_TRAIL_DELTA_MAX_BYTES`              | `65536` | Maximum serialized delta target in bytes                           |
+| `LIVE_TRAIL_DELTA_FLUSH_MS`                | `2000`  | Maximum batching delay before emitting a delta                     |
 
-T1a persistence and the T1b REST snapshot/catch-up contract are implemented; Socket watch/delta is not available until T2. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when projection storage fails.
+T1 persistence, REST snapshot/catch-up and T2 Socket watch/delta are implemented. Offline batches and late arrivals emit `journey:trail_reset`; they are never replayed as current `location_update`. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when trail persistence or publication fails.
 
 ### Redis (optional)
 

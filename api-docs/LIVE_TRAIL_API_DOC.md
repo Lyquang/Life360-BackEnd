@@ -1,6 +1,6 @@
-# Live Trail REST API - Mobile Contract
+# Live Trail REST + Socket.IO API - Mobile Contract
 
-Trạng thái hiện tại: T1a persistence và T1b REST read đã có. Socket watch/delta thuộc T2 và **chưa khả dụng**. Production giữ `LIVE_TRAIL_ENABLED=false` cho đến khi hoàn tất privacy/member-removal hooks và load gates.
+Trạng thái hiện tại: persistence, REST snapshot/catch-up và Socket.IO watch/delta đã có. Production giữ `LIVE_TRAIL_ENABLED=false` cho đến khi hoàn tất privacy/member-removal hooks và load gates.
 
 ## 1. Endpoint
 
@@ -167,4 +167,129 @@ struct LiveTrailMatch: Decodable, Sendable {
 4. Merge point theo `seq`, merge gap theo `(fromSeq,toSeq)`.
 5. Sort point `(recordedAt,seq)` trước khi dựng polyline.
 6. Không nối đường liền qua cặp seq có trong `gaps`.
-7. Socket realtime vẫn dùng `location_update`; watch/delta live trail sẽ được bổ sung ở T2.
+7. Sau khi có snapshot, đăng ký `journey:watch`; áp delta chỉ khi revision và `afterSeq` khớp local state.
+
+## 9. Socket watch
+
+Kết nối Socket.IO bằng access token như các event hiện có và chờ `session:ready`. Sau đó emit:
+
+```json
+{
+  "event": "journey:watch",
+  "payload": {
+    "userId": "661234567890abcdef012345",
+    "date": "2026-10-18"
+  }
+}
+```
+
+Ack thành công chỉ trả metadata; mobile vẫn lấy point bằng REST:
+
+```json
+{
+  "ok": true,
+  "trailId": "671234567890abcdef012345",
+  "userId": "661234567890abcdef012345",
+  "date": "2026-10-18",
+  "revision": 4,
+  "lastSeq": 203
+}
+```
+
+Ack lỗi:
+
+```json
+{
+  "ok": false,
+  "status": 403,
+  "code": "FORBIDDEN",
+  "message": "You can only watch live trails of yourself or members of your groups."
+}
+```
+
+Một socket được watch tối đa 5 trail. `watch` và `unwatch` dùng chung giới hạn mặc định 30 action/phút/socket.
+
+Hủy watch:
+
+```json
+{
+  "event": "journey:unwatch",
+  "payload": {
+    "userId": "661234567890abcdef012345",
+    "date": "2026-10-18"
+  },
+  "ack": { "ok": true, "removed": true }
+}
+```
+
+## 10. Server events
+
+### `journey:trail_delta`
+
+```json
+{
+  "userId": "661234567890abcdef012345",
+  "trailId": "671234567890abcdef012345",
+  "revision": 4,
+  "afterSeq": 203,
+  "fromSeq": 205,
+  "toSeq": 207,
+  "points": [
+    {
+      "seq": 205,
+      "latitude": 10.762622,
+      "longitude": 106.660172,
+      "recordedAt": "2026-10-18T05:04:00.000Z",
+      "accuracy": 8,
+      "motionState": "walking",
+      "pointId": "ca05768a-9774-4e29-832e-70048a95901e"
+    }
+  ],
+  "matchedUpdates": []
+}
+```
+
+`afterSeq=203` là cursor ngay trước delta dù `fromSeq` có thể là 205. Không yêu cầu seq liền kề. Chỉ apply khi `revision` bằng local revision và `afterSeq` bằng local insertion cursor; nếu không, gọi REST catch-up hoặc reload.
+
+Server gom tối đa 2 giây và giới hạn mặc định 50 point/64 KB mỗi delta. `matchedUpdates` luôn rỗng cho đến T3.
+
+### `journey:trail_reset`
+
+```json
+{
+  "userId": "661234567890abcdef012345",
+  "trailId": "671234567890abcdef012345",
+  "revision": 5
+}
+```
+
+Late realtime point hoặc offline batch làm canonical ordering có thể đổi. Mobile phải bỏ snapshot revision cũ và tải lại REST từ đầu. Khi live trail bật, late point và offline batch không được phát thành current `location_update` hay delta cũ.
+
+### `journey:trail_closed`
+
+```json
+{
+  "userId": "661234567890abcdef012345",
+  "trailId": "671234567890abcdef012345",
+  "reason": "permission_revoked"
+}
+```
+
+Reason hiện có:
+
+| Reason | Ý nghĩa |
+| --- | --- |
+| `permission_revoked` | Lease kiểm tra thấy requester không còn chung Circle |
+| `trail_expired` | Trail bị xóa/hết retention hoặc identity không còn khớp |
+
+Lease kiểm tra quyền mặc định mỗi 60 giây. Feature production vẫn bị khóa cho đến khi có hook đóng watch ngay khi user ẩn vị trí hoặc rời/bị xóa khỏi Circle.
+
+## 11. Mobile recovery algorithm
+
+1. Tải đầy đủ REST snapshot và giữ `revision`, insertion cursor cuối cùng.
+2. Emit `journey:watch`; nếu ack metadata mới hơn snapshot, gọi REST catch-up.
+3. Với delta đúng revision + `afterSeq`, merge theo `seq`, cập nhật cursor rồi sort path theo `(recordedAt, seq)`.
+4. Delta không nối được cursor: không đoán point bị mất; gọi REST với local `afterSeq` và revision.
+5. Nhận reset hoặc HTTP 409: xóa revision cũ và tải snapshot từ trang đầu.
+6. Nhận closed: ngừng watch và dừng hiển thị dữ liệu live của target.
+7. Reconnect Socket.IO: chờ `session:ready`, catch-up REST trước rồi watch lại; watch registry không tồn tại qua disconnect.

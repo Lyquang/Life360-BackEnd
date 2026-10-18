@@ -3,6 +3,7 @@ const rooms = {
   group: (groupId) => `group:${groupId}`,
   conversation: (conversationId) => `conversation:${conversationId}`,
   session: (familyId) => `session:${familyId}`,
+  liveTrail: (trailId) => `journey:trail:${trailId}`,
 };
 
 /** Realtime port implemented with Socket.IO. Use cases only see these methods. */
@@ -25,6 +26,10 @@ function createSocketRealtime(io) {
 
     emitToConversation(conversationId, event, payload, { exceptSocketId } = {}) {
       to(rooms.conversation(conversationId), exceptSocketId).emit(event, payload);
+    },
+
+    emitToLiveTrail(trailId, event, payload) {
+      io.to(rooms.liveTrail(trailId)).emit(event, payload);
     },
 
     /** Makes every connected device of the user join the room (e.g. after joining a group). */

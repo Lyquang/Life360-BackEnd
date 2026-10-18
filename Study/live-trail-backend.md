@@ -2,7 +2,7 @@
 
 ## 1. Trạng thái
 
-Đây là tài liệu đọc code và thiết kế đã được duyệt ngày 2026-10-18. Chưa có production code cho live trail hoặc map matching.
+Đây là tài liệu đọc code, thiết kế và trạng thái triển khai đã được duyệt ngày 2026-10-18. T1 persistence/REST và T2 Socket watch/delta đã được hiện thực sau cờ mặc định tắt; map matching T3/T4 chưa có.
 
 Mục tiêu là tạo vệt theo `(userId, localDate)`, cho phép người có quyền đăng ký xem và nhận delta gần realtime. Raw GPS luôn được giữ để kiểm chứng/fallback. Map-matched geometry chỉ là suy luận, chạy bất đồng bộ và không được làm chậm hoặc làm hỏng `update_location`.
 
@@ -392,8 +392,21 @@ Kết quả triển khai:
 
 ### T2 - Socket watch/delta
 
-- Gateway, watch use case, trail rooms, bounded aggregator, disconnect cleanup.
-- Permission/watch/rate/delta integration tests.
+**Trạng thái:** Hoàn tất ngày 2026-10-18, vẫn chịu gate `LIVE_TRAIL_ENABLED=false`.
+
+- `journey:watch` query quyền hiện tại, lấy trail metadata rồi mới join room `journey:trail:<trailId>`; ack không chứa snapshot.
+- Registry `socket.data.watchedTrails` giới hạn 5 trail/socket và bị xóa khi disconnect.
+- `journey:watch` + `journey:unwatch` dùng sliding-window 30 action/phút/socket.
+- Lease mặc định 60 giây gọi lại application authorization. Mất quyền phát `journey:trail_closed(reason=permission_revoked)`; trail biến mất phát `trail_expired`.
+- Realtime append được gom tối đa 2 giây, 50 point hoặc mục tiêu 64 KB. Mỗi delta có `afterSeq` là cursor ngay trước delta, không suy luận seq liền kề.
+- Late realtime insert xóa delta đang chờ và phát `journey:trail_reset` với revision mới.
+- Khi projection xác nhận realtime fix là late arrival, fix đó không được phát tiếp như `location_update`; feature tắt vẫn giữ hành vi location legacy.
+- Offline batch có point được projection luôn phát reset, không phát delta và không phát `location_update`.
+- Publisher và watch state đang in-memory/single-instance; T2 chưa thêm Redis adapter.
+- Integration coverage xác nhận authorization, unwatch, five-watch cap, rate limit, cursor delta, late/batch reset và lease revocation.
+- Full regression suite sau T2: 155 test qua trên MongoDB in-memory replica set; lint và whitespace check qua.
+
+Hai rollout blocker vẫn giữ nguyên: chưa có setting ẩn vị trí và chưa có use case rời Circle/xóa thành viên để gọi hook đóng watch ngay. Lease chỉ là lớp phòng vệ tối đa 60 giây, không thay hai hook đó.
 
 ### T3 - Matcher port/fakes/windowing
 
