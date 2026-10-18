@@ -355,11 +355,23 @@ Do giới hạn khoảng 8 file/commit, T1 cần chia nhỏ. Đề xuất:
 
 ### T1a - Domain và persistence projection
 
+**Trạng thái:** Hoàn tất ngày 2026-10-18, vẫn sau `LIVE_TRAIL_ENABLED=false`.
+
 - Trail/point domain rules, models, repository, seq/revision transaction.
 - Integrate realtime + batch append without matcher.
 - Synthetic tests cho append, late point, duplicate và date boundary.
 - Dùng MongoDB in-memory replica set cho integration test transaction.
 - Trước khi bật flag: xác nhận MongoDB production plan/topology hỗ trợ transaction, đo p50/p95 write latency và tải transaction; lỗi trail write vẫn không làm hỏng `location_update` hiện tại.
+
+Kết quả triển khai và xác minh:
+
+- `LiveTrail`/`LiveTrailPoint` có unique cursor, point/fingerprint dedupe, chronological index và TTL tuyệt đối 7 ngày.
+- Realtime và offline batch cùng đi qua projection; accuracy lớn hơn 100 m không được giữ trong live trail.
+- Transaction test chạy trên MongoDB Memory Replica Set thật; concurrent append cấp đúng `seq=1...10`, không trùng hoặc mất cursor.
+- Duplicate không cấp seq; late insertion tăng revision đúng một lần trong transaction.
+- Forced trail repository failure vẫn cho phép `location_update` hiện tại broadcast thành công; log không chứa userId/toạ độ.
+- Baseline local ngày 2026-10-18, 20 transaction một điểm tuần tự trên in-memory replica set: p50 `6.02 ms`, p95 `8.95 ms`. Đây không phải capacity/SLA production.
+- Production startup đã dùng `hello` để bắt buộc replica set hoặc mongos. Việc xác nhận Atlas plan, connection/transaction quotas và đo tải trên Render thật vẫn là deployment gate trước khi đổi flag sang `true`.
 
 ### T1b - REST snapshot/catch-up
 

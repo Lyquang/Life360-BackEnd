@@ -33,6 +33,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 | Done | Route geometry B6 mobile contract follow-up | Published geometry policy, hybrid gap/stay quality, stable stay IDs, defensive gap filtering, observed/unobserved summaries, and `includePath=false`; measured a 31.07% reduction on the documented 100-point fixture. |
 | Planned / Deferred | Road map matching for journey geometry | B6b/B6c prerequisites are complete, but M0 deliberately keeps T1-T3 unmatched and defers T4 until raw-trail evaluation; OSRM is the first POC if matching is later approved. |
 | Approved / Gated | Live trail B7-0 and map-matching M0 | T1-T3 use raw trails with Noop/Fake matcher behind default-off flags. Real rollout is blocked on privacy toggle and Circle-leave hooks; T4/OSRM POC is deferred until raw-trail evaluation. |
+| Done / Gated | Live trail B7 T1a persistence | Added transaction-backed trail metadata/points, monotonic insertion cursors, late revision, idempotent realtime/batch projection, TTL/accuracy policy and fail-soft tests. `LIVE_TRAIL_ENABLED` remains false; T1b is next. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -61,6 +62,8 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - `Study/map-matching-options.md`: M0 provider, Apple Maps terms, infrastructure, privacy and cost decision gate.
 - `src/domain/routeGeometry.js`: Pure route ordering, distance, gap analysis, link construction, and gap-safe thinning.
 - `src/domain/historyPersistence.js`: Pure configurable decision policy for dense history persistence.
+- `src/domain/liveTrail.js`: Pure live-trail date, retention, quality and deduplication policy.
+- `src/infrastructure/repositories/liveTrailRepository.js`: Transactional seq/revision persistence adapter.
 
 ## Technical Notes
 
@@ -76,6 +79,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - Offline location batches are idempotent by `(userId, pointId)`, accept partial validity, never broadcast or trigger stay alerts, and keep last-known MongoDB/Redis state monotonic by `recordedAt`.
 - Route geometry B2-B6d is wired; dense persistence remains rollout-gated and legacy reads stay backward compatible.
 - Geometry B6b treats long same-region silence as an inferred stay and long far movement as a route gap; legacy journey output remains unchanged.
+- Live trail T1a writes are disabled by default and fail independently from the existing location broadcast/history flow.
 
 ## Next Update Checklist
 

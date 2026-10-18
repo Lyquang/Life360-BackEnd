@@ -53,6 +53,13 @@ services:
         value: "1000"
       - key: HISTORY_RANGE_MAX_DAYS
         value: "7"
+      # Live trail remains gated off until privacy hooks and production load validation are complete.
+      - key: LIVE_TRAIL_ENABLED
+        value: "false"
+      - key: LIVE_TRAIL_RETENTION_DAYS
+        value: "7"
+      - key: LIVE_TRAIL_MAX_ACCURACY_METERS
+        value: "100"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGIN

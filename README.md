@@ -457,6 +457,16 @@ Mobile removes only IDs returned in `accepted` or `duplicates`.
 | `HISTORY_RANGE_MAX_LIMIT`                  | `1000`  | Maximum raw history page size                    |
 | `HISTORY_RANGE_MAX_DAYS`                   | `7`     | Maximum requested range width                    |
 
+### Live trail foundation (gated)
+
+| Variable                         | Default | Description                                                        |
+| -------------------------------- | ------- | ------------------------------------------------------------------ |
+| `LIVE_TRAIL_ENABLED`             | `false` | Enables transaction-backed trail projection; keep off before rollout gates pass |
+| `LIVE_TRAIL_RETENTION_DAYS`      | `7`     | TTL retention for trail metadata and points                        |
+| `LIVE_TRAIL_MAX_ACCURACY_METERS` | `100`   | Drops lower-quality fixes from the live-trail projection           |
+
+The T1a persistence foundation is implemented, but there is no public live-trail REST/watch contract yet. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when projection storage fails.
+
 ### Redis (optional)
 
 | Variable                        | Default          | Description                                     |
