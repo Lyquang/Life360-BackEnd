@@ -26,8 +26,8 @@ describe('GET /api/v1/history/:userId range pagination', { timeout: 120000 }, ()
     const group = await t.createGroup(owner, 'Range History');
     await t.joinGroup(member, group);
 
-    const start = new Date();
-    start.setHours(10, 0, 0, 0);
+    // Keep the one-sided `from` fixture in the past regardless of local test time.
+    const start = new Date(Date.now() - 5 * 60 * 1000);
     from = new Date(start.getTime() - 60000);
     to = new Date(start.getTime() + 10 * 60000);
     await LocationHistory.create(

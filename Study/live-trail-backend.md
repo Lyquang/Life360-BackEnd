@@ -2,7 +2,7 @@
 
 ## 1. Trạng thái
 
-Đây là tài liệu đọc code, thiết kế và trạng thái triển khai đã được duyệt ngày 2026-10-18. T1 persistence/REST và T2 Socket watch/delta đã được hiện thực sau cờ mặc định tắt; map matching T3/T4 chưa có.
+Đây là tài liệu đọc code, thiết kế và trạng thái triển khai đã được duyệt ngày 2026-10-18. T1 persistence/REST, T2 Socket watch/delta và T3 matcher framework đã được hiện thực sau các cờ mặc định tắt; provider thật T4 chưa có.
 
 Mục tiêu là tạo vệt theo `(userId, localDate)`, cho phép người có quyền đăng ký xem và nhận delta gần realtime. Raw GPS luôn được giữ để kiểm chứng/fallback. Map-matched geometry chỉ là suy luận, chạy bất đồng bộ và không được làm chậm hoặc làm hỏng `update_location`.
 
@@ -387,7 +387,7 @@ Kết quả triển khai:
 - `afterSeq` bắt buộc có `revision`; mismatch trả `409 TRAIL_REVISION_CHANGED` kèm `trailId`, `currentRevision`, `lastSeq`.
 - Hybrid gaps dùng stable `{ fromSeq, toSeq, seconds, meters }`; same-region silence không được công bố là route gap.
 - Authorization dùng cùng `assertCanView` với history; limiter 60 request/phút mặc định, key theo requester.
-- Feature off trả 503, ngày chưa có trail trả 404; `matched` hiện luôn rỗng vì T3 chưa triển khai.
+- Feature off trả 503, ngày chưa có trail trả 404; `matched` rỗng khi matcher flag tắt và chứa match đúng current revision khi T3 được bật ở test/staging.
 - Implementation T1b hiện đọc chronological point set của cả trail để tính gap ổn định rồi trả cùng gap set trên mỗi page. Đây là O(n) theo point/day; phải benchmark và cân nhắc materialized gaps trước rollout tải lớn.
 
 ### T2 - Socket watch/delta
@@ -410,9 +410,22 @@ Hai rollout blocker vẫn giữ nguyên: chưa có setting ẩn vị trí và ch
 
 ### T3 - Matcher port/fakes/windowing
 
-- `MapMatcher`, `NoopMatcher`, fake adapter, quality/window/finalization domain.
-- Bounded in-process queue, circuit breaker và persisted match results.
-- Không network/provider thật; dùng `NoopMatcher`/`FakeMatcher`, feature flag mặc định off.
+**Trạng thái:** Hoàn tất ngày 2026-10-19, `LIVE_TRAIL_MATCHER_ENABLED=false` và provider `noop` mặc định.
+
+- Port `matchWindow` không rò URL/token/provider SDK vào application; `NoopMatcher` trả unmatched, `FakeMatcher` tạo Polyline6 deterministic cho test.
+- Production config từ chối `provider=fake`; chưa có network adapter hoặc provider secret.
+- Pure domain sort `(recordedAt,seq)`, tách run tại route gap hoặc accuracy >50 m, tạo window K=5/overlap=2 và giữ M=2 future point trước khi chuyển final.
+- `segmentId` ổn định theo trail/revision/window start; `sourceRevision` SHA-256 bao gồm canonical point fields, profile, window/quality policy và matcher version.
+- `LiveTrailMatch` lưu current revision, lifecycle `provisional|final|unmatched`, geometry/matcher/confidence và TTL không dài hơn trail.
+- Queue in-process coalesce theo trail, mặc định tối đa 100 trail/concurrency 1; job đủ K chạy ngay, phần ít hơn chờ tối đa T=30 giây.
+- Timeout cứng 1 giây kể cả adapter bỏ qua AbortSignal; circuit mở sau 3 lỗi liên tiếp trong 30 giây. Mọi lỗi chỉ giữ raw fallback.
+- Cache hit theo `sourceRevision` không gọi matcher lại. Late revision xóa match revision cũ rồi rebuild; final match không bị sửa trong cùng revision.
+- REST `matched` và Socket `matchedUpdates` chỉ bổ sung dữ liệu; raw points/gaps luôn còn. Match hoàn tất trước raw flush được gộp vào delta chờ, hoàn tất sau sẽ phát delta không có point và không đổi cursor.
+- Match updates cũng chịu cap 64 KB: publisher chia chunk theo byte; một geometry đơn lẻ vượt cap bị bỏ khỏi Socket và phát reset để client tải canonical REST snapshot.
+- Unit/integration tests bao phủ gap/accuracy, lifecycle, deterministic adapters, bounded queue, timeout, circuit, cache hit, durable REST/Socket result và late-revision invalidation.
+- Full regression suite sau T3: 165 test qua với MongoDB in-memory replica set; lint và whitespace check qua.
+
+T3 vẫn là single-instance best effort: restart có thể mất pending jobs nhưng không mất raw points. Reconciliation sau restart và distributed queue chỉ cần thiết trước production matcher rollout.
 
 ### T4 - Provider adapter (hoãn)
 

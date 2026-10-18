@@ -50,6 +50,19 @@ const envSchema = z.object({
   LIVE_TRAIL_DELTA_MAX_POINTS: z.coerce.number().int().min(1).max(500).default(50),
   LIVE_TRAIL_DELTA_MAX_BYTES: z.coerce.number().int().min(1024).max(1024 * 1024).default(64 * 1024),
   LIVE_TRAIL_DELTA_FLUSH_MS: z.coerce.number().int().min(10).max(60000).default(2000),
+  LIVE_TRAIL_MATCHER_ENABLED: z.enum(['true', 'false']).default('false'),
+  LIVE_TRAIL_MATCHER_PROVIDER: z.enum(['noop', 'fake']).default('noop'),
+  LIVE_TRAIL_MATCH_WINDOW_SIZE: z.coerce.number().int().min(3).max(100).default(5),
+  LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS: z.coerce.number().int().min(1).max(300).default(30),
+  LIVE_TRAIL_MATCH_OVERLAP_POINTS: z.coerce.number().int().min(0).max(99).default(2),
+  LIVE_TRAIL_MATCH_FUTURE_CONTEXT_POINTS: z.coerce.number().int().min(0).max(99).default(2),
+  LIVE_TRAIL_MATCH_MIN_POINTS: z.coerce.number().int().min(2).max(100).default(3),
+  LIVE_TRAIL_MATCH_MAX_ACCURACY_METERS: z.coerce.number().positive().max(1000).default(50),
+  LIVE_TRAIL_MATCH_QUEUE_MAX_TRAILS: z.coerce.number().int().min(1).max(10000).default(100),
+  LIVE_TRAIL_MATCH_CONCURRENCY: z.coerce.number().int().min(1).max(20).default(1),
+  LIVE_TRAIL_MATCH_TIMEOUT_MS: z.coerce.number().int().min(10).max(60000).default(1000),
+  LIVE_TRAIL_MATCH_CIRCUIT_FAILURES: z.coerce.number().int().min(1).max(100).default(3),
+  LIVE_TRAIL_MATCH_CIRCUIT_COOLDOWN_SECONDS: z.coerce.number().int().min(1).max(3600).default(30),
   GOOGLE_CLIENT_ID: optionalString,
 
   REDIS_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -94,6 +107,19 @@ function loadConfig(env = process.env) {
   }
   const e = parsed.data;
   const isProduction = e.NODE_ENV === 'production';
+
+  if (e.LIVE_TRAIL_MATCH_OVERLAP_POINTS >= e.LIVE_TRAIL_MATCH_WINDOW_SIZE) {
+    throw new ConfigError('LIVE_TRAIL_MATCH_OVERLAP_POINTS must be smaller than LIVE_TRAIL_MATCH_WINDOW_SIZE.');
+  }
+  if (e.LIVE_TRAIL_MATCH_FUTURE_CONTEXT_POINTS >= e.LIVE_TRAIL_MATCH_WINDOW_SIZE) {
+    throw new ConfigError('LIVE_TRAIL_MATCH_FUTURE_CONTEXT_POINTS must be smaller than LIVE_TRAIL_MATCH_WINDOW_SIZE.');
+  }
+  if (e.LIVE_TRAIL_MATCH_MIN_POINTS > e.LIVE_TRAIL_MATCH_WINDOW_SIZE) {
+    throw new ConfigError('LIVE_TRAIL_MATCH_MIN_POINTS cannot exceed LIVE_TRAIL_MATCH_WINDOW_SIZE.');
+  }
+  if (isProduction && e.LIVE_TRAIL_MATCHER_PROVIDER === 'fake') {
+    throw new ConfigError('The fake live trail matcher cannot run in production.');
+  }
 
   const missing = [];
   if (!e.JWT_SECRET) missing.push('JWT_SECRET');
@@ -206,6 +232,21 @@ function loadConfig(env = process.env) {
       deltaMaxPoints: e.LIVE_TRAIL_DELTA_MAX_POINTS,
       deltaMaxBytes: e.LIVE_TRAIL_DELTA_MAX_BYTES,
       deltaFlushMs: e.LIVE_TRAIL_DELTA_FLUSH_MS,
+      matcher: {
+        enabled: e.LIVE_TRAIL_MATCHER_ENABLED === 'true',
+        provider: e.LIVE_TRAIL_MATCHER_PROVIDER,
+        windowSize: e.LIVE_TRAIL_MATCH_WINDOW_SIZE,
+        windowWaitMs: e.LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS * 1000,
+        overlapPoints: e.LIVE_TRAIL_MATCH_OVERLAP_POINTS,
+        futureContextPoints: e.LIVE_TRAIL_MATCH_FUTURE_CONTEXT_POINTS,
+        minPoints: e.LIVE_TRAIL_MATCH_MIN_POINTS,
+        maxAccuracyMeters: e.LIVE_TRAIL_MATCH_MAX_ACCURACY_METERS,
+        queueMaxTrails: e.LIVE_TRAIL_MATCH_QUEUE_MAX_TRAILS,
+        concurrency: e.LIVE_TRAIL_MATCH_CONCURRENCY,
+        timeoutMs: e.LIVE_TRAIL_MATCH_TIMEOUT_MS,
+        circuitFailureThreshold: e.LIVE_TRAIL_MATCH_CIRCUIT_FAILURES,
+        circuitCooldownMs: e.LIVE_TRAIL_MATCH_CIRCUIT_COOLDOWN_SECONDS * 1000,
+      },
     },
     authMaxActiveSessions: e.AUTH_MAX_ACTIVE_SESSIONS,
     storage: r2Storage || legacyStorage,

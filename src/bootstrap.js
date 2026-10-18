@@ -61,6 +61,7 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
     },
     async close() {
       scheduler.stop();
+      await services.liveTrailMatchingService.close();
       services.liveTrailDeltaPublisher.close();
       await new Promise((resolve) => io.close(() => resolve()));
       if (services.cacheManager.close) await services.cacheManager.close();

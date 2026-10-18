@@ -8,6 +8,7 @@ function createSyncLocationBatchUseCase({
   locationCacheTtlSeconds = 300,
   liveTrailProjection,
   liveTrailDeltaPublisher,
+  liveTrailMatchingService,
   policy,
 }) {
   return async function syncLocationBatch({ userId, userName, fallbackBatteryLevel, points, rejected = [] }) {
@@ -74,6 +75,7 @@ function createSyncLocationBatchUseCase({
 
     const trailProjection = await liveTrailProjection.project({ userId, points: unique });
     liveTrailDeltaPublisher.publishBatchReset({ userId, projection: trailProjection });
+    liveTrailMatchingService.schedule({ userId, projection: trailProjection });
 
     return {
       accepted: persisted.accepted,

@@ -74,6 +74,33 @@ services:
         value: "65536"
       - key: LIVE_TRAIL_DELTA_FLUSH_MS
         value: "2000"
+      # T3 matcher framework remains off. `fake` is rejected when NODE_ENV=production.
+      - key: LIVE_TRAIL_MATCHER_ENABLED
+        value: "false"
+      - key: LIVE_TRAIL_MATCHER_PROVIDER
+        value: noop
+      - key: LIVE_TRAIL_MATCH_WINDOW_SIZE
+        value: "5"
+      - key: LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS
+        value: "30"
+      - key: LIVE_TRAIL_MATCH_OVERLAP_POINTS
+        value: "2"
+      - key: LIVE_TRAIL_MATCH_FUTURE_CONTEXT_POINTS
+        value: "2"
+      - key: LIVE_TRAIL_MATCH_MIN_POINTS
+        value: "3"
+      - key: LIVE_TRAIL_MATCH_MAX_ACCURACY_METERS
+        value: "50"
+      - key: LIVE_TRAIL_MATCH_QUEUE_MAX_TRAILS
+        value: "100"
+      - key: LIVE_TRAIL_MATCH_CONCURRENCY
+        value: "1"
+      - key: LIVE_TRAIL_MATCH_TIMEOUT_MS
+        value: "1000"
+      - key: LIVE_TRAIL_MATCH_CIRCUIT_FAILURES
+        value: "3"
+      - key: LIVE_TRAIL_MATCH_CIRCUIT_COOLDOWN_SECONDS
+        value: "30"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGIN

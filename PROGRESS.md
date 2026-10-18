@@ -36,6 +36,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 | Done / Gated | Live trail B7 T1a persistence | Added transaction-backed trail metadata/points, monotonic insertion cursors, late revision, idempotent realtime/batch projection, TTL/accuracy policy and fail-soft tests. `LIVE_TRAIL_ENABLED` remains false; T1b is next. |
 | Done / Gated | Live trail B7 T1b REST read | Added authorized snapshot/catch-up pagination, revision conflict recovery, stable seq-boundary gaps and per-requester limiting. Feature remains disabled by default; T2 socket watch is next. |
 | Done / Gated | Live trail B7 T2 Socket watch/delta | Added authorized per-trail rooms, five-watch cap, per-socket limiter, 60-second permission lease, bounded cursor deltas, late/batch resets, stale-current suppression, cleanup and integration coverage. Feature remains disabled pending privacy/member-removal hooks and load gates. |
+| Done / Gated | Live trail B7 T3 matcher framework | Added the provider port, Noop/Fake adapters, gap/accuracy-safe overlapping windows, provisional/final lifecycle, revision-scoped durable matches, bounded queue, timeout/circuit fallback, REST/Socket match updates and tests. No real provider; matcher remains disabled. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -70,6 +71,10 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - `src/application/history/liveTrailWatchUseCases.js`: Authorization and lease revalidation for trail watches.
 - `src/application/location/liveTrailDeltaPublisher.js`: Bounded single-instance delta aggregation and reset publication.
 - `src/presentation/socket/gateways/liveTrailGateway.js`: Socket watch/unwatch validation, limits, rooms and cleanup.
+- `src/domain/liveTrailMatching.js`: Pure window, quality, revision and stable segment policies.
+- `src/application/location/liveTrailMatchingService.js`: Bounded asynchronous matching queue, timeout and circuit breaker.
+- `src/infrastructure/database/models/LiveTrail.js`: Trail, point and revision-scoped match persistence.
+- `src/infrastructure/matching/`: Noop production fallback and deterministic test-only FakeMatcher.
 
 ## Technical Notes
 
@@ -89,6 +94,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - Live trail T2 is single-instance: watch rooms and pending delta buffers are in memory. Horizontal scale requires a Socket.IO Redis adapter and distributed limiter/coordination.
 - Offline batches never emit trail deltas; any accepted batch projection emits `journey:trail_reset` so clients reload canonical ordering through REST.
 - B7 T2 verification on 2026-10-18: all 155 tests passed with `--test-concurrency=1`; lint and `git diff --check` passed.
+- B7 T3 verification on 2026-10-19: all 165 tests passed; matcher failure/timeout leaves raw trail available, and no real provider is enabled.
 
 ## Next Update Checklist
 

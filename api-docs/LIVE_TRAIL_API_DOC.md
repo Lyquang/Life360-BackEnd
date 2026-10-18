@@ -155,7 +155,31 @@ struct LiveTrailGap: Decodable, Hashable, Sendable {
 }
 
 struct LiveTrailMatch: Decodable, Sendable {
-    // Reserved for T3. T1b always returns an empty array.
+    let segmentId: String
+    let fromSeq: Int
+    let toSeq: Int
+    let status: LiveTrailMatchStatus
+    let geometry: LiveTrailMatchGeometry?
+    let matcher: LiveTrailMatcher
+    let confidence: Double?
+    let sourceRevision: String
+    let generatedAt: Date
+}
+
+enum LiveTrailMatchStatus: String, Decodable, Sendable {
+    case provisional
+    case final
+    case unmatched
+}
+
+struct LiveTrailMatchGeometry: Decodable, Sendable {
+    let encoding: String // "polyline6"
+    let data: String
+}
+
+struct LiveTrailMatcher: Decodable, Sendable {
+    let provider: String
+    let version: String
 }
 ```
 
@@ -245,13 +269,27 @@ Hủy watch:
       "pointId": "ca05768a-9774-4e29-832e-70048a95901e"
     }
   ],
-  "matchedUpdates": []
+  "matchedUpdates": [
+    {
+      "segmentId": "ryImN8kQnHDy0R7gN5Zt5fba",
+      "fromSeq": 201,
+      "toSeq": 205,
+      "status": "provisional",
+      "geometry": { "encoding": "polyline6", "data": "<encoded>" },
+      "matcher": { "provider": "fake", "version": "fake-v1" },
+      "confidence": 0.99,
+      "sourceRevision": "sha256-base64url",
+      "generatedAt": "2026-10-19T03:00:00.000Z"
+    }
+  ]
 }
 ```
 
 `afterSeq=203` là cursor ngay trước delta dù `fromSeq` có thể là 205. Không yêu cầu seq liền kề. Chỉ apply khi `revision` bằng local revision và `afterSeq` bằng local insertion cursor; nếu không, gọi REST catch-up hoặc reload.
 
-Server gom tối đa 2 giây và giới hạn mặc định 50 point/64 KB mỗi delta. `matchedUpdates` luôn rỗng cho đến T3.
+Server gom tối đa 2 giây và giới hạn mặc định 50 point/64 KB mỗi delta. Matcher chạy bất đồng bộ: kết quả có thể được gộp vào delta đang chờ, hoặc đến trong một delta có `points=[]` và `afterSeq` bằng cursor hiện tại. Mobile upsert match bằng `segmentId`; `provisional` có thể được thay thế, `final` là ổn định trong cùng revision, `unmatched` phải tiếp tục vẽ raw points. Nếu một geometry đơn lẻ vượt byte cap, server không gửi payload quá cỡ mà phát `journey:trail_reset`; mobile tải lại REST snapshot.
+
+T3 chưa cấu hình provider đường bộ thật. Production mặc định matcher tắt/Noop; `fake` chỉ xuất hiện trong test hoặc staging có chủ đích và bị server từ chối khi `NODE_ENV=production`.
 
 ### `journey:trail_reset`
 

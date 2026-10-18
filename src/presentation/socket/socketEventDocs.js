@@ -54,7 +54,7 @@ const socketEventDocs = {
     'chat:typing': '{ conversationId, userId, name, isTyping }',
     'chat:conversation_updated': '{ conversationId, name, avatarUrl, updatedBy, updatedAt }',
     'chat:error': '{ event, success: false, status, code, message, errors? } — only when the client emitted without an ack',
-    'journey:trail_delta': '{ userId, trailId, revision, afterSeq, fromSeq, toSeq, points[], matchedUpdates: [] }',
+    'journey:trail_delta': '{ userId, trailId, revision, afterSeq, fromSeq, toSeq, points[], matchedUpdates: LiveTrailMatch[] }',
     'journey:trail_reset': '{ userId, trailId, revision } — discard the old revision and reload the REST snapshot',
     'journey:trail_closed': '{ userId, trailId, reason: "permission_revoked" | "trail_expired" }',
     error: '{ message, errors? } — invalid location / SOS payloads',

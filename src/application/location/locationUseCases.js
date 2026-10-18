@@ -22,6 +22,7 @@ function createLocationUseCases({
   historyPersistencePolicy = { denseEnabled: false },
   liveTrailProjection,
   liveTrailDeltaPublisher,
+  liveTrailMatchingService,
   logger = console,
 }) {
   const lastSavedLocation = new Map();
@@ -160,6 +161,7 @@ function createLocationUseCases({
       points: [{ latitude, longitude, recordedAt: at, accuracy, pointId, motionState }],
     });
     liveTrailDeltaPublisher.publishRealtime({ userId, projection: trailProjection });
+    liveTrailMatchingService.schedule({ userId, projection: trailProjection });
     const isLateTrailUpdate = trailProjection.results.some((result) => result.lateArrival);
     if (isLateTrailUpdate) return;
 

@@ -69,6 +69,22 @@ function serializeTrailPoint(point) {
   };
 }
 
+function serializeTrailMatch(match) {
+  return {
+    segmentId: match.segmentId,
+    fromSeq: match.fromSeq,
+    toSeq: match.toSeq,
+    status: match.status,
+    matcher: match.matcher,
+    sourceRevision: match.sourceRevision,
+    generatedAt: match.updatedAt || match.createdAt,
+    ...(match.geometry?.data && {
+      geometry: { encoding: match.geometry.encoding, data: match.geometry.data },
+    }),
+    ...(match.confidence !== undefined && { confidence: match.confidence }),
+  };
+}
+
 function createHistoryUseCases({
   groupRepo,
   locationHistoryRepo,
@@ -180,14 +196,15 @@ function createHistoryUseCases({
       });
     }
 
-    const rows = await liveTrailRepo.listPointsAfter({
-      trailId: trail._id,
-      afterSeq,
-      limit,
-    });
+    const [rows, chronological, matches] = await Promise.all([
+      liveTrailRepo.listPointsAfter({ trailId: trail._id, afterSeq, limit }),
+      liveTrailRepo.listPointsChronological(trail._id),
+      liveTrailPolicy.matcher.enabled
+        ? liveTrailRepo.listMatches(trail._id, trail.revision)
+        : Promise.resolve([]),
+    ]);
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
-    const chronological = await liveTrailRepo.listPointsChronological(trail._id);
     const gaps = buildLiveTrailGaps(
       chronological.map(serializeTrailPoint),
       liveTrailPolicy
@@ -202,7 +219,7 @@ function createHistoryUseCases({
       lastSeq: trail.lastSeq,
       points: page.map(serializeTrailPoint),
       gaps,
-      matched: [],
+      matched: matches.map(serializeTrailMatch),
       hasMore,
       nextAfterSeq: hasMore ? page.at(-1).seq : null,
     };

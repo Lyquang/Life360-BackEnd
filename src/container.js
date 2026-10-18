@@ -30,7 +30,10 @@ const { createLocationUseCases } = require('./application/location/locationUseCa
 const { createSyncLocationBatchUseCase } = require('./application/location/syncLocationBatchUseCase');
 const { createLiveTrailProjection } = require('./application/location/liveTrailProjection');
 const { createLiveTrailDeltaPublisher } = require('./application/location/liveTrailDeltaPublisher');
+const { createLiveTrailMatchingService } = require('./application/location/liveTrailMatchingService');
 const { createChatUseCases } = require('./application/chat/chatUseCases');
+const { createNoopMapMatcher } = require('./infrastructure/matching/NoopMapMatcher');
+const { createFakeMapMatcher } = require('./infrastructure/matching/FakeMapMatcher');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
 function createContainer({ config, io, supportsTransactions, logger = console }) {
@@ -87,10 +90,25 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     policy: config.liveTrail,
     logger,
   });
+  services.mapMatcher = config.liveTrail.matcher.provider === 'fake'
+    ? createFakeMapMatcher()
+    : createNoopMapMatcher();
+  services.liveTrailMatchingService = createLiveTrailMatchingService({
+    liveTrailRepo,
+    matcher: services.mapMatcher,
+    liveTrailDeltaPublisher: services.liveTrailDeltaPublisher,
+    policy: {
+      ...config.liveTrail.matcher,
+      gapThresholdSeconds: config.journeyGeometry.gapThresholdSeconds,
+      stayRadiusMeters: config.journeyGeometry.stayRadiusMeters,
+    },
+    logger,
+  });
   const deps = {
     ...baseDeps,
     liveTrailProjection: services.liveTrailProjection,
     liveTrailDeltaPublisher: services.liveTrailDeltaPublisher,
+    liveTrailMatchingService: services.liveTrailMatchingService,
   };
 
   const useCases = {

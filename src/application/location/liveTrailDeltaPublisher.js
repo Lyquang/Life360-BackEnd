@@ -22,7 +22,7 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
       fromSeq: points[0].seq,
       toSeq: points.at(-1).seq,
       points,
-      matchedUpdates: [],
+      matchedUpdates: queue.matchedUpdates,
     };
   }
 
@@ -50,6 +50,7 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
       revision: result.revision,
       afterSeq,
       points: [],
+      matchedUpdates: [],
       timer: null,
     };
     pending.set(result.trailId, queue);
@@ -126,12 +127,67 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
     }
   }
 
+  function publishMatchedUpdates({ userId, trailId, revision, lastSeq, updates }) {
+    if (!updates?.length) return;
+    const queue = pending.get(trailId);
+    if (queue && queue.revision === revision) {
+      const previousUpdates = queue.matchedUpdates;
+      const combined = [...queue.matchedUpdates, ...updates];
+      queue.matchedUpdates = combined;
+      if (Buffer.byteLength(JSON.stringify(payloadFor(queue))) <= policy.deltaMaxBytes) return;
+      queue.matchedUpdates = previousUpdates;
+      flush(trailId);
+    }
+
+    let chunk = [];
+    let needsReset = false;
+    const emitChunk = () => {
+      if (!chunk.length) return;
+      realtime.emitToLiveTrail(trailId, 'journey:trail_delta', {
+        userId: String(userId),
+        trailId,
+        revision,
+        afterSeq: lastSeq,
+        fromSeq: Math.min(...chunk.map((update) => update.fromSeq)),
+        toSeq: Math.max(...chunk.map((update) => update.toSeq)),
+        points: [],
+        matchedUpdates: chunk,
+      });
+      chunk = [];
+    };
+
+    for (const update of updates) {
+      const candidate = [...chunk, update];
+      const payload = {
+        userId: String(userId), trailId, revision, afterSeq: lastSeq,
+        fromSeq: Math.min(...candidate.map((item) => item.fromSeq)),
+        toSeq: Math.max(...candidate.map((item) => item.toSeq)),
+        points: [], matchedUpdates: candidate,
+      };
+      if (Buffer.byteLength(JSON.stringify(payload)) <= policy.deltaMaxBytes) {
+        chunk = candidate;
+        continue;
+      }
+      emitChunk();
+      const single = { ...payload, fromSeq: update.fromSeq, toSeq: update.toSeq, matchedUpdates: [update] };
+      if (Buffer.byteLength(JSON.stringify(single)) <= policy.deltaMaxBytes) chunk = [update];
+      else needsReset = true;
+    }
+    emitChunk();
+    if (needsReset) {
+      logger.warn('Oversized live trail match update omitted from Socket.IO; clients must reload REST.');
+      realtime.emitToLiveTrail(trailId, 'journey:trail_reset', {
+        userId: String(userId), trailId, revision,
+      });
+    }
+  }
+
   function close() {
     for (const queue of pending.values()) clearTimer(queue);
     pending.clear();
   }
 
-  return { publishRealtime, publishBatchReset, flush, close };
+  return { publishRealtime, publishBatchReset, publishMatchedUpdates, flush, close };
 }
 
 module.exports = { createLiveTrailDeltaPublisher };

@@ -1,4 +1,4 @@
-const { LiveTrail, LiveTrailPoint } = require('../database/models/LiveTrail');
+const { LiveTrail, LiveTrailPoint, LiveTrailMatch } = require('../database/models/LiveTrail');
 
 function existingIdentityFilter(trailId, points) {
   const identities = points.flatMap((point) => [
@@ -113,5 +113,55 @@ module.exports = {
       .sort({ recordedAt: 1, seq: 1 })
       .select('seq location recordedAt')
       .lean();
+  },
+
+  async loadMatchingSnapshot(trailId) {
+    const [trail, points] = await Promise.all([
+      LiveTrail.findById(trailId).lean(),
+      LiveTrailPoint.find({ trailId })
+        .sort({ recordedAt: 1, seq: 1 })
+        .select('seq location recordedAt accuracy motionState expiresAt')
+        .lean(),
+    ]);
+    if (!trail) return null;
+    return {
+      trail,
+      points: points.map((point) => ({
+        seq: point.seq,
+        latitude: point.location.coordinates[1],
+        longitude: point.location.coordinates[0],
+        recordedAt: point.recordedAt,
+        expiresAt: point.expiresAt,
+        ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
+        ...(point.motionState !== undefined && { motionState: point.motionState }),
+      })),
+    };
+  },
+
+  findMatchBySourceRevision(sourceRevision) {
+    return LiveTrailMatch.findOne({ sourceRevision }).lean();
+  },
+
+  async saveMatch(match) {
+    const { _id, __v, createdAt, updatedAt, ...writable } = match;
+    const existing = await LiveTrailMatch.findOne({
+      trailId: writable.trailId,
+      revision: writable.revision,
+      segmentId: writable.segmentId,
+    }).lean();
+    if (existing?.status === 'final') return existing;
+    return LiveTrailMatch.findOneAndUpdate(
+      { trailId: writable.trailId, revision: writable.revision, segmentId: writable.segmentId },
+      { $set: writable },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).lean();
+  },
+
+  deleteMatchesOutsideRevision(trailId, revision) {
+    return LiveTrailMatch.deleteMany({ trailId, revision: { $ne: revision } });
+  },
+
+  listMatches(trailId, revision) {
+    return LiveTrailMatch.find({ trailId, revision }).sort({ fromSeq: 1 }).lean();
   },
 };

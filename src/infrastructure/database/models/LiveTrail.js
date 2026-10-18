@@ -57,7 +57,37 @@ liveTrailPointSchema.index({ trailId: 1, dedupeKey: 1 }, { unique: true });
 liveTrailPointSchema.index({ trailId: 1, recordedAt: 1, seq: 1 });
 liveTrailPointSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
+const liveTrailMatchSchema = new mongoose.Schema(
+  {
+    trailId: { type: mongoose.Schema.Types.ObjectId, ref: 'LiveTrail', required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    revision: { type: Number, required: true, min: 1 },
+    segmentId: { type: String, required: true },
+    fromSeq: { type: Number, required: true, min: 1 },
+    toSeq: { type: Number, required: true, min: 1 },
+    status: { type: String, enum: ['provisional', 'final', 'unmatched'], required: true },
+    geometry: {
+      encoding: { type: String, enum: ['polyline6'] },
+      data: { type: String },
+    },
+    matcher: {
+      provider: { type: String, required: true },
+      version: { type: String, required: true },
+    },
+    confidence: { type: Number, min: 0, max: 1 },
+    sourceRevision: { type: String, required: true },
+    expiresAt: { type: Date, required: true },
+  },
+  { timestamps: true }
+);
+
+liveTrailMatchSchema.index({ trailId: 1, revision: 1, segmentId: 1 }, { unique: true });
+liveTrailMatchSchema.index({ trailId: 1, revision: 1, fromSeq: 1 });
+liveTrailMatchSchema.index({ sourceRevision: 1 });
+liveTrailMatchSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 const LiveTrail = mongoose.model('LiveTrail', liveTrailSchema);
 const LiveTrailPoint = mongoose.model('LiveTrailPoint', liveTrailPointSchema);
+const LiveTrailMatch = mongoose.model('LiveTrailMatch', liveTrailMatchSchema);
 
-module.exports = { LiveTrail, LiveTrailPoint };
+module.exports = { LiveTrail, LiveTrailPoint, LiveTrailMatch };

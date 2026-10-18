@@ -473,7 +473,27 @@ Mobile removes only IDs returned in `accepted` or `duplicates`.
 | `LIVE_TRAIL_DELTA_MAX_BYTES`              | `65536` | Maximum serialized delta target in bytes                           |
 | `LIVE_TRAIL_DELTA_FLUSH_MS`                | `2000`  | Maximum batching delay before emitting a delta                     |
 
-T1 persistence, REST snapshot/catch-up and T2 Socket watch/delta are implemented. Offline batches and late arrivals emit `journey:trail_reset`; they are never replayed as current `location_update`. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when trail persistence or publication fails.
+T1 persistence, REST snapshot/catch-up, T2 Socket watch/delta and the T3 provider-neutral matcher framework are implemented. Offline batches and late arrivals emit `journey:trail_reset`; they are never replayed as current `location_update`. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when trail persistence, matching or publication fails.
+
+Matcher settings remain gated independently:
+
+| Variable                                      | Default | Description                                      |
+| --------------------------------------------- | ------- | ------------------------------------------------ |
+| `LIVE_TRAIL_MATCHER_ENABLED`                  | `false` | Enables asynchronous match jobs                  |
+| `LIVE_TRAIL_MATCHER_PROVIDER`                 | `noop`  | `noop`; `fake` is accepted only outside production |
+| `LIVE_TRAIL_MATCH_WINDOW_SIZE`                | `5`     | Target points per overlapping window             |
+| `LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS`        | `30`    | Maximum wait before processing a partial trigger |
+| `LIVE_TRAIL_MATCH_OVERLAP_POINTS`             | `2`     | Context shared by adjacent windows               |
+| `LIVE_TRAIL_MATCH_FUTURE_CONTEXT_POINTS`      | `2`     | Tail context required before finalization        |
+| `LIVE_TRAIL_MATCH_MIN_POINTS`                 | `3`     | Minimum eligible fixes per matcher call          |
+| `LIVE_TRAIL_MATCH_MAX_ACCURACY_METERS`        | `50`    | Splits matching runs at lower-quality fixes      |
+| `LIVE_TRAIL_MATCH_QUEUE_MAX_TRAILS`           | `100`   | Bounded coalesced in-process queue                |
+| `LIVE_TRAIL_MATCH_CONCURRENCY`                | `1`     | Concurrent matcher jobs                          |
+| `LIVE_TRAIL_MATCH_TIMEOUT_MS`                 | `1000`  | Hard adapter timeout                              |
+| `LIVE_TRAIL_MATCH_CIRCUIT_FAILURES`           | `3`     | Consecutive failures before opening circuit      |
+| `LIVE_TRAIL_MATCH_CIRCUIT_COOLDOWN_SECONDS`   | `30`    | Circuit-open cooldown                             |
+
+No real road provider is configured in T3. `NoopMatcher` preserves raw GPS; `FakeMatcher` creates deterministic Polyline6 only for automated tests. T4/OSRM remains deferred.
 
 ### Redis (optional)
 

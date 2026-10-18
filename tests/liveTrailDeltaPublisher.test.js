@@ -28,7 +28,7 @@ function setup(policy = {}) {
       emitToLiveTrail: (trailId, event, payload) => emitted.push({ trailId, event, payload }),
     },
     policy: { deltaMaxPoints: 2, deltaMaxBytes: 64 * 1024, deltaFlushMs: 20, ...policy },
-    logger: { error() {} },
+    logger: { warn() {}, error() {} },
   });
   return { publisher, emitted };
 }
@@ -68,6 +68,32 @@ describe('live trail delta publisher', () => {
       'journey:trail_reset',
       'journey:trail_reset',
     ]);
+    publisher.close();
+  });
+
+  it('merges bounded match updates and resets instead of emitting an oversized geometry', async () => {
+    const { publisher, emitted } = setup({ deltaMaxPoints: 50, deltaMaxBytes: 700, deltaFlushMs: 30 });
+    publisher.publishRealtime({ userId: 'user-1', projection: { results: [result()] } });
+    publisher.publishMatchedUpdates({
+      userId: 'user-1', trailId: 'trail-1', revision: 1, lastSeq: 13,
+      updates: [{
+        segmentId: 'small', fromSeq: 11, toSeq: 13, status: 'provisional',
+        matcher: { provider: 'fake', version: 'fake-v1' }, sourceRevision: 'source-small',
+      }],
+    });
+    await sleep(50);
+    assert.equal(emitted[0].event, 'journey:trail_delta');
+    assert.equal(emitted[0].payload.matchedUpdates.length, 1);
+
+    publisher.publishMatchedUpdates({
+      userId: 'user-1', trailId: 'trail-1', revision: 1, lastSeq: 13,
+      updates: [{
+        segmentId: 'large', fromSeq: 11, toSeq: 13, status: 'provisional',
+        geometry: { encoding: 'polyline6', data: 'x'.repeat(1000) },
+        matcher: { provider: 'fake', version: 'fake-v1' }, sourceRevision: 'source-large',
+      }],
+    });
+    assert.equal(emitted.at(-1).event, 'journey:trail_reset');
     publisher.close();
   });
 });
