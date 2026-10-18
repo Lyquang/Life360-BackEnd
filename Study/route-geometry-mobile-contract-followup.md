@@ -1,10 +1,12 @@
 # Route Geometry Mobile Contract Follow-up - B6 Plan
 
+**Trạng thái:** B6a và B6b đã hoàn tất; B6c-B6d chưa triển khai.
+
 ## 1. Mục tiêu
 
 Khép kín các điểm chưa rõ giữa journey/history backend và iOS sau B2-B5 mà không làm vỡ client đang dùng legacy mode hoặc `detail=geometry` hiện tại.
 
-Đây là tài liệu plan-first. Chưa có API, schema hay thuật toán production nào được thay đổi trong B6.
+Tài liệu bắt đầu theo quy trình plan-first. Các mục B6a-B6b bên dưới hiện đã được triển khai và kiểm thử; phần còn lại vẫn là kế hoạch.
 
 ## 2. Hiện trạng đã kiểm chứng
 
@@ -189,6 +191,8 @@ Test:
 
 ### B6b - Hybrid gap invariant và stay quality
 
+**Trạng thái:** Hoàn tất ngày 2026-10-18.
+
 Tầng domain/application:
 
 - thêm validator thuần cho gap index sau thinning;
@@ -207,6 +211,13 @@ Test:
 - legacy mode vẫn trả stay/summary cũ;
 - golden test xác nhận field cũ trong geometry mode không đổi ý nghĩa;
 - malformed internal gap bị loại an toàn, không crash.
+
+Kết quả xác minh:
+
+- toàn bộ test suite: 131 pass, 0 fail;
+- lint/syntax check: pass;
+- smoke test 50.000 điểm hoàn tất trong ngân sách 5 giây;
+- contract legacy chỉ được bảo toàn bằng golden shape tests, các field quality mới chỉ xuất hiện trong geometry mode.
 
 ### B6c - Payload negotiation
 

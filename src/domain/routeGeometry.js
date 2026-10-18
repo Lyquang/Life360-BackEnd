@@ -71,6 +71,20 @@ function analyzeRouteGaps(points, gapThresholdSeconds) {
   return { gaps, maxGapSeconds, observedDurationSeconds };
 }
 
+function validRouteGaps(gaps, points) {
+  return gaps.filter((gap) => {
+    if (!Number.isInteger(gap.fromIndex) || !Number.isInteger(gap.toIndex)) return false;
+    if (gap.fromIndex < 0 || gap.fromIndex >= gap.toIndex || gap.toIndex >= points.length) return false;
+    if (!Number.isFinite(gap.seconds) || gap.seconds < 0) return false;
+    if (!Number.isFinite(gap.meters) || gap.meters < 0) return false;
+    try {
+      return recordedAtMs(points[gap.fromIndex]) < recordedAtMs(points[gap.toIndex]);
+    } catch {
+      return false;
+    }
+  });
+}
+
 function buildRouteLinks(points) {
   const links = [];
   for (let index = 1; index < points.length; index++) {
@@ -195,4 +209,5 @@ module.exports = {
   simplifyRoute,
   sortAndDedupeHistoryPoints,
   totalDistanceMeters,
+  validRouteGaps,
 };

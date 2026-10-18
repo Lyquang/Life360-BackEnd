@@ -6,6 +6,7 @@ const {
   simplifyRoute,
   sortAndDedupeHistoryPoints,
   totalDistanceMeters,
+  validRouteGaps,
 } = require('../src/domain/routeGeometry');
 
 const BASE_TIME = Date.UTC(2026, 0, 1);
@@ -109,5 +110,20 @@ describe('route geometry domain', () => {
     );
     assert.equal(totalDistanceMeters([only]), 0);
     assert.deepEqual(buildRouteLinks([only]), []);
+  });
+
+  it('drops malformed gap indices and keeps valid boundaries', () => {
+    const points = [point('a', 0, 0, 0), point('b', 20, 0, 20)];
+    const valid = { fromIndex: 0, toIndex: 1, seconds: 20, meters: 20 };
+    assert.deepEqual(
+      validRouteGaps([
+        valid,
+        { ...valid, fromIndex: -1 },
+        { ...valid, fromIndex: 1, toIndex: 1 },
+        { ...valid, toIndex: 2 },
+        { ...valid, seconds: Number.NaN },
+      ], points),
+      [valid]
+    );
   });
 });

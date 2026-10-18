@@ -5,6 +5,7 @@ const {
   simplifyRoute,
   sortAndDedupeHistoryPoints,
   totalDistanceMeters,
+  validRouteGaps,
 } = require('./routeGeometry');
 
 const STAY_RADIUS_METERS = 80;
@@ -26,32 +27,67 @@ function formatJourneyDuration(minutes) {
  * STAY_RADIUS_METERS of its first point lasting at least STAY_MIN_DURATION_MS.
  * @param {Array<{latitude:number, longitude:number, timestamp:Date}>} points sorted by time
  */
-function detectStayPoints(points) {
+function intervalSeconds(from, to) {
+  return Math.max(0, (to.timestamp - from.timestamp) / 1000);
+}
+
+function stayObservation(windowPoints, gapThresholdSeconds) {
+  let observedStaySeconds = 0;
+  let unobservedSeconds = 0;
+  let maxGapSeconds = 0;
+  for (let index = 1; index < windowPoints.length; index++) {
+    const seconds = intervalSeconds(windowPoints[index - 1], windowPoints[index]);
+    maxGapSeconds = Math.max(maxGapSeconds, seconds);
+    if (seconds > gapThresholdSeconds) unobservedSeconds += seconds;
+    else observedStaySeconds += seconds;
+  }
+  return { observedStaySeconds, unobservedSeconds, maxGapSeconds };
+}
+
+function isFarDataGap(previous, current, options) {
+  if (!options.geometry) return false;
+  if (intervalSeconds(previous, current) <= (options.gapThresholdSeconds ?? 180)) return false;
+  return haversineDistance(
+    previous.latitude,
+    previous.longitude,
+    current.latitude,
+    current.longitude
+  ) > (options.stayRadiusMeters ?? STAY_RADIUS_METERS);
+}
+
+function detectStayPoints(points, options = {}) {
   const stayPoints = [];
   const usedIndices = new Set();
   const n = points.length;
+  const stayRadiusMeters = options.geometry
+    ? options.stayRadiusMeters ?? STAY_RADIUS_METERS
+    : STAY_RADIUS_METERS;
+  const stayMinDurationMs = options.geometry
+    ? (options.minStayMinutes ?? STAY_MIN_DURATION_MS / 60000) * 60000
+    : STAY_MIN_DURATION_MS;
 
   let i = 0;
   while (i < n) {
     let j = i + 1;
     while (j < n) {
+      if (isFarDataGap(points[j - 1], points[j], options)) break;
       const dist = haversineDistance(
         points[i].latitude, points[i].longitude,
         points[j].latitude, points[j].longitude
       );
-      if (dist > STAY_RADIUS_METERS) break;
+      if (dist > stayRadiusMeters) break;
       j++;
     }
 
     const windowPoints = points.slice(i, j);
     const windowDuration = points[j - 1].timestamp - points[i].timestamp;
 
-    if (windowDuration >= STAY_MIN_DURATION_MS && windowPoints.length >= 2) {
+    if (windowDuration >= stayMinDurationMs && windowPoints.length >= 2) {
       const avgLat = windowPoints.reduce((s, p) => s + p.latitude, 0) / windowPoints.length;
       const avgLng = windowPoints.reduce((s, p) => s + p.longitude, 0) / windowPoints.length;
       const durationMinutes = Math.round(windowDuration / 60000);
 
-      stayPoints.push({
+      const stayPoint = {
         type: 'stay',
         latitude: avgLat,
         longitude: avgLng,
@@ -62,7 +98,21 @@ function detectStayPoints(points) {
         pointCount: windowPoints.length,
         _startIdx: i,
         _endIdx: j - 1,
-      });
+      };
+      if (options.geometry) {
+        const observation = stayObservation(
+          windowPoints,
+          options.gapThresholdSeconds ?? 180
+        );
+        Object.assign(stayPoint, {
+          segmentId: stableSegmentId(windowPoints[0]),
+          confidence: observation.unobservedSeconds > 0 ? 'inferred' : 'observed',
+          containsDataGap: observation.unobservedSeconds > 0,
+          maxGapSeconds: observation.maxGapSeconds,
+          _observedStaySeconds: observation.observedStaySeconds,
+        });
+      }
+      stayPoints.push(stayPoint);
 
       for (let k = i; k < j; k++) usedIndices.add(k);
       i = j;
@@ -79,9 +129,21 @@ function stableSegmentId(first) {
   return `v1_${createHash('sha256').update(String(identity)).digest('base64url').slice(0, 22)}`;
 }
 
+function hybridMovingGaps(points, gapThresholdSeconds, stayRadiusMeters) {
+  const temporal = analyzeRouteGaps(points, gapThresholdSeconds);
+  return {
+    ...temporal,
+    gaps: temporal.gaps.filter((gap) => gap.meters > stayRadiusMeters),
+  };
+}
+
 function enrichedGeometry(segPoints, options) {
   const gapThresholdSeconds = options.gapThresholdSeconds ?? 180;
-  const rawGaps = analyzeRouteGaps(segPoints, gapThresholdSeconds);
+  const rawGaps = hybridMovingGaps(
+    segPoints,
+    gapThresholdSeconds,
+    options.stayRadiusMeters ?? STAY_RADIUS_METERS
+  );
   const simplified = simplifyRoute(segPoints, {
     toleranceMeters: options.simplifyToleranceMeters ?? 8,
     gapThresholdSeconds,
@@ -90,12 +152,21 @@ function enrichedGeometry(segPoints, options) {
   const returnedIndexByRawIndex = new Map(
     simplified.originalIndices.map((rawIndex, returnedIndex) => [rawIndex, returnedIndex])
   );
-  const gaps = rawGaps.gaps.map((gap) => ({
-    fromIndex: returnedIndexByRawIndex.get(gap.fromIndex),
-    toIndex: returnedIndexByRawIndex.get(gap.toIndex),
-    seconds: gap.seconds,
-    meters: gap.meters,
+  const points = simplified.points.map((point) => ({
+    latitude: point.latitude,
+    longitude: point.longitude,
+    recordedAt: point.timestamp.toISOString(),
+    ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
   }));
+  const gaps = validRouteGaps(
+    rawGaps.gaps.map((gap) => ({
+      fromIndex: returnedIndexByRawIndex.get(gap.fromIndex),
+      toIndex: returnedIndexByRawIndex.get(gap.toIndex),
+      seconds: gap.seconds,
+      meters: gap.meters,
+    })),
+    points
+  );
 
   return {
     segmentId: stableSegmentId(segPoints[0]),
@@ -103,12 +174,7 @@ function enrichedGeometry(segPoints, options) {
       latitude: point.latitude,
       longitude: point.longitude,
     })),
-    points: simplified.points.map((point) => ({
-      latitude: point.latitude,
-      longitude: point.longitude,
-      recordedAt: point.timestamp.toISOString(),
-      ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
-    })),
+    points,
     pointCount: simplified.points.length,
     originalPointCount: segPoints.length,
     distanceMeters: totalDistanceMeters(segPoints),
@@ -182,11 +248,15 @@ function buildDayJourney(points, options = {}) {
       },
       journey: [],
     };
-    if (options.geometry) empty.summary.observedMovingSeconds = 0;
+    if (options.geometry) {
+      empty.summary.observedMovingSeconds = 0;
+      empty.summary.observedStaySeconds = 0;
+      empty.summary.unobservedSeconds = 0;
+    }
     return empty;
   }
 
-  const { stayPoints, usedIndices } = detectStayPoints(preparedPoints);
+  const { stayPoints, usedIndices } = detectStayPoints(preparedPoints, options);
   const movingSegments = buildMovingSegments(preparedPoints, stayPoints, usedIndices, options);
 
   const journey = [
@@ -194,7 +264,7 @@ function buildDayJourney(points, options = {}) {
     ...movingSegments.map((ms) => ({ ...ms, _sortTime: new Date(ms.startTime) })),
   ]
     .sort((a, b) => a._sortTime - b._sortTime)
-    .map(({ _sortTime, _startIdx, _endIdx, ...rest }) => rest);
+    .map(({ _sortTime, _startIdx, _endIdx, _observedStaySeconds, ...rest }) => rest);
 
   const totalStayMinutes = stayPoints.reduce((s, sp) => s + sp.durationMinutes, 0);
   const totalMovingMinutes = movingSegments.reduce((s, ms) => s + ms.durationMinutes, 0);
@@ -217,6 +287,15 @@ function buildDayJourney(points, options = {}) {
       (sum, segment) => sum + segment.observedMovingSeconds,
       0
     );
+    result.summary.observedStaySeconds = stayPoints.reduce(
+      (sum, stay) => sum + (stay._observedStaySeconds ?? 0),
+      0
+    );
+    result.summary.unobservedSeconds = preparedPoints.reduce((sum, point, index) => {
+      if (index === 0) return sum;
+      const seconds = intervalSeconds(preparedPoints[index - 1], point);
+      return seconds > (options.gapThresholdSeconds ?? 180) ? sum + seconds : sum;
+    }, 0);
   }
   return result;
 }
