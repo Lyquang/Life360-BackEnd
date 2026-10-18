@@ -21,13 +21,24 @@ const historyQuery = z
     }
   });
 
-const journeyQuery = z.object({
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
-    .refine(isValidCalendarDate, 'Invalid calendar date.')
-    .optional(),
-  detail: z.enum(['geometry']).optional(),
-});
+const journeyQuery = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.')
+      .refine(isValidCalendarDate, 'Invalid calendar date.')
+      .optional(),
+    detail: z.enum(['geometry']).optional(),
+    includePath: z.enum(['true', 'false']).transform((value) => value === 'true').optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.includePath !== undefined && value.detail !== 'geometry') {
+      context.addIssue({
+        code: 'custom',
+        path: ['includePath'],
+        message: 'includePath is only supported when detail=geometry.',
+      });
+    }
+  });
 
 module.exports = { userIdParams, historyQuery, journeyQuery };

@@ -1,12 +1,12 @@
 # Route Geometry Mobile Contract Follow-up - B6 Plan
 
-**Trạng thái:** B6a và B6b đã hoàn tất; B6c-B6d chưa triển khai.
+**Trạng thái:** B6a-B6d đã hoàn tất.
 
 ## 1. Mục tiêu
 
 Khép kín các điểm chưa rõ giữa journey/history backend và iOS sau B2-B5 mà không làm vỡ client đang dùng legacy mode hoặc `detail=geometry` hiện tại.
 
-Tài liệu bắt đầu theo quy trình plan-first. Các mục B6a-B6b bên dưới hiện đã được triển khai và kiểm thử; phần còn lại vẫn là kế hoạch.
+Tài liệu bắt đầu theo quy trình plan-first. Toàn bộ B6a-B6d bên dưới hiện đã được triển khai và kiểm thử.
 
 ## 2. Hiện trạng đã kiểm chứng
 
@@ -221,6 +221,8 @@ Kết quả xác minh:
 
 ### B6c - Payload negotiation
 
+**Trạng thái:** Hoàn tất ngày 2026-10-18.
+
 Tầng DTO/presentation/domain:
 
 - validate `includePath` boolean và chỉ chấp nhận với `detail=geometry`;
@@ -236,7 +238,11 @@ Test:
 - invalid combinations trả `400` rõ ràng.
 - test serialization ghi nhận byte UTF-8 thật của cùng fixture với `includePath=true/false`; B6d đưa đúng hai con số đo được vào tài liệu.
 
+Kết quả fixture 100 điểm không bị thinning: `16,705` bytes với `path`, `11,515` bytes khi opt-out; giảm `5,190` bytes (`31.07%`).
+
 ### B6d - Mobile contract và rollout
+
+**Trạng thái:** Hoàn tất ngày 2026-10-18.
 
 - cập nhật `api-docs/JOURNEY_ROUTE_API_DOC.md`, Swift models và mapper rules;
 - cập nhật README, `.env.example`, `render.yaml`, `PROGRESS.md`;

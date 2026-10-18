@@ -14,12 +14,12 @@ Quyền truy cập tiếp tục dùng `assertCanView`: chủ tài khoản hoặc
 
 ### Dependency gate
 
-Map matching phụ thuộc B6b/B6c:
+Map matching phụ thuộc B6b/B6c, và hai prerequisite này đã hoàn tất ngày 2026-10-18:
 
 - B6b khóa semantics hybrid gap/stay và stable `segmentId` cho mọi segment.
 - B6c khóa `includePath` mà không thay đổi mảng `points` dùng làm index space.
 
-Do đó phải hoàn tất B6b/B6c trước khi wire map matching. Nếu không, cache key, `sourceRevision`, `fromPointIndex` và `toPointIndex` có thể mất ổn định.
+Point index space và hybrid gap/stay semantics hiện đã được khóa. Tuy vậy T4 vẫn hoãn theo M0; hoàn tất prerequisite không đồng nghĩa tự động bật provider map matching.
 
 ## 2. Hiện trạng đã kiểm chứng
 
@@ -240,7 +240,7 @@ sequenceDiagram
 
 ### M0 - Hoàn tất dependency
 
-Hoàn tất và test B6b/B6c; khóa stable moving point index space và geometry policy version.
+Đã hoàn tất và test B6b/B6c; stable moving point index space và geometry policy version đã được khóa.
 
 ### M1 - Contract/domain
 

@@ -36,7 +36,7 @@ Backend for a family safety and location-sharing application. It provides live m
 | Realtime location         | Socket.IO fixes with `recordedAt`, accuracy, motion state, feature-flagged dense history and monotonic last-known writes                                        |
 | Offline location recovery | Idempotent `POST /locations/batch`, partial validation and cross-channel fix deduplication without realtime rebroadcast                                         |
 | Safety                    | Emergency SOS broadcasts and stay alerts at configured duration milestones                                                                                       |
-| Journey history           | Opt-in timestamped route geometry, stable segment IDs, data gaps, distance/thinning and cursor-paginated raw ranges                                              |
+| Journey history           | Opt-in timestamped geometry, hybrid gap/stay quality, stable IDs, compact payload negotiation and cursor-paginated raw ranges                                   |
 | Realtime chat             | Group and direct conversations, text/image/voice messages, unread counts, read receipts and typing indicators                                                    |
 | Media storage             | Direct image and voice upload to Cloudflare R2 with short-lived pre-signed PUT URLs; the Node.js server does not proxy binary files                              |
 | Redis                     | Optional Upstash-compatible cache, token blacklist, session metadata, profile/member cache, media metadata and last-known location; no-op fallback when disabled |
@@ -293,7 +293,7 @@ Standard success and error shapes:
 | ------ | -------------------------- | --------------------------------------------------------------------------- |
 | `POST` | `/locations/batch`         | Idempotently sync multiple offline points; never broadcasts realtime events |
 | `GET`  | `/history/:userId`         | Today's points, or `from/to/limit/cursor` range pagination                  |
-| `GET`  | `/history/:userId/journey` | Daily stay/moving timeline; `detail=geometry` adds route and gap metadata   |
+| `GET`  | `/history/:userId/journey` | Daily timeline; `detail=geometry&includePath=false` returns compact route and gap metadata |
 
 ### System
 

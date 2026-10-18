@@ -170,10 +170,12 @@ function enrichedGeometry(segPoints, options) {
 
   return {
     segmentId: stableSegmentId(segPoints[0]),
-    path: simplified.points.map((point) => ({
-      latitude: point.latitude,
-      longitude: point.longitude,
-    })),
+    ...(options.includePath !== false && {
+      path: simplified.points.map((point) => ({
+        latitude: point.latitude,
+        longitude: point.longitude,
+      })),
+    }),
     points,
     pointCount: simplified.points.length,
     originalPointCount: segPoints.length,
@@ -199,7 +201,9 @@ function toMovingSegment(segPoints, options = {}) {
     endTime: last.timestamp.toISOString(),
     durationMinutes,
     durationFormatted: formatJourneyDuration(durationMinutes),
-    path: segPoints.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
+    ...((!options.geometry || options.includePath !== false) && {
+      path: segPoints.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
+    }),
   };
   if (options.geometry) Object.assign(segment, enrichedGeometry(segPoints, options));
   return segment;

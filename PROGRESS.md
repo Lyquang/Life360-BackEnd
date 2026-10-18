@@ -30,8 +30,8 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 | Done | Refresh project README | Reconciled implemented features, Google OAuth mobile setup, refresh rotation, Redis/R2, offline location sync, API routes, environment variables, tests, Docker and Render/GHCR delivery with the current codebase. |
 | Done | Route geometry B0-B1 | Documented the verified history/journey behavior and added pure, tested domain primitives for route distance, gaps, thinning, ordering, deduplication, and dense-history persistence decisions. |
 | Done | Route geometry B2-B5 | Added feature-flagged dense persistence, realtime/batch deduplication, opt-in journey geometry with gaps/thinning, cursor-paginated raw history, mobile contracts, deployment configuration, and interview notes. |
-| In Progress | Route geometry B6 mobile contract follow-up | B6a-B6b are complete: published geometry policy plus hybrid gap/stay classification, stable stay IDs, defensive gap filtering, and observed/unobserved quality summaries. B6c payload negotiation is next. |
-| Planned | Road map matching for journey geometry | Added `Study/ROAD_MAP_MATCHING_BACKEND.md` with provider evaluation, additive contract, privacy/cache design, phase plan and unresolved production decisions. Implementation is gated on B6b/B6c and provider approval. |
+| Done | Route geometry B6 mobile contract follow-up | Published geometry policy, hybrid gap/stay quality, stable stay IDs, defensive gap filtering, observed/unobserved summaries, and `includePath=false`; measured a 31.07% reduction on the documented 100-point fixture. |
+| Planned / Deferred | Road map matching for journey geometry | B6b/B6c prerequisites are complete, but M0 deliberately keeps T1-T3 unmatched and defers T4 until raw-trail evaluation; OSRM is the first POC if matching is later approved. |
 | Approved / Gated | Live trail B7-0 and map-matching M0 | T1-T3 use raw trails with Noop/Fake matcher behind default-off flags. Real rollout is blocked on privacy toggle and Circle-leave hooks; T4/OSRM POC is deferred until raw-trail evaluation. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
@@ -74,7 +74,7 @@ Deliver truthful, gap-aware journey geometry and sufficiently dense location his
 - Redis keys follow domain naming in `src/domain/cacheKeys.js`; application code depends on cache abstractions, not directly on `ioredis`.
 - Refresh session correctness lives in MongoDB transactions; Redis remains best-effort for cache and access-token blacklist. Refresh tokens are opaque and only SHA-256 hashes are persisted.
 - Offline location batches are idempotent by `(userId, pointId)`, accept partial validity, never broadcast or trigger stay alerts, and keep last-known MongoDB/Redis state monotonic by `recordedAt`.
-- Route geometry B2-B6b is wired; dense persistence remains rollout-gated and legacy reads stay backward compatible.
+- Route geometry B2-B6d is wired; dense persistence remains rollout-gated and legacy reads stay backward compatible.
 - Geometry B6b treats long same-region silence as an inferred stay and long far movement as a route gap; legacy journey output remains unchanged.
 
 ## Next Update Checklist

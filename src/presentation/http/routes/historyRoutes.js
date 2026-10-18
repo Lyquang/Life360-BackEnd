@@ -43,6 +43,10 @@ function createHistoryRoutes({ controller, authenticate }) {
    *         name: detail
    *         schema: { type: string, enum: [geometry] }
    *         description: Opt in to timestamped points, gaps, distance and thinning metadata
+   *       - in: query
+   *         name: includePath
+   *         schema: { type: boolean, default: true }
+   *         description: With detail=geometry, set false to omit duplicate path coordinates and use points only
    *     responses:
    *       200: { description: "{ date, userId, summary, journey }" }
    *       400: { $ref: '#/components/responses/ValidationError' }

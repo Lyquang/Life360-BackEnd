@@ -129,7 +129,7 @@ function createHistoryUseCases({
     };
   }
 
-  async function getDayJourney({ requesterId, userId, date, detail }) {
+  async function getDayJourney({ requesterId, userId, date, detail, includePath }) {
     await assertCanView(requesterId, userId);
     const { start, end } = localDayRange(date);
     const history = await locationHistoryRepo.listForUserBetween(userId, start, end);
@@ -138,6 +138,7 @@ function createHistoryUseCases({
       userId,
       ...buildDayJourney(history.map(toPoint), {
         geometry: detail === 'geometry',
+        includePath: includePath ?? true,
         ...journeyGeometryPolicy,
       }),
     };

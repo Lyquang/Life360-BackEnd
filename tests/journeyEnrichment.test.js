@@ -65,7 +65,63 @@ describe('journey geometry enrichment', () => {
     assert.equal(first.summary.observedStaySeconds, 0);
     assert.equal(first.summary.unobservedSeconds, 300);
     assert.ok(moving.distanceMeters > 0);
+    assert.equal(Array.isArray(moving.path), true);
     assert.ok(moving.points.every((entry) => entry.recordedAt && entry.accuracy === 5));
+  });
+
+  it('omits only the duplicate path when geometry includePath is false', () => {
+    const input = [point(0, 0), point(1, 30), point(2, 60), point(3, 90)];
+    const options = {
+      geometry: true,
+      gapThresholdSeconds: 180,
+      maxPointsPerSegment: 1000,
+      simplifyToleranceMeters: 0,
+    };
+    const full = buildDayJourney(input, options).journey[0];
+    const moving = buildDayJourney(input, { ...options, includePath: false }).journey[0];
+
+    assert.equal(moving.path, undefined);
+    assert.deepEqual(moving.points, full.points);
+    assert.equal(moving.pointCount, full.pointCount);
+    assert.equal(moving.originalPointCount, 4);
+  });
+
+  it('records the UTF-8 payload reduction for a deterministic 100-point fixture', () => {
+    const startedAt = Date.UTC(2026, 0, 1);
+    const input = Array.from({ length: 100 }, (_, index) => ({
+      id: `payload-${index}`,
+      latitude: 10.7 + (index % 2 ? 0.00025 : -0.00025),
+      longitude: 106.6 + index * 0.0001,
+      timestamp: new Date(startedAt + index * 15000),
+      accuracy: 5,
+    }));
+    const options = {
+      geometry: true,
+      gapThresholdSeconds: 180,
+      maxPointsPerSegment: 1000,
+      simplifyToleranceMeters: 1,
+    };
+    const response = (includePath) => ({
+      success: true,
+      date: '2026-01-01',
+      userId: '66f123456789abcdef012345',
+      ...buildDayJourney(input, { ...options, includePath }),
+      timeZone: 'Asia/Ho_Chi_Minh',
+      geometryPolicy: {
+        version: 2,
+        gapThresholdSeconds: 180,
+        gapIndexSpace: 'points',
+        toBoundary: 'inclusive',
+        stayRadiusMeters: 80,
+        minStayMinutes: 5,
+      },
+    });
+
+    const fullBytes = Buffer.byteLength(JSON.stringify(response(true)), 'utf8');
+    const compactBytes = Buffer.byteLength(JSON.stringify(response(false)), 'utf8');
+    assert.equal(fullBytes, 16705);
+    assert.equal(compactBytes, 11515);
+    assert.equal(fullBytes - compactBytes, 5190);
   });
 
   it('keeps same-place silence as one inferred stay instead of a route gap', () => {
@@ -228,11 +284,20 @@ describe('GET journey geometry integration', { timeout: 120000 }, () => {
   it('returns additive geometry to circle members and keeps authorization unchanged', async () => {
     const legacy = await t.api('GET', `/api/v1/history/${member.id}/journey`, { token: owner.token });
     const enriched = await t.api('GET', `/api/v1/history/${member.id}/journey?detail=geometry`, { token: owner.token });
+    const compact = await t.api(
+      'GET',
+      `/api/v1/history/${member.id}/journey?detail=geometry&includePath=false`,
+      { token: owner.token }
+    );
     assert.equal(legacy.status, 200);
     assert.equal(legacy.body.journey[0].points, undefined);
     assert.equal(enriched.status, 200);
+    assert.equal(Array.isArray(enriched.body.journey[0].path), true);
     assert.equal(enriched.body.journey[0].points.length, 2);
     assert.equal(enriched.body.journey[0].pointCount, 2);
+    assert.equal(compact.status, 200);
+    assert.equal(compact.body.journey[0].path, undefined);
+    assert.deepEqual(compact.body.journey[0].points, enriched.body.journey[0].points);
     assert.equal(enriched.body.timeZone, 'Asia/Ho_Chi_Minh');
     assert.deepEqual(enriched.body.geometryPolicy, {
       version: 2,
@@ -248,5 +313,23 @@ describe('GET journey geometry integration', { timeout: 120000 }, () => {
       (await t.api('GET', `/api/v1/history/${member.id}/journey?detail=geometry`, { token: outsider.token })).status,
       403
     );
+  });
+
+  it('rejects includePath outside geometry mode and non-boolean values', async () => {
+    const withoutGeometry = await t.api(
+      'GET',
+      `/api/v1/history/${member.id}/journey?includePath=false`,
+      { token: owner.token }
+    );
+    const malformed = await t.api(
+      'GET',
+      `/api/v1/history/${member.id}/journey?detail=geometry&includePath=no`,
+      { token: owner.token }
+    );
+
+    assert.equal(withoutGeometry.status, 400);
+    assert.equal(withoutGeometry.body.code, 'VALIDATION_ERROR');
+    assert.equal(malformed.status, 400);
+    assert.equal(malformed.body.code, 'VALIDATION_ERROR');
   });
 });

@@ -59,11 +59,11 @@ Hai task phải cung cấp application-level hook cho live trail, không đặt 
 
 ### 2.3. Journey B2-B6
 
-- B2-B5 và B6a-B6b đã có trong source.
+- B2-B5 và B6a-B6d đã có trong source.
 - Geometry mode trả `points`, `gaps`, stable moving `segmentId`, distance và thinning metadata.
 - B6a trả top-level `timeZone` và `geometryPolicy.version = 2`.
 - B6b đã thêm stable stay `segmentId`, `confidence`, `containsDataGap`, `maxGapSeconds`, `observedStaySeconds` và `unobservedSeconds` theo hybrid gap policy dùng chung.
-- **B6c chưa triển khai:** chưa có `includePath=false`; `path` vẫn luôn có.
+- B6c hỗ trợ `includePath=false`; mobile có thể dùng `points` làm source duy nhất và tránh payload tọa độ trùng.
 - Route gap trong geometry mode chỉ được công bố khi interval vượt ngưỡng và hai biên xa hơn stay radius; same-region silence được giữ thành inferred stay.
 
 Live trail không phụ thuộc journey builder để lưu point/seq, nhưng phải tái sử dụng semantics hybrid gap đã khóa trong B6b.
