@@ -32,7 +32,8 @@ Backend for a family safety and location-sharing application. It provides live m
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Authentication            | Email/password registration and login, Google ID Token login, JWT access tokens, opaque refresh tokens, device metadata, logout and password change              |
 | Refresh security          | Strict single-use refresh-token rotation, reuse detection, session-family revocation, maximum 10 active device families per user                                 |
-| Family circles            | Create circles, join with a six-digit invite code, list members, online status, notification intervals and favorite places                                       |
+| Family circles            | Create/join circles, transactional leave/admin removal, group-chat membership cleanup, online status, notification intervals and favorite places                 |
+| Location privacy          | Account-wide temporary/indefinite sharing pause, server-side write/read enforcement, immediate live-watch closure and explicit SOS override                     |
 | Realtime location         | Socket.IO fixes with `recordedAt`, accuracy, motion state, feature-flagged dense history and monotonic last-known writes                                        |
 | Offline location recovery | Idempotent `POST /locations/batch`, partial validation and cross-channel fix deduplication without realtime rebroadcast                                         |
 | Safety                    | Emergency SOS broadcasts and stay alerts at configured duration milestones                                                                                       |
@@ -265,11 +266,15 @@ Standard success and error shapes:
 | `GET`   | `/groups`                                | List the current user's circles                            |
 | `POST`  | `/groups/join`                           | Join using a six-digit invite code                         |
 | `GET`   | `/groups/:groupId/members`               | List members and status information                        |
+| `DELETE` | `/groups/:groupId/members/me`            | Leave a Circle and its group chat atomically               |
+| `DELETE` | `/groups/:groupId/members/:userId`       | Admin removes a Circle member                              |
 | `PATCH` | `/groups/:groupId/notification-interval` | Set digest interval; `0` disables it                       |
 | `GET`   | `/groups/:groupId/digests`               | Paginated digest history                                   |
 | `GET`   | `/groups/:groupId/digests/latest`        | Latest digest                                              |
 | `POST`  | `/groups/:groupId/places`                | Add a named safe/favorite place                            |
 | `GET`   | `/groups/:groupId/places`                | List circle places                                         |
+| `GET`   | `/privacy/location-sharing`              | Read effective account-wide sharing state                  |
+| `PATCH` | `/privacy/location-sharing`              | Pause for up to 7 days, pause indefinitely, or resume      |
 
 ### Conversations and chat
 
@@ -473,7 +478,7 @@ Mobile removes only IDs returned in `accepted` or `duplicates`.
 | `LIVE_TRAIL_DELTA_MAX_BYTES`              | `65536` | Maximum serialized delta target in bytes                           |
 | `LIVE_TRAIL_DELTA_FLUSH_MS`                | `2000`  | Maximum batching delay before emitting a delta                     |
 
-T1 persistence, REST snapshot/catch-up, T2 Socket watch/delta and the T3 provider-neutral matcher framework are implemented. Offline batches and late arrivals emit `journey:trail_reset`; they are never replayed as current `location_update`. Production enablement remains blocked on privacy/member-removal hooks, MongoDB plan/quota verification and load measurement. Existing location updates continue when trail persistence, matching or publication fails.
+T1 persistence, REST snapshot/catch-up, T2 Socket watch/delta and the T3 provider-neutral matcher framework are implemented. Offline batches and late arrivals emit `journey:trail_reset`; they are never replayed as current `location_update`. Privacy/member-removal hooks are implemented; production enablement remains blocked on MongoDB plan/quota verification and real load measurement. Existing location updates continue when trail persistence, matching or publication fails.
 
 Matcher settings remain gated independently:
 
@@ -585,7 +590,7 @@ Render production requires at least `MONGODB_URI` and a secure `JWT_SECRET`. Add
 
 For route-history rollout, deploy with `LOCATION_HISTORY_DENSE_ENABLED=false`, verify MongoDB indexes (especially `{ userId: 1, timestamp: 1, _id: 1 }`), smoke test legacy endpoints, then enable the flag and monitor storage/latency. Setting it back to `false` restores legacy write throttling without changing read contracts.
 
-For live-trail rollout, deploy first with both live-trail flags disabled. Before enabling it for real users, implement immediate privacy-toggle and Circle-leave watch closure, verify MongoDB transaction/replica-set support and quotas, then load-test the real database and Socket.IO path. Enable raw `LIVE_TRAIL_ENABLED` on staging first while keeping the matcher disabled. Roll back by setting `LIVE_TRAIL_ENABLED=false`; existing location/history flows remain fail-soft and independent.
+For live-trail rollout, deploy first with both live-trail flags disabled. Privacy pause and Circle-leave watch closure are implemented; remaining gates are MongoDB transaction/replica-set and quota verification plus real database/Socket.IO load tests. Enable raw `LIVE_TRAIL_ENABLED` on staging first while keeping the matcher disabled. Roll back by setting `LIVE_TRAIL_ENABLED=false`; existing location/history flows remain fail-soft and independent.
 
 Docker runtime:
 
@@ -607,6 +612,7 @@ The production image uses Node 20 Alpine, installs production dependencies only,
 | [`api-docs/LOCATION_UPDATE_API_DOC.md`](api-docs/LOCATION_UPDATE_API_DOC.md)               | Realtime and offline-batch location contract             |
 | [`api-docs/JOURNEY_ROUTE_API_DOC.md`](api-docs/JOURNEY_ROUTE_API_DOC.md)                   | iOS journey geometry and raw-history pagination contract |
 | [`api-docs/LIVE_TRAIL_API_DOC.md`](api-docs/LIVE_TRAIL_API_DOC.md)                         | Gated live-trail REST cursor, revision and gap contract   |
+| [`api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md`](api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md) | iOS privacy pause and Circle leave/removal contract |
 | [`Study/route-geometry-backend-interview-notes.md`](Study/route-geometry-backend-interview-notes.md) | Design trade-offs and interview preparation |
 | [`Study/CORE_FLOWS_BACKEND.md`](Study/CORE_FLOWS_BACKEND.md)                               | Backend sequence diagrams and architectural flows        |
 | [`Study/CORE_FLOWS_MOBILE.md`](Study/CORE_FLOWS_MOBILE.md)                                 | iOS Swift/SwiftUI integration flows                      |

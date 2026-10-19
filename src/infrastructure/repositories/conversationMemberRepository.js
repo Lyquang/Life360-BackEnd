@@ -38,6 +38,10 @@ module.exports = {
     return ConversationMember.find({ conversationId: { $in: conversationIds } }).lean();
   },
 
+  remove(conversationId, userId, { session } = {}) {
+    return ConversationMember.deleteOne({ conversationId, userId }, { session });
+  },
+
   /**
    * lastReadMessageId = GREATEST(lastReadMessageId, messageId), atomically.
    * Returns the document as it was BEFORE the update (null if not a member).

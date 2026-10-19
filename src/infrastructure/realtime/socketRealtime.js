@@ -41,6 +41,14 @@ function createSocketRealtime(io) {
       io.in(rooms.user(userId)).socketsJoin(rooms.conversation(conversationId));
     },
 
+    unsubscribeUserFromGroup(userId, groupId) {
+      io.in(rooms.user(userId)).socketsLeave(rooms.group(groupId));
+    },
+
+    unsubscribeUserFromConversation(userId, conversationId) {
+      io.in(rooms.user(userId)).socketsLeave(rooms.conversation(conversationId));
+    },
+
     async countGroupSockets(groupId) {
       return (await io.in(rooms.group(groupId)).fetchSockets()).length;
     },

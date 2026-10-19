@@ -49,6 +49,12 @@ module.exports = {
     return Conversation.find({ groupId: { $in: groupIds } }).select('_id groupId').lean();
   },
 
+  findByGroupId(groupId, { session } = {}) {
+    const query = Conversation.findOne({ groupId }).select('_id groupId').lean();
+    if (session) query.session(session);
+    return query;
+  },
+
   updateMetadata(id, patch) {
     return Conversation.findByIdAndUpdate(id, { $set: patch }, { new: true, runValidators: true }).lean();
   },

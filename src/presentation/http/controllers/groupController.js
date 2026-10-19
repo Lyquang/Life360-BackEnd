@@ -24,6 +24,20 @@ function createGroupController({ groups, digests, places }) {
       res.json({ success: true, data });
     }),
 
+    leave: asyncHandler(async (req, res) => {
+      const data = await groups.leaveGroup({ userId: req.user._id, groupId: req.dto.params.groupId });
+      res.json({ success: true, message: 'You left the Circle.', data });
+    }),
+
+    removeMember: asyncHandler(async (req, res) => {
+      const data = await groups.removeMember({
+        userId: req.user._id,
+        groupId: req.dto.params.groupId,
+        memberUserId: req.dto.params.userId,
+      });
+      res.json({ success: true, message: 'Member removed from the Circle.', data });
+    }),
+
     updateNotificationInterval: asyncHandler(async (req, res) => {
       const { intervalMinutes } = req.dto.body;
       const data = await groups.updateNotificationInterval({

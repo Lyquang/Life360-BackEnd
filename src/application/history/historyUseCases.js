@@ -2,7 +2,6 @@ const { Errors } = require('../../domain/errors');
 const { buildDayJourney } = require('../../domain/journey');
 const { localDayRange, formatLocalDate } = require('../../domain/dates');
 const { buildLiveTrailGaps, localDateFor } = require('../../domain/liveTrail');
-const { sameId } = require('../shared/policies');
 
 function toPoint(entry) {
   return {
@@ -93,12 +92,10 @@ function createHistoryUseCases({
   historyTimeZone,
   liveTrailRepo,
   liveTrailPolicy,
+  locationAccessPolicy,
 }) {
   async function assertCanView(requesterId, targetUserId) {
-    if (sameId(requesterId, targetUserId)) return;
-    if (!(await groupRepo.usersShareGroup(requesterId, targetUserId))) {
-      throw Errors.forbidden('You can only view history of yourself or members of your groups.');
-    }
+    await locationAccessPolicy.assertCanViewLocation(requesterId, targetUserId);
   }
 
   async function getTodayHistory({ requesterId, userId }) {

@@ -1,5 +1,6 @@
 const { updateLocationPayload, sosPayload } = require('../../dto/location.schemas');
 const { formatIssues } = require('../../dto/common');
+const { AppError } = require('../../../domain/errors');
 
 function registerLocationGateway(socket, { location, logger = console }) {
   const user = socket.data.user;
@@ -19,6 +20,9 @@ function registerLocationGateway(socket, { location, logger = console }) {
       });
       if (parsed.data.batteryLevel !== undefined) user.batteryLevel = parsed.data.batteryLevel;
     } catch (error) {
+      if (error instanceof AppError) {
+        return socket.emit('error', { code: error.code, message: error.message });
+      }
       logger.error(`❌ Error updating location for ${user.name}:`, error.message);
       socket.emit('error', { message: 'Failed to update location' });
     }

@@ -1,13 +1,9 @@
 const { Errors } = require('../../domain/errors');
 const { localDateFor } = require('../../domain/liveTrail');
-const { sameId } = require('../shared/policies');
 
-function createLiveTrailWatchUseCases({ groupRepo, liveTrailRepo, liveTrailPolicy }) {
+function createLiveTrailWatchUseCases({ liveTrailRepo, liveTrailPolicy, locationAccessPolicy }) {
   async function assertCanView(requesterId, targetUserId) {
-    if (sameId(requesterId, targetUserId)) return;
-    if (!(await groupRepo.usersShareGroup(requesterId, targetUserId))) {
-      throw Errors.forbidden('You can only watch live trails of yourself or members of your groups.');
-    }
+    await locationAccessPolicy.assertCanViewLocation(requesterId, targetUserId);
   }
 
   function normalizeDate(date) {

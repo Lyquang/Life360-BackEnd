@@ -36,6 +36,20 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    locationSharing: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+      pausedUntil: {
+        type: Date,
+        default: null,
+      },
+      updatedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
     // ── Yêu cầu mới: lưu thời điểm online cuối + vị trí cuối ──
     // Dùng để hiển thị "online 30 phút trước" kể cả khi offline
     lastSeenAt: {

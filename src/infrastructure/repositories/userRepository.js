@@ -46,6 +46,14 @@ module.exports = {
     return User.updateOne({ _id: id }, { $set: { password: passwordHash } }, { session });
   },
 
+  setLocationSharing(id, locationSharing) {
+    return User.findByIdAndUpdate(
+      id,
+      { $set: { locationSharing } },
+      { new: true, runValidators: true }
+    );
+  },
+
   markOffline(id, at) {
     return User.updateOne({ _id: id }, { isOnline: false, lastSeenAt: at });
   },

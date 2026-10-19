@@ -2,7 +2,10 @@ const { registerLocationGateway } = require('./gateways/locationGateway');
 const { registerChatGateway } = require('./gateways/chatGateway');
 const { registerLiveTrailGateway } = require('./gateways/liveTrailGateway');
 
-function registerSocketServer(io, { auth, location, chat, liveTrailWatch, realtime, liveTrailPolicy, logger = console }) {
+function registerSocketServer(
+  io,
+  { auth, location, chat, liveTrailWatch, liveTrailAccessInvalidator, realtime, liveTrailPolicy, logger = console }
+) {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
@@ -28,6 +31,7 @@ function registerSocketServer(io, { auth, location, chat, liveTrailWatch, realti
     registerChatGateway(socket, { chat, logger });
     registerLiveTrailGateway(socket, {
       liveTrailWatch,
+      liveTrailAccessInvalidator,
       realtime,
       policy: liveTrailPolicy,
       logger,

@@ -1,6 +1,6 @@
 # Live Trail REST + Socket.IO API - Mobile Contract
 
-Trạng thái hiện tại: persistence, REST snapshot/catch-up và Socket.IO watch/delta đã có. Production giữ `LIVE_TRAIL_ENABLED=false` cho đến khi hoàn tất privacy/member-removal hooks và load gates.
+Trạng thái hiện tại: persistence, REST snapshot/catch-up, Socket.IO watch/delta và privacy/member-removal hooks đã có. Production giữ `LIVE_TRAIL_ENABLED=false` cho đến khi hoàn tất MongoDB/Socket.IO load gates.
 
 ## 1. Endpoint
 
@@ -319,9 +319,10 @@ Reason hiện có:
 | Reason | Ý nghĩa |
 | --- | --- |
 | `permission_revoked` | Lease kiểm tra thấy requester không còn chung Circle |
+| `sharing_paused` | Target đã tạm dừng chia sẻ vị trí toàn tài khoản |
 | `trail_expired` | Trail bị xóa/hết retention hoặc identity không còn khớp |
 
-Lease kiểm tra quyền mặc định mỗi 60 giây. Feature production vẫn bị khóa cho đến khi có hook đóng watch ngay khi user ẩn vị trí hoặc rời/bị xóa khỏi Circle.
+Privacy và Circle membership mutations đóng watch ngay; lease 60 giây vẫn là fallback nếu realtime hook lỗi.
 
 ## 11. Mobile recovery algorithm
 
@@ -335,7 +336,7 @@ Lease kiểm tra quyền mặc định mỗi 60 giây. Feature production vẫn 
 
 ## 12. Trạng thái rollout
 
-- Production phải giữ `LIVE_TRAIL_ENABLED=false` và `LIVE_TRAIL_MATCHER_ENABLED=false` cho đến khi có setting tạm ẩn vị trí và hook đóng watch ngay khi rời/bị xóa khỏi Circle.
+- Privacy pause và Circle leave/remove hooks đã có. Production vẫn giữ `LIVE_TRAIL_ENABLED=false` và `LIVE_TRAIL_MATCHER_ENABLED=false` cho đến khi MongoDB/Socket.IO load gates được xác nhận.
 - `LIVE_TRAIL_MATCHER_PROVIDER=fake` chỉ dành cho test/staging và bị từ chối trong `NODE_ENV=production`.
 - Khi feature được duyệt, bật raw live trail trên staging trước; matcher vẫn tắt để đánh giá đường GPS thật trên thiết bị.
 - Trước production phải xác nhận MongoDB deployment hỗ trợ transaction/replica set, index đã tạo, quota đủ và đo tải qua MongoDB + Socket.IO thật.

@@ -17,6 +17,11 @@ function createCachedGroupRepository({ groupRepo, cacheManager }) {
       await invalidateGroup(groupId);
       return result;
     },
+    async removeMember(groupId, userId, options) {
+      const result = await groupRepo.removeMember(groupId, userId, options);
+      await invalidateGroup(groupId);
+      return result;
+    },
     async findByIdWithMembers(id) {
       const key = circleMembersKey(id.toString());
       const cached = await cacheManager.get(key);

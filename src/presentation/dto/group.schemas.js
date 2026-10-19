@@ -3,6 +3,7 @@ const { z, objectId } = require('./common');
 const PLACE_CATEGORIES = ['restaurant', 'entertainment', 'cafe', 'shopping', 'other'];
 
 const groupIdParams = z.object({ groupId: objectId });
+const groupMemberParams = z.object({ groupId: objectId, userId: objectId });
 
 const createGroupBody = z.object({
   name: z.string().trim().min(2).max(50),
@@ -32,6 +33,7 @@ const addPlaceBody = z.object({
 
 module.exports = {
   groupIdParams,
+  groupMemberParams,
   createGroupBody,
   joinGroupBody,
   notificationIntervalBody,

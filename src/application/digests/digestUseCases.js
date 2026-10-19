@@ -1,7 +1,9 @@
 const { requireGroupMember } = require('../shared/policies');
 const { formatDuration, formatLastSeen } = require('../../domain/geo');
+const { isLocationSharingEnabled } = require('../../domain/locationSharing');
 
 function buildMemberStatus(member, now) {
+  const sharingEnabled = isLocationSharingEnabled(member.locationSharing, now);
   const lastLoc = member.lastKnownLocation;
   const lastSeenText = formatLastSeen(member, now);
   const durationMin = lastLoc?.durationMinutes || 0;
@@ -13,12 +15,14 @@ function buildMemberStatus(member, now) {
     isOnline: member.isOnline,
     lastSeenText,
     batteryLevel: member.batteryLevel,
-    latitude: lastLoc?.coordinates?.[1] ?? null,
-    longitude: lastLoc?.coordinates?.[0] ?? null,
-    locationUpdatedAt: lastLoc?.updatedAt || null,
-    durationMinutes: durationMin,
-    durationFormatted: durationMin > 0 ? formatDuration(durationMin) : null,
-    summary: durationText
+    latitude: sharingEnabled ? lastLoc?.coordinates?.[1] ?? null : null,
+    longitude: sharingEnabled ? lastLoc?.coordinates?.[0] ?? null : null,
+    locationUpdatedAt: sharingEnabled ? lastLoc?.updatedAt || null : null,
+    durationMinutes: sharingEnabled ? durationMin : 0,
+    durationFormatted: sharingEnabled && durationMin > 0 ? formatDuration(durationMin) : null,
+    summary: !sharingEnabled
+      ? `${member.name} đã tạm dừng chia sẻ vị trí`
+      : durationText
       ? `${member.name} ${durationText} và ${lastSeenText.toLowerCase()}`
       : `${member.name} ${lastSeenText.toLowerCase()}`,
   };

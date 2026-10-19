@@ -1,6 +1,6 @@
 const Group = require('../database/models/Group');
 
-const MEMBER_FIELDS = 'name email avatar isOnline batteryLevel';
+const MEMBER_FIELDS = 'name email avatar isOnline batteryLevel locationSharing';
 const ADMIN_FIELDS = 'name email avatar';
 
 module.exports = {
@@ -9,8 +9,10 @@ module.exports = {
     return group;
   },
 
-  findById(id) {
-    return Group.findById(id);
+  findById(id, { session } = {}) {
+    const query = Group.findById(id);
+    if (session) query.session(session);
+    return query;
   },
 
   findByIdWithAdmin(id) {
@@ -27,6 +29,14 @@ module.exports = {
 
   addMember(groupId, userId, { session } = {}) {
     return Group.updateOne({ _id: groupId }, { $addToSet: { members: userId } }, { session });
+  },
+
+  removeMember(groupId, userId, { session } = {}) {
+    return Group.updateOne(
+      { _id: groupId, members: userId },
+      { $pull: { members: userId } },
+      { session }
+    );
   },
 
   listByMember(userId) {
@@ -54,7 +64,7 @@ module.exports = {
   listWithDigestEnabled() {
     return Group.find({ notificationIntervalMinutes: { $gt: 0 } }).populate(
       'members',
-      'name isOnline lastSeenAt lastKnownLocation batteryLevel'
+      'name isOnline lastSeenAt lastKnownLocation batteryLevel locationSharing'
     );
   },
 

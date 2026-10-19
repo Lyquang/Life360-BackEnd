@@ -23,10 +23,11 @@ function createLocationUseCases({
   liveTrailProjection,
   liveTrailDeltaPublisher,
   liveTrailMatchingService,
+  locationAccessPolicy,
+  locationRuntimeState,
   logger = console,
 }) {
-  const lastSavedLocation = new Map();
-  const durationTracker = new Map();
+  const { lastSavedLocation, durationTracker } = locationRuntimeState;
   let ignoredRecordedAtCount = 0;
 
   function resolveRecordedAt(recordedAt, serverNow) {
@@ -116,6 +117,7 @@ function createLocationUseCases({
     pointId,
     motionState,
   }) {
+    await locationAccessPolicy.assertCanPublishLocation(userId);
     const now = Date.now();
     const serverAt = new Date(now);
     const at = resolveRecordedAt(recordedAt, now);
@@ -244,8 +246,7 @@ function createLocationUseCases({
 
     const at = new Date();
     await userRepo.markOffline(userId, at);
-    lastSavedLocation.delete(userId);
-    durationTracker.delete(userId);
+    locationRuntimeState.clearUser(userId);
 
     const groups = await groupRepo.listSummariesByMember(userId);
     for (const group of groups) {

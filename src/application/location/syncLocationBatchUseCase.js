@@ -9,9 +9,11 @@ function createSyncLocationBatchUseCase({
   liveTrailProjection,
   liveTrailDeltaPublisher,
   liveTrailMatchingService,
+  locationAccessPolicy,
   policy,
 }) {
   return async function syncLocationBatch({ userId, userName, fallbackBatteryLevel, points, rejected = [] }) {
+    await locationAccessPolicy.assertCanPublishLocation(userId);
     const now = Date.now();
     const eligible = [];
     const outcomeRejected = [...rejected];

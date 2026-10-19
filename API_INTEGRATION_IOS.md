@@ -578,6 +578,11 @@ Response `200`:
         "batteryLevel": 80,
         "isOnline": true,
         "lastSeenAt": null,
+        "locationSharing": {
+          "enabled": true,
+          "pausedUntil": null,
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
         "lastKnownLocation": {
           "type": "Point",
           "coordinates": [106.7009, 10.7769],
@@ -591,6 +596,18 @@ Response `200`:
 ```
 
 Common errors: `400`, `401`, `403`, `404`.
+
+### Leave Or Remove A Circle Member
+
+```http
+DELETE /groups/{groupId}/members/me
+DELETE /groups/{groupId}/members/{userId}  # admin only
+Auth: Yes
+```
+
+Circle membership and group-chat membership are removed atomically. The Circle admin cannot leave or remove themselves until ownership transfer/deletion is implemented. Connected devices immediately leave the Circle/chat rooms and receive `group:membership_ended`; remaining members receive `group:member_left`.
+
+See [`api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md`](api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md) for payloads, errors and Swift models.
 
 ### Update Digest Notification Interval
 
@@ -1420,6 +1437,20 @@ The server accepts at most 100 points, sorts them by `recordedAt`, and deduplica
 Remove local points only when their IDs are in `accepted` or `duplicates`. Validation failures appear in `rejected` without failing valid points in the same batch. Honor `Retry-After` on `429`; route `401` through the shared single-flight refresh flow.
 
 Batch sync never emits realtime events. After `session:ready`, upload buffered history through REST and send a newly measured current fix through socket `update_location`. Do not send the same buffered point through both paths. The complete contract and Swift DTOs are in `api-docs/LOCATION_UPDATE_API_DOC.md`.
+
+### Account-wide Location Privacy
+
+```http
+GET /privacy/location-sharing
+PATCH /privacy/location-sharing
+Auth: Yes
+```
+
+Pause indefinitely with `{ "enabled": false }`, pause for at most seven days with `{ "enabled": false, "pausedUntil": "<ISO-8601>" }`, and resume with `{ "enabled": true }`.
+
+While paused, backend rejects realtime and batch location writes with `LOCATION_SHARING_PAUSED`, blocks other Circle members from history/journey/live-trail reads, and immediately closes existing watches with `sharing_paused`. Explicit SOS remains available. Mobile must stop CoreLocation transmission and clear its offline location buffer when pause succeeds.
+
+Full contract: [`api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md`](api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md).
 
 ## 9. Socket.io Realtime Contract
 

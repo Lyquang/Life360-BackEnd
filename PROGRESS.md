@@ -32,12 +32,13 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 | Done | Route geometry B2-B5 | Added feature-flagged dense persistence, realtime/batch deduplication, opt-in journey geometry with gaps/thinning, cursor-paginated raw history, mobile contracts, deployment configuration, and interview notes. |
 | Done | Route geometry B6 mobile contract follow-up | Published geometry policy, hybrid gap/stay quality, stable stay IDs, defensive gap filtering, observed/unobserved summaries, and `includePath=false`; measured a 31.07% reduction on the documented 100-point fixture. |
 | Planned / Deferred | Road map matching for journey geometry | B6b/B6c prerequisites are complete, but M0 deliberately keeps T1-T3 unmatched and defers T4 until raw-trail evaluation; OSRM is the first POC if matching is later approved. |
-| Approved / Gated | Live trail B7-0 and map-matching M0 | T1-T3 use raw trails with Noop/Fake matcher behind default-off flags. Real rollout is blocked on privacy toggle and Circle-leave hooks; T4/OSRM POC is deferred until raw-trail evaluation. |
+| Approved / Gated | Live trail B7-0 and map-matching M0 | T1-T3 use raw trails with Noop/Fake matcher behind default-off flags. Privacy/Circle hooks are done; rollout still requires real MongoDB/Socket.IO load gates. T4/OSRM POC remains deferred. |
 | Done / Gated | Live trail B7 T1a persistence | Added transaction-backed trail metadata/points, monotonic insertion cursors, late revision, idempotent realtime/batch projection, TTL/accuracy policy and fail-soft tests. `LIVE_TRAIL_ENABLED` remains false; T1b is next. |
 | Done / Gated | Live trail B7 T1b REST read | Added authorized snapshot/catch-up pagination, revision conflict recovery, stable seq-boundary gaps and per-requester limiting. Feature remains disabled by default; T2 socket watch is next. |
-| Done / Gated | Live trail B7 T2 Socket watch/delta | Added authorized per-trail rooms, five-watch cap, per-socket limiter, 60-second permission lease, bounded cursor deltas, late/batch resets, stale-current suppression, cleanup and integration coverage. Feature remains disabled pending privacy/member-removal hooks and load gates. |
+| Done / Gated | Live trail B7 T2 Socket watch/delta | Added authorized per-trail rooms, five-watch cap, per-socket limiter, 60-second permission lease, bounded cursor deltas, late/batch resets, stale-current suppression, cleanup and integration coverage. Immediate privacy/member-removal hooks now supplement the lease. |
 | Done / Gated | Live trail B7 T3 matcher framework | Added the provider port, Noop/Fake adapters, gap/accuracy-safe overlapping windows, provisional/final lifecycle, revision-scoped durable matches, bounded queue, timeout/circuit fallback, REST/Socket match updates and tests. No real provider; matcher remains disabled. |
-| Done / Gated | Live trail B7 T5 docs and deployment readiness | Added complete Swagger/mobile contracts, rollout and rollback gates, Render/env documentation and a reproducible synthetic benchmark. Production remains blocked on privacy/Circle-leave hooks and real MongoDB/Socket.IO load tests. |
+| Done / Gated | Live trail B7 T5 docs and deployment readiness | Added complete Swagger/mobile contracts, rollout and rollback gates, Render/env documentation and a reproducible synthetic benchmark. Production remains blocked on real MongoDB/Socket.IO load tests. |
+| Done | Live trail privacy and Circle exit hooks | Added account-wide pause/resume, shared location access enforcement, SOS override, transactional leave/admin removal, room cleanup, immediate watch invalidation, Swagger/mobile docs and integration tests. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -64,6 +65,8 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - `Study/route-geometry-mobile-contract-followup.md`: B6 plan for timezone, gap semantics, stay quality, timestamp naming, and payload negotiation.
 - `Study/ROAD_MAP_MATCHING_BACKEND.md`: Provider assessment and implementation plan for gap-safe, cacheable road map matching.
 - `Study/live-trail-backend.md`: B7-0 verified architecture and execution plan for watch-based live journey trails.
+- `Study/LIVE_TRAIL_PRIVACY_AND_CIRCLE_EXIT.md`: Plan for temporary sharing pause, Circle leave/removal and immediate live-watch invalidation.
+- `api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md`: iOS contract for privacy state, Circle membership lifecycle and realtime closure events.
 - `Study/map-matching-options.md`: M0 provider, Apple Maps terms, infrastructure, privacy and cost decision gate.
 - `src/domain/routeGeometry.js`: Pure route ordering, distance, gap analysis, link construction, and gap-safe thinning.
 - `src/domain/historyPersistence.js`: Pure configurable decision policy for dense history persistence.
@@ -98,6 +101,8 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - B7 T2 verification on 2026-10-18: all 155 tests passed with `--test-concurrency=1`; lint and `git diff --check` passed.
 - B7 T3 verification on 2026-10-19: all 165 tests passed; matcher failure/timeout leaves raw trail available, and no real provider is enabled.
 - B7 T5 local smoke on 2026-10-19: 2,000 points produced 100 bounded deltas (max 2,899 bytes) in 22.47 ms; FakeMatcher persisted/published 600 windows in 9.03 ms at concurrency 4. These in-process numbers are not a production SLA.
+- Privacy/Circle targeted verification on 2026-10-19: 9 tests pass, including domain expiry, runtime reset, digest masking, immediate closure, shared-Circle preservation and transaction rollback.
+- Privacy/Circle final verification on 2026-10-19: full regression passes 174/174 tests across 48 suites; syntax lint and whitespace checks pass.
 
 ## Next Update Checklist
 

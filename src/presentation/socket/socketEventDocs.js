@@ -56,7 +56,9 @@ const socketEventDocs = {
     'chat:error': '{ event, success: false, status, code, message, errors? } — only when the client emitted without an ack',
     'journey:trail_delta': '{ userId, trailId, revision, afterSeq, fromSeq, toSeq, points[], matchedUpdates: LiveTrailMatch[] }',
     'journey:trail_reset': '{ userId, trailId, revision } — discard the old revision and reload the REST snapshot',
-    'journey:trail_closed': '{ userId, trailId, reason: "permission_revoked" | "trail_expired" }',
+    'journey:trail_closed': '{ userId, trailId, reason: "permission_revoked" | "sharing_paused" | "trail_expired" }',
+    'group:membership_ended': '{ groupId, userId, removedBy } (sent to removed user devices)',
+    'group:member_left': '{ groupId, userId, removedBy } (sent to remaining Circle members)',
     error: '{ message, errors? } — invalid location / SOS payloads',
   },
 };

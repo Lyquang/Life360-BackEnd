@@ -406,7 +406,7 @@ Kết quả triển khai:
 - Integration coverage xác nhận authorization, unwatch, five-watch cap, rate limit, cursor delta, late/batch reset và lease revocation.
 - Full regression suite sau T2: 155 test qua trên MongoDB in-memory replica set; lint và whitespace check qua.
 
-Hai rollout blocker vẫn giữ nguyên: chưa có setting ẩn vị trí và chưa có use case rời Circle/xóa thành viên để gọi hook đóng watch ngay. Lease chỉ là lớp phòng vệ tối đa 60 giây, không thay hai hook đó.
+Hai privacy blocker đã được đóng ngày 2026-10-19: account-wide pause và Circle leave/admin-remove đều gọi immediate watch invalidation; lease 60 giây vẫn là lớp fallback. Rollout còn bị khóa bởi MongoDB/Socket.IO load gates.
 
 ### T3 - Matcher port/fakes/windowing
 
@@ -443,7 +443,7 @@ Chỉ cân nhắc sau khi đánh giá raw trail trên dữ liệu thật. Nếu 
 
 1. Deploy code với `LIVE_TRAIL_ENABLED=false`, `LIVE_TRAIL_MATCHER_ENABLED=false`, provider `noop`.
 2. Xác nhận MongoDB là replica set hỗ trợ transaction, index trail/point/match đã build và retention/quota đáp ứng 7 ngày.
-3. Hoàn thành setting tạm ẩn vị trí và hook rời/bị xóa Circle để đóng watch ngay; đây là blocker bắt buộc cho user thật.
+3. Xác nhận regression của setting tạm ẩn vị trí và hook rời/bị xóa Circle; hai hook đã được hiện thực và là điều kiện bắt buộc phải giữ khi rollout.
 4. Chạy full regression, synthetic benchmark và staging load test qua MongoDB + Socket.IO thật; đo p95/p99, CPU, memory, transaction abort và event fan-out.
 5. Bật raw `LIVE_TRAIL_ENABLED=true` ở staging, giữ matcher tắt, đánh giá vệt từ dữ liệu thiết bị thật.
 6. Chỉ rollout production theo nhóm nhỏ sau khi đạt load/privacy gates. T4/OSRM cần approval riêng.

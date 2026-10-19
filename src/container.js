@@ -18,6 +18,7 @@ const { createTokenService } = require('./infrastructure/security/tokenService')
 const { createS3Storage } = require('./infrastructure/storage/s3Storage');
 const { createCloudflareR2StorageService } = require('./infrastructure/storage/CloudflareR2StorageService');
 const { createSocketRealtime } = require('./infrastructure/realtime/socketRealtime');
+const { createLiveTrailAccessInvalidator } = require('./infrastructure/realtime/liveTrailAccessInvalidator');
 const { createOAuthProviderFactory } = require('./infrastructure/oauth/oauthProviderFactory');
 const { createUnitOfWork } = require('./infrastructure/database/unitOfWork');
 const { createAuthUseCases } = require('./application/auth/authUseCases');
@@ -25,12 +26,15 @@ const { createGroupUseCases } = require('./application/groups/groupUseCases');
 const { createPlaceUseCases } = require('./application/places/placeUseCases');
 const { createHistoryUseCases } = require('./application/history/historyUseCases');
 const { createLiveTrailWatchUseCases } = require('./application/history/liveTrailWatchUseCases');
+const { createLocationAccessPolicy } = require('./application/privacy/locationAccessPolicy');
+const { createPrivacyUseCases } = require('./application/privacy/privacyUseCases');
 const { createDigestUseCases } = require('./application/digests/digestUseCases');
 const { createLocationUseCases } = require('./application/location/locationUseCases');
 const { createSyncLocationBatchUseCase } = require('./application/location/syncLocationBatchUseCase');
 const { createLiveTrailProjection } = require('./application/location/liveTrailProjection');
 const { createLiveTrailDeltaPublisher } = require('./application/location/liveTrailDeltaPublisher');
 const { createLiveTrailMatchingService } = require('./application/location/liveTrailMatchingService');
+const { createLocationRuntimeState } = require('./application/location/locationRuntimeState');
 const { createChatUseCases } = require('./application/chat/chatUseCases');
 const { createNoopMapMatcher } = require('./infrastructure/matching/NoopMapMatcher');
 const { createFakeMapMatcher } = require('./infrastructure/matching/FakeMapMatcher');
@@ -58,6 +62,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
   const services = {
     unitOfWork: createUnitOfWork({ supportsTransactions, logger }),
     realtime: createSocketRealtime(io),
+    liveTrailAccessInvalidator: createLiveTrailAccessInvalidator({ logger }),
     tokenService: createTokenService(config.jwt),
     passwordHasher,
     oauthProviderFactory: createOAuthProviderFactory({ config }),
@@ -68,6 +73,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
       : null,
     cacheManager,
     locationCacheTtlSeconds: config.redis.locationTtlSeconds,
+    locationRuntimeState: createLocationRuntimeState(),
     historyPersistencePolicy: config.locationHistory,
     journeyGeometryPolicy: config.journeyGeometry,
     historyTimeZone: config.timeZone,
@@ -80,6 +86,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     authMaxActiveSessions: config.authMaxActiveSessions,
     logger,
   };
+  services.locationAccessPolicy = createLocationAccessPolicy({ ...repos, ...services });
   const baseDeps = { ...repos, ...services };
   services.liveTrailProjection = createLiveTrailProjection({
     ...baseDeps,
@@ -117,6 +124,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     places: createPlaceUseCases(deps),
     history: createHistoryUseCases(deps),
     liveTrailWatch: createLiveTrailWatchUseCases(deps),
+    privacy: createPrivacyUseCases(deps),
     digests: createDigestUseCases(deps),
     location: createLocationUseCases(deps),
     chat: createChatUseCases(deps),

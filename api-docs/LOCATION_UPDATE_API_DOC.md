@@ -228,6 +228,7 @@ Không gửi `userId`. Backend luôn lấy user từ access token. Request body 
 | `400` | `VALIDATION_ERROR` | Sửa envelope; không retry nguyên trạng |
 | `400` | `BATCH_LIMIT_EXCEEDED` | Chia thành lô tối đa 100 điểm |
 | `401` | `UNAUTHORIZED` | Dùng refresh single-flight rồi retry một lần |
+| `403` | `LOCATION_SHARING_PAUSED` | Dừng gửi realtime/batch và giữ trạng thái privacy off; không retry cho đến khi user bật lại |
 | `413` | `PAYLOAD_TOO_LARGE` | Chia lô nhỏ hơn để body dưới 100 KB |
 | `429` | `RATE_LIMITED` | Giữ queue và chờ số giây trong `Retry-After` |
 | `500` | `INTERNAL_ERROR` | Giữ queue, retry với exponential backoff và jitter |
@@ -282,3 +283,5 @@ struct LocationBatchResult: Decodable, Sendable {
 ```
 
 Encoder phải dùng ISO-8601 cho `Date`. Khi server trả `429`, đọc header `Retry-After`; khi `401`, dùng chung refresh coordinator để tránh nhiều refresh chạy đồng thời.
+
+Khi account pause location sharing, backend không lưu realtime hoặc batch points. Mobile phải dừng location transmission và xóa offline buffer theo quyết định privacy; không gửi lại các point đã thu trong thời gian pause sau khi bật lại. Xem `api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md`.

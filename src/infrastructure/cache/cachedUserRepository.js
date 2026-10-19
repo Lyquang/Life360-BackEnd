@@ -45,6 +45,11 @@ function createCachedUserRepository({ userRepo, cacheManager }) {
       await invalidateUser(id);
       return result;
     },
+    async setLocationSharing(id, locationSharing) {
+      const user = await userRepo.setLocationSharing(id, locationSharing);
+      await invalidateUser(id);
+      return user;
+    },
     async markOffline(id, at) {
       const result = await userRepo.markOffline(id, at);
       await invalidateUser(id);

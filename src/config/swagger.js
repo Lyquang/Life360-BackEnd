@@ -211,6 +211,7 @@ function createSwaggerSpec({ publicUrl, port }) {
         { name: 'Places' },
         { name: 'History' },
         { name: 'Locations', description: 'Offline location history synchronization' },
+        { name: 'Privacy', description: 'Account-wide location sharing controls' },
         { name: 'Chat', description: 'Conversations, messages, read receipts, media upload' },
       ],
     },

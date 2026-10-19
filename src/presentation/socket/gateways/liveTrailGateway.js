@@ -13,7 +13,10 @@ function createSlidingWindowLimiter(max, windowMs) {
   };
 }
 
-function registerLiveTrailGateway(socket, { liveTrailWatch, realtime, policy, logger = console }) {
+function registerLiveTrailGateway(
+  socket,
+  { liveTrailWatch, liveTrailAccessInvalidator, realtime, policy, logger = console }
+) {
   const requesterId = socket.data.user.id;
   const watched = new Map();
   const isRateLimited = createSlidingWindowLimiter(policy.watchActionsPerMinute, 60 * 1000);
@@ -84,8 +87,14 @@ function registerLiveTrailGateway(socket, { liveTrailWatch, realtime, policy, lo
     }
   });
 
-  async function revalidateWatches() {
+  async function revalidateWatches(filter = {}) {
     for (const [key, watch] of [...watched]) {
+      if (filter.targetUserId && String(watch.userId) !== filter.targetUserId) continue;
+      if (
+        filter.memberUserId &&
+        requesterId !== filter.memberUserId &&
+        String(watch.userId) !== filter.memberUserId
+      ) continue;
       try {
         await liveTrailWatch.revalidate({ requesterId, ...watch });
       } catch (error) {
@@ -93,7 +102,11 @@ function registerLiveTrailGateway(socket, { liveTrailWatch, realtime, policy, lo
           logger.error('Live trail watch lease revalidation failed.', { errorName: error?.name || 'Error' });
           continue;
         }
-        const reason = error.status === 403 ? 'permission_revoked' : 'trail_expired';
+        const reason = error.code === 'LOCATION_SHARING_PAUSED'
+          ? 'sharing_paused'
+          : error.status === 403
+          ? 'permission_revoked'
+          : 'trail_expired';
         watched.delete(key);
         await socket.leave(realtime.rooms.liveTrail(watch.trailId));
         socket.emit('journey:trail_closed', {
@@ -111,9 +124,11 @@ function registerLiveTrailGateway(socket, { liveTrailWatch, realtime, policy, lo
     });
   }, policy.watchLeaseMs);
   leaseTimer.unref?.();
+  const unregisterInvalidator = liveTrailAccessInvalidator.register(socket.id, revalidateWatches);
 
   function cleanup() {
     clearInterval(leaseTimer);
+    unregisterInvalidator();
     watched.clear();
   }
   socket.once('disconnect', cleanup);

@@ -577,3 +577,31 @@ for (const group of groups) {
 **Action:** Toi dat SOS trong location gateway vi da co socket auth va group room. Backend validate payload, lay groups cua sender, emit `sos_alert` den tung group room va tra `sos_confirmed` cho sender.
 
 **Result:** SOS khong phu thuoc vao REST round-trip hay ghi DB, receiver dang online nhan ngay banner, sender biet da gui den bao nhieu group, va luong co the mo rong APNs/audit log sau nay.
+# Addendum: Location Privacy And Circle Membership Invalidation
+
+Location privacy is enforced by one application policy across realtime updates, offline batch sync, history, journey and live-trail watch authorization. Circle leave/removal updates `Group.members` and `ConversationMember` atomically before any realtime side effect.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Privacy/Group Controller
+    participant UC as Application Use Case
+    participant DB as MongoDB Transaction
+    participant Policy as LocationAccessPolicy
+    participant Registry as LiveTrailAccessInvalidator
+    participant Socket as Watcher Socket
+
+    Client->>API: Pause sharing or leave/remove Circle
+    API->>UC: Authenticated command
+    UC->>DB: Persist privacy or membership mutation
+    DB-->>UC: Commit
+    UC->>Registry: Revalidate affected target/member
+    Registry->>Policy: Reuse canonical authorization
+    Policy-->>Registry: LOCATION_SHARING_PAUSED or FORBIDDEN
+    Registry->>Socket: journey:trail_closed
+    Registry->>Socket: Leave trail/group/chat room
+    UC-->>Client: 200 committed result
+    Note over UC,Socket: Realtime failure never rolls back DB; 60-second lease is fallback
+```
+
+Important files: `src/application/privacy/locationAccessPolicy.js`, `src/application/privacy/privacyUseCases.js`, `src/application/groups/groupUseCases.js`, and `src/infrastructure/realtime/liveTrailAccessInvalidator.js`.

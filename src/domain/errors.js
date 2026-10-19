@@ -17,6 +17,8 @@ const Errors = {
   refreshTokenReused: () =>
     new AppError(401, 'REFRESH_TOKEN_REUSED', 'Refresh token is no longer valid. Please sign in again.'),
   forbidden: (message = 'Forbidden.') => new AppError(403, 'FORBIDDEN', message),
+  locationSharingPaused: () =>
+    new AppError(403, 'LOCATION_SHARING_PAUSED', 'Location sharing is currently paused.'),
   notFound: (message = 'Not found.') => new AppError(404, 'NOT_FOUND', message),
   conflict: (message) => new AppError(409, 'CONFLICT', message),
   trailRevisionChanged: (data) =>

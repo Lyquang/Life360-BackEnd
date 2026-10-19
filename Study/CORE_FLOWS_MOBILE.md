@@ -615,3 +615,27 @@ push.scheduleLocal(title: title, body: body, deeplink: deeplink)
 **Action:** Toi dung `EmergencyCoordinator` lam state holder toan app, `SendSOSUseCase` lay location/battery va gui qua realtime repository. Receiver observe `SOSAlert` stream, overlay `SOSAlertBanner`; background thi `RealtimeNotificationBridge` tao local notification.
 
 **Result:** SOS co UX ro rang, hoat dong tren moi tab, tach logic realtime/use case/UI, va co du diem mo rong sang APNs/audit log.
+# Addendum: Privacy Pause And Circle Exit
+
+Mobile reads and updates the account-wide state through `/api/v1/privacy/location-sharing`. After a successful pause, stop CoreLocation transmission, clear the offline location buffer, and treat `LOCATION_SHARING_PAUSED` as non-retryable until the user resumes sharing. Explicit SOS remains available.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant VM as PrivacyViewModel
+    participant API as Backend API
+    participant Buffer as LocationBuffer
+    participant Socket as SocketClient
+    participant Nav as Coordinator
+
+    User->>VM: Pause location sharing
+    VM->>API: PATCH /privacy/location-sharing
+    API-->>VM: 200 enabled=false
+    VM->>Buffer: Cancel sync and delete buffered points
+    VM->>Socket: Stop update_location emission
+    Socket-->>VM: group:membership_ended (when removed/left)
+    VM->>Nav: Close Circle/chat screen and remove local models
+    Note over VM,Nav: Handle UI mutations on MainActor
+```
+
+The canonical DTO and event contract is `api-docs/PRIVACY_AND_CIRCLE_MEMBERSHIP_API_DOC.md`.

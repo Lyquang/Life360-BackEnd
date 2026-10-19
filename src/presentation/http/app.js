@@ -15,12 +15,14 @@ const { createGroupController } = require('./controllers/groupController');
 const { createHistoryController } = require('./controllers/historyController');
 const { createChatController } = require('./controllers/chatController');
 const { createLocationController } = require('./controllers/locationController');
+const { createPrivacyController } = require('./controllers/privacyController');
 const { createAuthRoutes } = require('./routes/authRoutes');
 const { createGroupRoutes } = require('./routes/groupRoutes');
 const { createHistoryRoutes } = require('./routes/historyRoutes');
 const { createConversationRoutes, createChatRoutes } = require('./routes/chatRoutes');
 const { createSystemRoutes } = require('./routes/systemRoutes');
 const { createLocationRoutes } = require('./routes/locationRoutes');
+const { createPrivacyRoutes } = require('./routes/privacyRoutes');
 
 /** Mounts middleware and the /api/v1 routes on an existing Express app. */
 function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected, logger = console }) {
@@ -56,6 +58,7 @@ function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected,
     refreshLimiter: createRefreshLimiter(config.refreshRateLimit),
   }));
   v1.use('/groups', createGroupRoutes({ controller: createGroupController(useCases), authenticate }));
+  v1.use('/privacy', createPrivacyRoutes({ controller: createPrivacyController(useCases), authenticate }));
   v1.use('/history', createHistoryRoutes({
     controller: createHistoryController(useCases),
     authenticate,

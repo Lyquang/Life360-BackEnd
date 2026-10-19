@@ -45,6 +45,7 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
   registerSocketServer(io, {
     ...useCases,
     realtime: services.realtime,
+    liveTrailAccessInvalidator: services.liveTrailAccessInvalidator,
     liveTrailPolicy: services.liveTrailPolicy,
     logger,
   });

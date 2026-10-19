@@ -2,6 +2,7 @@ const express = require('express');
 const { validate } = require('../middleware/validate');
 const {
   groupIdParams,
+  groupMemberParams,
   createGroupBody,
   joinGroupBody,
   notificationIntervalBody,
@@ -80,6 +81,44 @@ function createGroupRoutes({ controller, authenticate }) {
    *       404: { description: Group not found }
    */
   router.get('/:groupId/members', validate({ params: groupIdParams }), controller.members);
+
+  /**
+   * @swagger
+   * /api/v1/groups/{groupId}/members/me:
+   *   delete:
+   *     summary: Leave a Circle; admins must transfer ownership or delete it first
+   *     tags: [Groups]
+   *     security: [{ bearerAuth: [] }]
+   *     parameters: [{ $ref: '#/components/parameters/GroupId' }]
+   *     responses:
+   *       200: { description: Circle and group-chat membership removed atomically }
+   *       403: { description: Not a member }
+   *       404: { description: Circle not found }
+   *       409: { description: Admin cannot leave before ownership transfer or deletion }
+   */
+  router.delete('/:groupId/members/me', validate({ params: groupIdParams }), controller.leave);
+
+  /**
+   * @swagger
+   * /api/v1/groups/{groupId}/members/{userId}:
+   *   delete:
+   *     summary: Remove a Circle member (admin only)
+   *     tags: [Groups]
+   *     security: [{ bearerAuth: [] }]
+   *     parameters:
+   *       - $ref: '#/components/parameters/GroupId'
+   *       - $ref: '#/components/parameters/UserId'
+   *     responses:
+   *       200: { description: Member and group-chat membership removed atomically }
+   *       403: { description: Only the Circle admin can remove members }
+   *       404: { description: Circle or member not found }
+   *       409: { description: Circle admin cannot be removed }
+   */
+  router.delete(
+    '/:groupId/members/:userId',
+    validate({ params: groupMemberParams }),
+    controller.removeMember
+  );
 
   /**
    * @swagger
