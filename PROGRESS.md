@@ -20,6 +20,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 | Done | Implement Cloudflare R2 image and voice upload flow | Added generalized media presigned URL endpoint, R2 storage config, voice chat messages, socket contract updates, docs, and tests. |
 | Done | Add local Cloudflare R2 account config | Added complete local Cloudflare R2 config for bucket `life360`, including account ID, API credentials, public development URL, upload TTL, and media size limits. |
 | Done | Fix npm audit CI failure | Removed `nodemon`/`chokidar` dev dependency by switching `npm run dev` to Node 20 native watch mode and updated `proxy-addr` to the patched lockfile version. |
+| Done | Patch follow-redirects security advisories | Updated the test-only transitive dependency `follow-redirects` from `1.16.0` to `1.16.1`; high-level audit, lint, and all 178 tests pass. |
 | Done | Implement Redis caching/session layer | Added Upstash-compatible `ioredis` cache manager with no-op fallback, user/circle cache-aside decorators, logout token blacklist, refresh session tracking, last-location Redis cache, and media metadata cache. |
 | Done | Configure local Upstash Redis URL | Added local `.env` Redis settings with `REDIS_ENABLED=true` and the Upstash `rediss://` connection URL. |
 | Done | Document Redis localhost testing | Expanded `Study/REDIS_PERFORMANCE_AND_CACHING_ARCHITECTURE.md` with important files, setup steps, runtime flows, sequence diagrams, and localhost test checklist. |
@@ -106,6 +107,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - Privacy/Circle targeted verification on 2026-10-19: 9 tests pass, including domain expiry, runtime reset, digest masking, immediate closure, shared-Circle preservation and transaction rollback.
 - Privacy/Circle final verification on 2026-10-19: full regression passes 174/174 tests across 48 suites; syntax lint and whitespace checks pass.
 - 2026-10-22: Mapbox Map Matching adapter đã nối vào pipeline Live Trail; 178/178 Backend tests và syntax lint pass. Chưa bật trên deployment do thiếu token, load gate và thử nghiệm hai thiết bị. Cấu hình mặc định vẫn noop/tắt.
+- 2026-10-22: Patched transitive `follow-redirects` advisory through a lockfile-only update to `1.16.1`; `npm audit --audit-level=high` reports 0 vulnerabilities.
 
 ## Next Update Checklist
 
