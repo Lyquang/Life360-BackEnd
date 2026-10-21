@@ -81,7 +81,7 @@ function createLiveTrailMatchingService({
       (Number.isFinite(result.confidence) && result.confidence >= 0 && result.confidence <= 1);
   }
 
-  async function callMatcher(window) {
+  async function callMatcher(window, profile) {
     if (Date.now() < circuitOpenUntil) return null;
     const controller = new AbortController();
     let rejectTimeout;
@@ -98,7 +98,7 @@ function createLiveTrailMatchingService({
       const result = await Promise.race([
         matcher.matchWindow({
           points: window.points,
-          profile: 'auto',
+          profile,
           signal: controller.signal,
         }),
         timeout,
@@ -146,12 +146,19 @@ function createLiveTrailMatchingService({
 
     for (const window of windows) {
       if (closed) return;
+      const counts = window.points.reduce((acc, point) => {
+        const key = point.motionState === 'automotive' ? 'driving'
+          : point.motionState === 'cycling' ? 'cycling' : 'walking';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+      const profile = Object.keys(counts).sort((left, right) => counts[right] - counts[left])[0] || 'walking';
       const source = sourceRevision({
         trailId: job.trailId,
         revision: job.revision,
         window,
         matcher: { provider: matcher.provider, version: matcher.version },
-        profile: 'auto',
+        profile,
         policy,
       });
       const cached = await liveTrailRepo.findMatchBySourceRevision(source);
@@ -161,7 +168,7 @@ function createLiveTrailMatchingService({
           ? await liveTrailRepo.saveMatch({ ...cached, status: 'final' })
           : cached;
       } else {
-        const result = await callMatcher(window);
+        const result = await callMatcher(window, profile);
         if (!result) continue;
         saved = await liveTrailRepo.saveMatch({
           trailId: job.trailId,

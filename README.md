@@ -485,7 +485,9 @@ Matcher settings remain gated independently:
 | Variable                                      | Default | Description                                      |
 | --------------------------------------------- | ------- | ------------------------------------------------ |
 | `LIVE_TRAIL_MATCHER_ENABLED`                  | `false` | Enables asynchronous match jobs                  |
-| `LIVE_TRAIL_MATCHER_PROVIDER`                 | `noop`  | `noop`; `fake` is accepted only outside production |
+| `LIVE_TRAIL_MATCHER_PROVIDER`                 | `noop`  | `mapbox` for real road matching; `fake` is test-only |
+| `MAPBOX_ACCESS_TOKEN`                         | unset   | Server-side Mapbox token; required when the Mapbox matcher is enabled |
+| `LIVE_TRAIL_MATCH_MIN_CONFIDENCE`             | `0.6`   | Lower-confidence or partial matches remain raw GPS |
 | `LIVE_TRAIL_MATCH_WINDOW_SIZE`                | `5`     | Target points per overlapping window             |
 | `LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS`        | `30`    | Maximum wait before processing a partial trigger |
 | `LIVE_TRAIL_MATCH_OVERLAP_POINTS`             | `2`     | Context shared by adjacent windows               |
@@ -498,7 +500,7 @@ Matcher settings remain gated independently:
 | `LIVE_TRAIL_MATCH_CIRCUIT_FAILURES`           | `3`     | Consecutive failures before opening circuit      |
 | `LIVE_TRAIL_MATCH_CIRCUIT_COOLDOWN_SECONDS`   | `30`    | Circuit-open cooldown                             |
 
-No real road provider is configured in T3. `NoopMatcher` preserves raw GPS; `FakeMatcher` creates deterministic Polyline6 only for automated tests. T4/OSRM remains deferred.
+Mapbox Map Matching is the real road provider. It returns full-detail Polyline6 windows for the live trail and Journey replay; incomplete, split, or low-confidence matches stay as dashed raw GPS. To enable on a deployment, set `LIVE_TRAIL_ENABLED=true`, `LIVE_TRAIL_MATCHER_ENABLED=true`, `LIVE_TRAIL_MATCHER_PROVIDER=mapbox`, `MAPBOX_ACCESS_TOKEN=<server secret>`, and `LIVE_TRAIL_MATCH_TIMEOUT_MS=5000` (tune after measurement). Never place the Mapbox token in iOS, request logs, or screenshots: request URLs also contain GPS coordinates. The default remains disabled/noop until database capacity, Mapbox quota/cost, and two-device privacy/performance checks have been completed. The matcher sends GPS traces to Mapbox; disclose this data processor in the product privacy policy and confirm licensing for displaying matched output on Apple MapKit before public rollout.
 
 ### Redis (optional)
 

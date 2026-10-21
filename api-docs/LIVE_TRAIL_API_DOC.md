@@ -338,6 +338,8 @@ Privacy và Circle membership mutations đóng watch ngay; lease 60 giây vẫn 
 
 - Privacy pause và Circle leave/remove hooks đã có. Production vẫn giữ `LIVE_TRAIL_ENABLED=false` và `LIVE_TRAIL_MATCHER_ENABLED=false` cho đến khi MongoDB/Socket.IO load gates được xác nhận.
 - `LIVE_TRAIL_MATCHER_PROVIDER=fake` chỉ dành cho test/staging và bị từ chối trong `NODE_ENV=production`.
+- `LIVE_TRAIL_MATCHER_PROVIDER=mapbox` dùng Mapbox Map Matching v5 thật; bật cùng `LIVE_TRAIL_MATCHER_ENABLED=true` và `MAPBOX_ACCESS_TOKEN` (chỉ ở server). Response `polyline6` chỉ được công bố khi mọi tracepoint khớp một đoạn và confidence đạt `LIVE_TRAIL_MATCH_MIN_CONFIDENCE` (mặc định 0.6); còn lại giữ vệt GPS thô. Chọn profile walking/cycling/driving theo motion state, mặc định walking cho vệt chạy bộ.
+- Mapbox cần độ trễ mạng thực tế: bắt đầu với `LIVE_TRAIL_MATCH_TIMEOUT_MS=5000`, sau đó đo và chỉnh. Trước rollout xem quota/chi phí, xử lý dữ liệu GPS với bên thứ ba và điều khoản hiển thị trên Apple MapKit. Không log URL request vì chứa tọa độ và token.
 - Khi feature được duyệt, bật raw live trail trên staging trước; matcher vẫn tắt để đánh giá đường GPS thật trên thiết bị.
 - Trước production phải xác nhận MongoDB deployment hỗ trợ transaction/replica set, index đã tạo, quota đủ và đo tải qua MongoDB + Socket.IO thật.
 - Rollback raw trail bằng `LIVE_TRAIL_ENABLED=false`. Luồng `location_update`, batch offline và history hiện tại vẫn hoạt động vì projection/publisher fail-soft.

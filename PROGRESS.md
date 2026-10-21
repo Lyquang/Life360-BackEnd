@@ -39,6 +39,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 | Done / Gated | Live trail B7 T3 matcher framework | Added the provider port, Noop/Fake adapters, gap/accuracy-safe overlapping windows, provisional/final lifecycle, revision-scoped durable matches, bounded queue, timeout/circuit fallback, REST/Socket match updates and tests. No real provider; matcher remains disabled. |
 | Done / Gated | Live trail B7 T5 docs and deployment readiness | Added complete Swagger/mobile contracts, rollout and rollback gates, Render/env documentation and a reproducible synthetic benchmark. Production remains blocked on real MongoDB/Socket.IO load tests. |
 | Done | Live trail privacy and Circle exit hooks | Added account-wide pause/resume, shared location access enforcement, SOS override, transactional leave/admin removal, room cleanup, immediate watch invalidation, Swagger/mobile docs and integration tests. |
+| Done | Mobile location API documentation index | Added one canonical reading map for realtime/offline location, journey/history, Live Trail, privacy and Circle membership contracts. |
 | Pending | Seed MCP memory graph | Requires MCP server to be installed/connected by the local client. |
 
 ## Key Files
@@ -59,6 +60,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - `docs/REFRESH_TOKEN_MOBILE_API_DOC.md`: Mobile contract and Swift single-flight refresh guidance.
 - `docs/CLOUDFLARE_R2_MEDIA_UPLOAD_API_DOC.md`: Complete iOS contract for image and voice uploads through Cloudflare R2.
 - `api-docs/LOCATION_UPDATE_API_DOC.md`: Mobile Socket.IO contract for measured GPS timestamps and accuracy.
+- `api-docs/MOBILE_LOCATION_INTEGRATION_INDEX.md`: Entry point and integration order for all mobile location, Live Trail, privacy and Circle membership contracts.
 - `api-docs/LIVE_TRAIL_API_DOC.md`: Mobile REST snapshot/catch-up contract, cursor/revision recovery and stable gap semantics.
 - `Study/OFFLINE_LOCATION_BATCH_SYNC.md`: P6 architecture, decisions, data flow, risks, and rollback.
 - `Study/route-geometry-backend.md`: Verified journey/history behavior, geometry design, storage estimates, decisions, rollout, and rollback.
@@ -103,6 +105,7 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - B7 T5 local smoke on 2026-10-19: 2,000 points produced 100 bounded deltas (max 2,899 bytes) in 22.47 ms; FakeMatcher persisted/published 600 windows in 9.03 ms at concurrency 4. These in-process numbers are not a production SLA.
 - Privacy/Circle targeted verification on 2026-10-19: 9 tests pass, including domain expiry, runtime reset, digest masking, immediate closure, shared-Circle preservation and transaction rollback.
 - Privacy/Circle final verification on 2026-10-19: full regression passes 174/174 tests across 48 suites; syntax lint and whitespace checks pass.
+- 2026-10-22: Mapbox Map Matching adapter đã nối vào pipeline Live Trail; 178/178 Backend tests và syntax lint pass. Chưa bật trên deployment do thiếu token, load gate và thử nghiệm hai thiết bị. Cấu hình mặc định vẫn noop/tắt.
 
 ## Next Update Checklist
 

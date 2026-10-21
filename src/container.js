@@ -38,6 +38,7 @@ const { createLocationRuntimeState } = require('./application/location/locationR
 const { createChatUseCases } = require('./application/chat/chatUseCases');
 const { createNoopMapMatcher } = require('./infrastructure/matching/NoopMapMatcher');
 const { createFakeMapMatcher } = require('./infrastructure/matching/FakeMapMatcher');
+const { createMapboxMapMatcher } = require('./infrastructure/matching/MapboxMapMatcher');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
 function createContainer({ config, io, supportsTransactions, logger = console }) {
@@ -97,9 +98,12 @@ function createContainer({ config, io, supportsTransactions, logger = console })
     policy: config.liveTrail,
     logger,
   });
-  services.mapMatcher = config.liveTrail.matcher.provider === 'fake'
-    ? createFakeMapMatcher()
-    : createNoopMapMatcher();
+  services.mapMatcher = config.liveTrail.matcher.enabled && config.liveTrail.matcher.provider === 'mapbox'
+    ? createMapboxMapMatcher({
+      accessToken: config.liveTrail.matcher.accessToken,
+      minConfidence: config.liveTrail.matcher.minConfidence,
+    })
+    : config.liveTrail.matcher.provider === 'fake' ? createFakeMapMatcher() : createNoopMapMatcher();
   services.liveTrailMatchingService = createLiveTrailMatchingService({
     liveTrailRepo,
     matcher: services.mapMatcher,

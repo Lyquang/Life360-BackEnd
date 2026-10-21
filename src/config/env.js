@@ -51,7 +51,9 @@ const envSchema = z.object({
   LIVE_TRAIL_DELTA_MAX_BYTES: z.coerce.number().int().min(1024).max(1024 * 1024).default(64 * 1024),
   LIVE_TRAIL_DELTA_FLUSH_MS: z.coerce.number().int().min(10).max(60000).default(2000),
   LIVE_TRAIL_MATCHER_ENABLED: z.enum(['true', 'false']).default('false'),
-  LIVE_TRAIL_MATCHER_PROVIDER: z.enum(['noop', 'fake']).default('noop'),
+  LIVE_TRAIL_MATCHER_PROVIDER: z.enum(['noop', 'fake', 'mapbox']).default('noop'),
+  MAPBOX_ACCESS_TOKEN: optionalString,
+  LIVE_TRAIL_MATCH_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.6),
   LIVE_TRAIL_MATCH_WINDOW_SIZE: z.coerce.number().int().min(3).max(100).default(5),
   LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS: z.coerce.number().int().min(1).max(300).default(30),
   LIVE_TRAIL_MATCH_OVERLAP_POINTS: z.coerce.number().int().min(0).max(99).default(2),
@@ -119,6 +121,9 @@ function loadConfig(env = process.env) {
   }
   if (isProduction && e.LIVE_TRAIL_MATCHER_PROVIDER === 'fake') {
     throw new ConfigError('The fake live trail matcher cannot run in production.');
+  }
+  if (e.LIVE_TRAIL_MATCHER_ENABLED === 'true' && e.LIVE_TRAIL_MATCHER_PROVIDER === 'mapbox' && !e.MAPBOX_ACCESS_TOKEN) {
+    throw new ConfigError('MAPBOX_ACCESS_TOKEN is required for the enabled Mapbox matcher.');
   }
 
   const missing = [];
@@ -235,6 +240,8 @@ function loadConfig(env = process.env) {
       matcher: {
         enabled: e.LIVE_TRAIL_MATCHER_ENABLED === 'true',
         provider: e.LIVE_TRAIL_MATCHER_PROVIDER,
+        accessToken: e.MAPBOX_ACCESS_TOKEN,
+        minConfidence: e.LIVE_TRAIL_MATCH_MIN_CONFIDENCE,
         windowSize: e.LIVE_TRAIL_MATCH_WINDOW_SIZE,
         windowWaitMs: e.LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS * 1000,
         overlapPoints: e.LIVE_TRAIL_MATCH_OVERLAP_POINTS,
