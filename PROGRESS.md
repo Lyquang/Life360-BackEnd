@@ -117,5 +117,7 @@ M3-0 verification: 180/180 tests pass (49 suites), including two new privacy reg
 
 ## Next Update Checklist
 
+- 2026-10-26 security patch: lockfile upgrades body-parser 1.20.8 -> 1.20.9, fast-uri 3.1.8 -> 3.1.9, ip-address 10.7.2 -> 10.7.5, zod 4.6.5 -> 4.6.7. No force/major upgrade. Audit reports zero vulnerabilities; all 180 tests (49 suites) and lint pass. No commit performed.
+
 - Add any architectural decisions discovered during future work.
 - Record important module relationships in MCP memory when the server is available.
