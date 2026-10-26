@@ -4,6 +4,16 @@
 
 Deliver a gated, cursor-safe live journey trail without breaking existing location and offline-sync clients.
 
+### Grafana M1a foundation (2026-10-26)
+
+- Added application Metrics/Noop port, isolated Prometheus registry and bounded policy; METRICS_ENABLED defaults false. No bootstrap wiring, runtime collectors or /metrics endpoint yet (M1b). No external shipping.
+- Exactly 8 review files: package.json/lock, config/env.js, application/ports/metrics.js, infrastructure/observability/{metricsPolicy,metricsRegistry}.js, tests/metricsFoundation.test.js, PROGRESS.md. No commit.
+- HTTP policy groups routes into 10 fixed values; 5 finite duration buckets, duration labels only route. Enumerated worst case = 570 series, leaving 1,930 of the 2,500 cap for later runtime/business metrics. Unknown input collapses to other; forbidden extra fields are discarded; registry construction/recording/snapshot failures are fail-soft. Noop avoids loading prom-client or reading input.
+- Dependency pinned to approved prom-client 15.1.3. npm marks it deprecated in favor of @prometheus-io/client; no migration performed without revisiting the approved dependency choice. Official reference: https://github.com/prometheus/client_js . Audit after install: zero vulnerabilities.
+- Baseline BEFORE instrumentation: local darwin/arm64 Node v26.7.0, real createServer through tests/helpers/testServer.startTestServer({withStorage:false}), Mongo in-memory replica set child, Redis off. Warm up 5 seconds after listen; 10 RSS samples one second apart, one GET /api/health before each sample; process.memoryUsage().rss sorted. Min 80,379,904 bytes; median (upper middle) 149,143,552 bytes; max 172,589,056 bytes. Includes test harness/imports, excludes Mongo child. No .env loaded or production service contacted. Short local smoke is not a stable Render baseline or a measured monitoring overhead; wide RSS spread warrants longer warmup/repeats at M4. Production baseline remains unverified.
+- M1b must add authenticated gzip endpoint and measure actual compressed/uncompressed exposition plus runtime lifecycle cleanup. README/.env.example operational setup accompanies endpoint wiring, not this disconnected foundation.
+- M1a verification: 184/184 tests pass across 49 suites, including cardinality enumeration, 10,000 unknown label inputs, disabled mode, isolated registries, invalid values and cap enforcement. npm run lint, audit (zero vulnerabilities), context graph regeneration and git diff --check pass. No runtime overhead claim: enabled instrumentation benchmark remains M4.
+
 ## Task Board
 
 Grafana observability M0 (2026-10-26): source/log inventory and provider research completed in `Study/grafana-observability.md` and `Study/grafana-options.md`. Waiting for `approved M0`, provider choice and phase splits; no runtime instrumentation or external telemetry configured. Documentation-only verification; tests not run for M0.
