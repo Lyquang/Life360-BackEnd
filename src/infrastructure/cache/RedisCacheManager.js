@@ -30,7 +30,7 @@ function createRedisCacheManager({ config, logger = console }) {
   });
   client.on('error', (error) => {
     healthy = false;
-    logger.warn(`Redis cache error: ${error.message}`);
+    logger.warn('REDIS_CONNECTION_ERROR');
   });
 
   async function safe(operation, fallback) {
@@ -38,7 +38,7 @@ function createRedisCacheManager({ config, logger = console }) {
       return await operation();
     } catch (error) {
       healthy = false;
-      logger.warn(`Redis cache operation skipped: ${error.message}`);
+      logger.warn('REDIS_OPERATION_FAILED');
       return fallback;
     }
   }

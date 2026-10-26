@@ -89,7 +89,7 @@ function createDigestUseCases({ groupRepo, digestRepo, realtime, logger = consol
       await groupRepo.setLastDigestSentAt(group._id, now);
       sent += 1;
 
-      logger.log(`📋 Digest sent to group "${group.name}" (${members.length} members)`);
+      logger.log('GROUP_DIGEST_SENT');
     }
     return sent;
   }

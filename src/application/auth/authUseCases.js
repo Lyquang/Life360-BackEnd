@@ -202,12 +202,7 @@ function createAuthUseCases({
 
     if (outcome.kind === 'reused') {
       await applyRevocationEffects(outcome.revoked, [outcome.current.familyId], outcome.current.userId);
-      logger.warn('Security event: refresh token reuse detected.', {
-        userId: outcome.current.userId.toString(),
-        familyId: outcome.current.familyId,
-        ip: requestContext.ip || null,
-        userAgent: requestContext.userAgent || null,
-      });
+      logger.warn('AUTH_REFRESH_TOKEN_REUSED');
       throw Errors.refreshTokenReused();
     }
     if (outcome.kind !== 'success') throw Errors.invalidRefreshToken();

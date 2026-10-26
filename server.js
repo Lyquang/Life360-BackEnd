@@ -8,7 +8,7 @@ async function main() {
   try {
     config = loadConfig(process.env);
   } catch (error) {
-    console.error(`❌ ${error.message}`);
+    console.error('SERVER_CONFIG_FAILED');
     process.exit(1);
   }
 
@@ -16,7 +16,7 @@ async function main() {
   try {
     instance = await createServer(config);
   } catch (error) {
-    console.error('❌ Failed to start:', error.message);
+    console.error('SERVER_START_FAILED');
     process.exit(1);
   }
 
@@ -42,7 +42,7 @@ async function main() {
       console.log('👋 Shutdown complete');
       process.exit(0);
     } catch (error) {
-      console.error('❌ Error during shutdown:', error.message);
+      console.error('SERVER_SHUTDOWN_FAILED');
       process.exit(1);
     }
   };

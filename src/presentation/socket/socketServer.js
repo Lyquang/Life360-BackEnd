@@ -22,7 +22,7 @@ function registerSocketServer(
 
   io.on('connection', (socket) => {
     const user = socket.data.user;
-    logger.log(`🟢 User connected: ${user.name} (${user.id})`);
+    logger.log('SOCKET_CONNECTED');
 
     // Handlers are registered synchronously so events sent right after connect are never dropped.
     socket.join(realtime.rooms.user(user.id));
@@ -38,10 +38,10 @@ function registerSocketServer(
     });
 
     socket.on('disconnect', (reason) => {
-      logger.log(`🔴 User disconnected: ${user.name} (${user.id}) - ${reason}`);
+      logger.log('SOCKET_DISCONNECTED');
       location
         .disconnect({ userId: user.id, userName: user.name })
-        .catch((error) => logger.error(`❌ Error handling disconnect for ${user.name}:`, error.message));
+        .catch(() => logger.error('SOCKET_DISCONNECT_FAILED'));
     });
 
     (async () => {
@@ -56,7 +56,7 @@ function registerSocketServer(
       }
       socket.join([...groupIds.map(realtime.rooms.group), ...conversationIds.map(realtime.rooms.conversation)]);
       socket.emit('session:ready', { groupIds, conversationIds });
-    })().catch((error) => logger.error(`❌ Error initializing session for ${user.name}:`, error.message));
+    })().catch(() => logger.error('SOCKET_SESSION_INIT_FAILED'));
   });
 }
 

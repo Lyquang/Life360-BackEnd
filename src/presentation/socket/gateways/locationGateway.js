@@ -23,7 +23,7 @@ function registerLocationGateway(socket, { location, logger = console }) {
       if (error instanceof AppError) {
         return socket.emit('error', { code: error.code, message: error.message });
       }
-      logger.error(`❌ Error updating location for ${user.name}:`, error.message);
+      logger.error('LOCATION_UPDATE_FAILED');
       socket.emit('error', { message: 'Failed to update location' });
     }
   });
@@ -34,11 +34,11 @@ function registerLocationGateway(socket, { location, logger = console }) {
       return socket.emit('error', { message: 'Invalid SOS payload.', errors: formatIssues(parsed.error) });
     }
     try {
-      logger.log(`🚨 SOS ALERT from ${user.name} (${user.id})`);
+      logger.log('SOS_ALERT_REQUESTED');
       const { groupCount } = await location.sendSos({ userId: user.id, userName: user.name, ...parsed.data });
       socket.emit('sos_confirmed', { message: 'SOS alert sent to all your groups.', groupCount });
     } catch (error) {
-      logger.error(`❌ Error sending SOS for ${user.name}:`, error.message);
+      logger.error('SOS_ALERT_FAILED');
       socket.emit('error', { message: 'Failed to send SOS alert' });
     }
   });

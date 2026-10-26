@@ -22,7 +22,7 @@ function registerChatGateway(socket, { chat, logger = console }) {
 
   function fail(event, ack, error) {
     const known = error instanceof AppError;
-    if (!known) logger.error(`❌ ${event} failed for ${user.id}:`, error);
+    if (!known) logger.error('CHAT_ACTION_FAILED');
     const body = {
       success: false,
       status: known ? error.status : 500,
@@ -76,7 +76,7 @@ function registerChatGateway(socket, { chat, logger = console }) {
         exceptSocketId: socket.id,
       });
     } catch (error) {
-      if (!(error instanceof AppError)) logger.error('❌ chat:typing failed:', error.message);
+      if (!(error instanceof AppError)) logger.error('CHAT_TYPING_FAILED');
     }
   });
 }

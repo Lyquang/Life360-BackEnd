@@ -6,6 +6,12 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 
 ## Task Board
 
+Grafana observability M0 (2026-10-26): source/log inventory and provider research completed in `Study/grafana-observability.md` and `Study/grafana-options.md`. Waiting for `approved M0`, provider choice and phase splits; no runtime instrumentation or external telemetry configured. Documentation-only verification; tests not run for M0.
+
+Grafana M0 approved with amendments (2026-10-26): local Compose staging, C then A with separate M5 consent, gzip scrape, 2,000-2,500 series/env, generated request IDs and stdout-only logging before benchmark. M3-0 first: fixed event codes replace URI/raw errors and identity-bearing logs. Review batches: foundation (connection/HTTP/server/Redis + study docs), then socket/auth/stay/chat/digest + privacy test. No metrics enabled, no secrets accessed, no commit. Baseline RSS measurement remains a prerequisite before M1 enables instrumentation.
+
+M3-0 verification: 180/180 tests pass (49 suites), including two new privacy regression tests; npm run lint and git diff --check pass. Initial sandbox run failed on localhost EPERM; rerun outside sandbox passed. This is targeted log removal, not yet the full M3 sanitization layer; digestScheduler raw error.message and other dynamic errorName fields remain for the comprehensive logging phase. No Cloud shipping or RSS baseline claim.
+
 | Status | Task | Notes |
 | --- | --- | --- |
 | Done | Add MCP memory configuration | Added `mcp.json`, `.vscode/mcp.json`, and `codex/config.example.toml` for `@modelcontextprotocol/server-memory`. |

@@ -19,7 +19,7 @@ function createErrorHandler({ isProduction, logger = console }) {
       return res.status(413).json({ success: false, code: 'PAYLOAD_TOO_LARGE', message: 'Request body too large.' });
     }
 
-    logger.error('❌ Unhandled error:', err);
+    logger.error('HTTP_UNHANDLED_ERROR');
     res.status(500).json({
       success: false,
       code: 'INTERNAL_ERROR',

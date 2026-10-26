@@ -201,7 +201,7 @@ function createLocationUseCases({
           message: `${userName} đang ở một nơi được ${formatDuration(milestone)} rồi!`,
           timestamp: serverAt.toISOString(),
         });
-        logger.log(`⏱  Stay alert: ${userName} stayed ${formatDuration(milestone)} in group ${group.name}`);
+        logger.log('LOCATION_STAY_ALERT_SENT');
       }
     }
   }
