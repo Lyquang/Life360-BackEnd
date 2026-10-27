@@ -26,6 +26,12 @@ Deliver a gated, cursor-safe live journey trail without breaking existing locati
 - Suggested commit: feat(observability): expose authenticated gzip metrics endpoint. No git add/commit/push. Full overhead acceptance (p95 <=5%, RSS <=+20 MB) still requires M4; current measurements are exposition size, not benchmark proof.
 - Verification: 188/188 tests pass across 49 suites; targeted foundation/HTTP tests 8/8 pass, npm run lint passes, explicit node --check on all 114 server/source JS files passes, git diff --check passes, context graph regenerated. No production configuration or Cloud export changed.
 
+### Grafana M3a foundation (2026-10-27)
+
+- Added pinned Pino 10.1.0, Logger port, JSON stdout adapter, strict event-code and metadata allowlists, generated correlation IDs and AsyncLocalStorage helper. Arbitrary strings, Error objects, nested fields, user IDs and location data are discarded before reaching the Pino writer. Socket/HTTP propagation and replacement of existing console wiring are M3b/M3c.
+- Seven review files: package.json/lock, src/application/ports/logger.js, src/infrastructure/observability/logContext.js and safeLogger.js, tests/safeLogger.test.js, PROGRESS.md. Suggested commit: `feat(observability): add privacy-safe JSON logger foundation`. No commit/push or external log shipping.
+- Verification: 191/191 tests pass (49 suites), including 3 new privacy/concurrency tests. Lint, audit (0 vulnerabilities), diff check and context graph refresh pass. Log transport overhead and M4 acceptance remain unmeasured.
+
 Grafana observability M0 (2026-10-26): source/log inventory and provider research completed in `Study/grafana-observability.md` and `Study/grafana-options.md`. Waiting for `approved M0`, provider choice and phase splits; no runtime instrumentation or external telemetry configured. Documentation-only verification; tests not run for M0.
 
 Grafana M0 approved with amendments (2026-10-26): local Compose staging, C then A with separate M5 consent, gzip scrape, 2,000-2,500 series/env, generated request IDs and stdout-only logging before benchmark. M3-0 first: fixed event codes replace URI/raw errors and identity-bearing logs. Review batches: foundation (connection/HTTP/server/Redis + study docs), then socket/auth/stay/chat/digest + privacy test. No metrics enabled, no secrets accessed, no commit. Baseline RSS measurement remains a prerequisite before M1 enables instrumentation.
