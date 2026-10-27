@@ -23,13 +23,15 @@ const { createConversationRoutes, createChatRoutes } = require('./routes/chatRou
 const { createSystemRoutes } = require('./routes/systemRoutes');
 const { createLocationRoutes } = require('./routes/locationRoutes');
 const { createPrivacyRoutes } = require('./routes/privacyRoutes');
+const { createMetricsMiddleware } = require('./middleware/metrics');
 
 /** Mounts middleware and the /api/v1 routes on an existing Express app. */
-function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected, logger = console }) {
+function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected, metrics, logger = console }) {
   // Render terminates TLS at its proxy; needed for correct req.ip in rate limiting.
   app.set('trust proxy', 1);
   // CSP disabled so Swagger UI assets load on both http://localhost and https.
   app.use(helmet({ contentSecurityPolicy: false }));
+  if (metrics) app.use(createMetricsMiddleware(metrics, config.metrics?.token));
   app.use(cors({ origin: config.corsOrigin }));
   app.use(express.json({ limit: '100kb' }));
   app.use(express.urlencoded({ extended: true, limit: '100kb' }));

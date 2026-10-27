@@ -16,6 +16,7 @@ const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().int().min(0).max(65535).default(3000),
   METRICS_ENABLED: z.enum(['true', 'false']).default('false'),
+  METRICS_TOKEN: optionalString,
   TZ: z.string().trim().min(1).default('Asia/Ho_Chi_Minh').refine(validTimeZone, 'Invalid IANA time zone.'),
   MONGODB_URI: optionalString,
   JWT_SECRET: optionalString,
@@ -110,6 +111,12 @@ function loadConfig(env = process.env) {
   }
   const e = parsed.data;
   const isProduction = e.NODE_ENV === 'production';
+  if (e.METRICS_ENABLED === 'true' && (!e.METRICS_TOKEN || e.METRICS_TOKEN.length < 32 || e.METRICS_TOKEN.length > 256)) {
+    throw new ConfigError('Enabled metrics require a separate METRICS_TOKEN of 32-256 characters.');
+  }
+  if (e.METRICS_ENABLED === 'true' && e.METRICS_TOKEN === e.JWT_SECRET) {
+    throw new ConfigError('METRICS_TOKEN must be different from JWT_SECRET.');
+  }
 
   if (e.LIVE_TRAIL_MATCH_OVERLAP_POINTS >= e.LIVE_TRAIL_MATCH_WINDOW_SIZE) {
     throw new ConfigError('LIVE_TRAIL_MATCH_OVERLAP_POINTS must be smaller than LIVE_TRAIL_MATCH_WINDOW_SIZE.');
@@ -183,8 +190,7 @@ function loadConfig(env = process.env) {
     env: e.NODE_ENV,
     isProduction,
     port: e.PORT,
-    // M1a foundation only; HTTP exposure and runtime wiring follow in M1b.
-    metrics: { enabled: e.METRICS_ENABLED === 'true' },
+    metrics: { enabled: e.METRICS_ENABLED === 'true', token: e.METRICS_TOKEN },
     mongodbUri: e.MONGODB_URI || 'mongodb://localhost:27017/location-sharing-app',
     // Only local development may silently fall back to an in-memory database.
     allowInMemoryDatabase: e.NODE_ENV === 'development',

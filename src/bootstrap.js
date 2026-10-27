@@ -7,6 +7,7 @@ const { createSwaggerSpec } = require('./config/swagger');
 const { configureApp } = require('./presentation/http/app');
 const { registerSocketServer } = require('./presentation/socket/socketServer');
 const { startDigestScheduler } = require('./presentation/jobs/digestScheduler');
+const { createMetrics } = require('./infrastructure/observability/metricsRegistry');
 
 /**
  * Builds the whole server (DB, HTTP, Socket.IO, jobs) without listening.
@@ -35,10 +36,13 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
   const synced = await useCases.chat.syncGroupConversations();
   logger.log(`💬 Group conversations in sync (${synced} circles)`);
 
+  const metrics = createMetrics({ ...config.metrics, runtime: true });
+
   configureApp(app, {
     config,
     useCases,
     swaggerSpec: createSwaggerSpec({ publicUrl: config.publicUrl, port: config.port }),
+    metrics,
     isDatabaseConnected,
     logger,
   });
@@ -61,6 +65,7 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
       return new Promise((resolve) => server.listen(port, '0.0.0.0', () => resolve(server.address().port)));
     },
     async close() {
+      metrics.close();
       scheduler.stop();
       await services.liveTrailMatchingService.close();
       services.liveTrailDeltaPublisher.close();
