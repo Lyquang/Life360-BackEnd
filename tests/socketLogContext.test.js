@@ -60,8 +60,9 @@ test('socket events have distinct IDs within one connection without logging payl
 
 test('digest scheduler logs only a fixed event code on failure', async () => {
   const events = [];
+  const calls = [];
   const scheduler = startDigestScheduler({
-    digests: { sendDueDigests: async () => { throw new Error('private-digest-canary'); } },
+    digests: { sendDueDigests: async (...args) => { calls.push(args); throw new Error('private-digest-canary'); } },
     intervalMs: 5,
     logger: { error: (...args) => events.push(args) },
   });
@@ -69,6 +70,8 @@ test('digest scheduler logs only a fixed event code on failure', async () => {
     await new Promise(resolve => setTimeout(resolve, 25));
     assert.ok(events.length > 0);
     assert.ok(events.every(args => args.length === 1 && args[0] === 'DIGEST_SCHEDULER_FAILED'));
+    assert.ok(calls.length > 0);
+    assert.ok(calls.every(([now, context]) => now instanceof Date && context.scheduledAt instanceof Date));
   } finally {
     scheduler.stop();
   }

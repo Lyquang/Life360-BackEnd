@@ -1,6 +1,7 @@
 const { requireGroupMember } = require('../shared/policies');
 const { formatDuration, formatLastSeen } = require('../../domain/geo');
 const { isLocationSharingEnabled } = require('../../domain/locationSharing');
+const { createSafeMetrics } = require('../ports/metrics');
 
 function buildMemberStatus(member, now) {
   const sharingEnabled = isLocationSharingEnabled(member.locationSharing, now);
@@ -35,7 +36,8 @@ function groupSettings(group) {
   };
 }
 
-function createDigestUseCases({ groupRepo, digestRepo, realtime, logger = console }) {
+function createDigestUseCases({ groupRepo, digestRepo, realtime, logger = console, metrics }) {
+  const telemetry = createSafeMetrics(metrics);
   async function listDigests({ userId, groupId, page, limit, from, to }) {
     const group = await requireGroupMember(groupRepo, groupId, userId);
     const { items, total } = await digestRepo.list({ groupId, from, to, skip: (page - 1) * limit, limit });
@@ -60,38 +62,53 @@ function createDigestUseCases({ groupRepo, digestRepo, realtime, logger = consol
   }
 
   /** Called every minute by the scheduler. Only groups with someone connected get a digest. */
-  async function sendDueDigests(now = new Date()) {
-    const groups = await groupRepo.listWithDigestEnabled();
-    let sent = 0;
-
-    for (const group of groups) {
-      const intervalMs = group.notificationIntervalMinutes * 60 * 1000;
-      if (group.lastDigestSentAt && now - group.lastDigestSentAt < intervalMs) continue;
-      if ((await realtime.countGroupSockets(group._id)) === 0) continue;
-
-      const members = group.members.map((member) => buildMemberStatus(member, now));
-      realtime.emitToGroup(group._id, 'group_digest', {
-        type: 'GROUP_DIGEST',
-        groupId: group._id,
-        groupName: group.name,
-        intervalMinutes: group.notificationIntervalMinutes,
-        members,
-        timestamp: now.toISOString(),
-      });
-
-      await digestRepo.create({
-        groupId: group._id,
-        groupName: group.name,
-        intervalMinutes: group.notificationIntervalMinutes,
-        members,
-        sentAt: now,
-      });
-      await groupRepo.setLastDigestSentAt(group._id, now);
-      sent += 1;
-
-      logger.log('GROUP_DIGEST_SENT');
+  async function sendDueDigests(now = new Date(), { scheduledAt } = {}) {
+    const startedAt = metrics?.enabled === true ? process.hrtime.bigint() : null;
+    if (scheduledAt instanceof Date && Number.isFinite(scheduledAt.getTime())) {
+      telemetry.observe('job_schedule_delay_seconds', { job: 'digest' }, Math.max(0, (Date.now() - scheduledAt.getTime()) / 1000));
     }
-    return sent;
+
+    try {
+      const groups = await groupRepo.listWithDigestEnabled();
+      let sent = 0;
+
+      for (const group of groups) {
+        const intervalMs = group.notificationIntervalMinutes * 60 * 1000;
+        if (group.lastDigestSentAt && now - group.lastDigestSentAt < intervalMs) continue;
+        if ((await realtime.countGroupSockets(group._id)) === 0) continue;
+
+        const members = group.members.map((member) => buildMemberStatus(member, now));
+        realtime.emitToGroup(group._id, 'group_digest', {
+          type: 'GROUP_DIGEST',
+          groupId: group._id,
+          groupName: group.name,
+          intervalMinutes: group.notificationIntervalMinutes,
+          members,
+          timestamp: now.toISOString(),
+        });
+
+        await digestRepo.create({
+          groupId: group._id,
+          groupName: group.name,
+          intervalMinutes: group.notificationIntervalMinutes,
+          members,
+          sentAt: now,
+        });
+        await groupRepo.setLastDigestSentAt(group._id, now);
+        sent += 1;
+
+        logger.log('GROUP_DIGEST_SENT');
+      }
+      telemetry.increment('job_runs_total', { job: 'digest', outcome: 'success' });
+      return sent;
+    } catch (error) {
+      telemetry.increment('job_runs_total', { job: 'digest', outcome: 'error' });
+      throw error;
+    } finally {
+      if (startedAt !== null) {
+        telemetry.observe('job_duration_seconds', { job: 'digest' }, Number(process.hrtime.bigint() - startedAt) / 1e9);
+      }
+    }
   }
 
   return { listDigests, getLatestDigest, sendDueDigests };

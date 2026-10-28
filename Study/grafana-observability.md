@@ -1,5 +1,31 @@
 # Grafana observability: M0
 
+## M2e Privacy, membership, media and digest metrics (2026-10-28)
+
+| Metric (prefix `familytracker_`) | Ý nghĩa |
+| --- | --- |
+| `privacy_actions_total{action,outcome}` | Pause/resume chia sẻ vị trí; success chỉ sau khi cập nhật và các tác vụ hậu xử lý hoàn tất. |
+| `circle_membership_actions_total{action,outcome}` | Leave/remove sau khi membership đã được cập nhật; lỗi realtime cleanup hiện được xử lý fail-soft và không đảo ngược thao tác DB. |
+| `media_tickets_total{media_type,outcome}` | Kết quả cấp upload ticket image/voice, bao gồm endpoint upload ảnh legacy; không có object key/URL. |
+| `job_runs_total{job,outcome}` | Kết quả mỗi lần digest job được gọi; success có thể gửi 0 digest nếu không có group đủ điều kiện. |
+| `job_duration_seconds{job}` | Thời gian thực thi digest sweep theo monotonic clock; chỉ đọc clock độ phân giải cao khi metrics bật. |
+| `job_schedule_delay_seconds{job}` | Độ trễ từ tick dự kiến đến lúc scheduler gọi digest job; chỉ có sample khi gọi từ scheduler, không phải khi gọi use case trực tiếp. |
+
+Tất cả action/outcome/job/media type đều allowlist, unknown quy về `other`; HTTP 4xx thành `rejected`, exception không có status hoặc 5xx thành `error`. Không xuất actor, Circle/group/conversation ID, danh tính, nội dung chat, URL hay storage key. Metrics được ghi fail-soft và không đổi response hoặc chính sách nghiệp vụ. Delay tính `max(0, actualStart - scheduledAt)`; không đo độ trễ xử lý từng group. Group cleanup emit/unsubscribe vốn bắt lỗi và tiếp tục nên membership DB thành công vẫn là `success`.
+
+PromQL gợi ý:
+
+```promql
+sum by (action, outcome) (rate(familytracker_privacy_actions_total[5m]))
+sum by (action, outcome) (rate(familytracker_circle_membership_actions_total[5m]))
+sum by (media_type, outcome) (rate(familytracker_media_tickets_total[5m]))
+sum by (outcome) (rate(familytracker_job_runs_total{job="digest"}[15m]))
+histogram_quantile(0.95, sum by (le) (rate(familytracker_job_duration_seconds_bucket{job="digest"}[1h])))
+histogram_quantile(0.95, sum by (le) (rate(familytracker_job_schedule_delay_seconds_bucket{job="digest"}[1h])))
+```
+
+Các histogram có bucket hữu hạn 0.01, 0.1, 1, 5, 30 giây. Snapshot Compose sau test workflow ghi nhận kích thước/cadence phụ thuộc các lần gọi; trần policy hiện tại là 1.416 series/2.500. Dashboard hiện có chưa được mở rộng trong M2e; Mongo/cache/auth/privacy panels thuộc phần dashboard kế tiếp. Không cần env, migration hay thay đổi hợp đồng mobile.
+
 ## M2d Redis/cache and blacklist metrics (2026-10-28)
 
 | Metric (prefix `familytracker_`) | Ý nghĩa |

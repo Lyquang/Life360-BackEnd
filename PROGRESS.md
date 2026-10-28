@@ -1,5 +1,11 @@
 # Progress Log
 
+### Grafana M2e privacy, membership, media and digest metrics (2026-10-28)
+
+- Added bounded workflow counters for location-sharing pause/resume, Circle leave/remove, media upload tickets, and digest job outcomes; digest duration and scheduler delay histograms use fixed buckets. Rejections (4xx) are separate from system errors. No actor/group/conversation IDs, content, URLs, or object keys in labels.
+- Scheduler passes its expected tick time to the digest use case only for measurement; business schedule and API/socket contracts are unchanged. Existing post-commit realtime cleanup remains fail-soft. Added success/rejected/error and privacy-canary coverage; no env or DB migration.
+- Verification: full `npm test` 213/213 across 50 suites; targeted workflow/regression suite 63/63; lint, graph refresh and `git diff --check` pass. Maximum metric policy cardinality is 1,416/2,500. Rebuilt local Compose is healthy; synthetic register/privacy update returned 201/200 and authenticated gzip scrape returned 200 with the pause counter plus membership/media/digest metric families registered. No stage/commit/push. Suggested commit: `feat(observability): instrument privacy chat and digest workflows`.
+
 ### Grafana M2d Redis/cache and auth blacklist metrics (2026-10-28)
 
 - Added bounded cache hit/miss/negative-hit/error/disabled outcomes by logical key category; Redis command outcome/duration and connection event metrics; explicit auth blacklist fail-open counters separating Redis disabled from unavailable. Existing fallback/auth semantics stay unchanged; no IDs, key material, tokens, command payloads or errors enter labels/logs. No new env or migration.

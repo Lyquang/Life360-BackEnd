@@ -18,7 +18,7 @@ Chỉ bind localhost; MongoDB không publish port. Nếu port đã bị chiếm,
 
 Prometheus scrape 60 giây bằng bearer riêng qua secret file, gzip, giới hạn 2.500 sample/lần và retention 3 ngày/512 MB. Chờ ít nhất hai scrape để biểu đồ rate có dữ liệu. `No data` nghĩa là chưa có mẫu, không phải zero. Backend bị giới hạn 0,1 CPU/512 MB; Docker Desktop và Mongo/Prometheus/Grafana vẫn dùng tài nguyên máy chủ riêng.
 
-Dashboard được provision trong folder FamilyTracker: HTTP & Runtime, Socket Actions, Location & Live Trail. Chưa có metrics DB/cache/auth chuyên sâu hoặc Loki datasource; các phần này phụ thuộc giai đoạn tiếp theo và gate benchmark. Log hiện xem bằng Docker logs của backend. Không có remote_write hay Cloud datasource.
+Metrics scrape hiện bao gồm HTTP/runtime, Socket/Location/Live Trail, Mongo pool/repository/transaction, Redis/cache/auth-blacklist, privacy/membership, media ticket và digest job outcomes. Dashboard được provision trong folder FamilyTracker: HTTP & Runtime, Socket Actions, Location & Live Trail; dashboard chuyên sâu cho DB/cache/auth/privacy/jobs và Loki datasource chưa được thêm. Log hiện xem bằng Docker logs của backend. Không có remote_write hay Cloud datasource.
 
 ## Benchmark
 

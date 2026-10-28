@@ -11,6 +11,7 @@ const {
   isChatMediaUploadKeyOwnedBy,
 } = require('../../domain/media');
 const { sameId } = require('../shared/policies');
+const { createSafeMetrics } = require('../ports/metrics');
 const { toMessageView, toMemberView, idOrNull } = require('./chatMappers');
 
 const isAfter = (a, b) => !b || a.toString() > b.toString(); // ObjectId hex order == creation order
@@ -28,7 +29,9 @@ function createChatUseCases({
       return false;
     },
   },
+  metrics,
 }) {
+  const telemetry = createSafeMetrics(metrics);
   async function requireMembership(conversationId, userId) {
     const membership = await conversationMemberRepo.find(conversationId, userId);
     if (!membership) throw Errors.forbidden('You are not a member of this conversation.');
@@ -310,48 +313,68 @@ function createChatUseCases({
 
   /** Pre-signed PUT so the client uploads straight to object storage. */
   async function createUploadTicket({ userId, conversationId, contentType, contentLength }) {
-    const store = requireStorage();
-    if (contentLength > store.maxUploadBytes) {
-      throw Errors.badRequest(`File is too large. Maximum size is ${store.maxUploadBytes} bytes.`);
-    }
-    await requireMembership(conversationId, userId);
+    try {
+      const store = requireStorage();
+      if (contentLength > store.maxUploadBytes) {
+        throw Errors.badRequest(`File is too large. Maximum size is ${store.maxUploadBytes} bytes.`);
+      }
+      await requireMembership(conversationId, userId);
 
-    const key = buildChatUploadKey({ conversationId, userId, uuid: randomUUID(), contentType });
-    const upload = await store.createPresignedUpload({ key, contentType, contentLength });
-    return {
-      uploadUrl: upload.url,
-      method: 'PUT',
-      headers: upload.headers,
-      key,
-      fileUrl: store.publicUrlFor(key),
-      expiresIn: store.urlTtlSeconds,
-      expiresAt: new Date(Date.now() + store.urlTtlSeconds * 1000).toISOString(),
-    };
+      const key = buildChatUploadKey({ conversationId, userId, uuid: randomUUID(), contentType });
+      const upload = await store.createPresignedUpload({ key, contentType, contentLength });
+      const result = {
+        uploadUrl: upload.url,
+        method: 'PUT',
+        headers: upload.headers,
+        key,
+        fileUrl: store.publicUrlFor(key),
+        expiresIn: store.urlTtlSeconds,
+        expiresAt: new Date(Date.now() + store.urlTtlSeconds * 1000).toISOString(),
+      };
+      telemetry.increment('media_tickets_total', { media_type: 'image', outcome: 'success' });
+      return result;
+    } catch (error) {
+      telemetry.increment('media_tickets_total', {
+        media_type: 'image',
+        outcome: Number(error?.status) >= 400 && Number(error?.status) < 500 ? 'rejected' : 'error',
+      });
+      throw error;
+    }
   }
 
   async function createMediaUploadTicket({ userId, conversationId, mediaType, extension, mimeType, fileSize }) {
-    const store = requireStorage();
-    assertMediaUploadInput({ mediaType, extension, mimeType, fileSize }, store);
-    await requireMembership(conversationId, userId);
+    try {
+      const store = requireStorage();
+      assertMediaUploadInput({ mediaType, extension, mimeType, fileSize }, store);
+      await requireMembership(conversationId, userId);
 
-    const key = buildChatMediaUploadKey({ conversationId, userId, uuid: randomUUID(), mimeType });
-    const upload = await store.createPresignedUpload({ key, contentType: mimeType, contentLength: fileSize });
-    const publicUrl = store.publicUrlFor(key);
-    await cacheManager.setWithTTL(
-      mediaMetadataKey(key),
-      { publicUrl, mediaType, mimeType, fileSize, uploadIssuedAt: new Date().toISOString() },
-      60 * 60,
-      { jitterSeconds: 120 }
-    );
-    return {
-      uploadUrl: upload.url,
-      method: 'PUT',
-      headers: upload.headers,
-      key,
-      publicUrl,
-      expiresIn: store.urlTtlSeconds,
-      expiresAt: new Date(Date.now() + store.urlTtlSeconds * 1000).toISOString(),
-    };
+      const key = buildChatMediaUploadKey({ conversationId, userId, uuid: randomUUID(), mimeType });
+      const upload = await store.createPresignedUpload({ key, contentType: mimeType, contentLength: fileSize });
+      const publicUrl = store.publicUrlFor(key);
+      await cacheManager.setWithTTL(
+        mediaMetadataKey(key),
+        { publicUrl, mediaType, mimeType, fileSize, uploadIssuedAt: new Date().toISOString() },
+        60 * 60,
+        { jitterSeconds: 120 }
+      );
+      const result = {
+        uploadUrl: upload.url,
+        method: 'PUT',
+        headers: upload.headers,
+        key,
+        publicUrl,
+        expiresIn: store.urlTtlSeconds,
+        expiresAt: new Date(Date.now() + store.urlTtlSeconds * 1000).toISOString(),
+      };
+      telemetry.increment('media_tickets_total', { media_type: mediaType, outcome: 'success' });
+      return result;
+    } catch (error) {
+      telemetry.increment('media_tickets_total', {
+        media_type: mediaType,
+        outcome: Number(error?.status) >= 400 && Number(error?.status) < 500 ? 'rejected' : 'error',
+      });
+      throw error;
+    }
   }
 
   async function notifyTyping({ userId, userName, conversationId, isTyping, exceptSocketId }) {

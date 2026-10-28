@@ -1,5 +1,6 @@
 const { Errors } = require('../../domain/errors');
 const { requireGroupMember, sameId } = require('../shared/policies');
+const { createSafeMetrics } = require('../ports/metrics');
 
 function createGroupUseCases({
   groupRepo,
@@ -9,7 +10,9 @@ function createGroupUseCases({
   realtime,
   liveTrailAccessInvalidator,
   logger = console,
+  metrics,
 }) {
+  const telemetry = createSafeMetrics(metrics);
   /** Circle + its group chat are created atomically (single transaction). */
   async function createGroup({ userId, name }) {
     const { group, conversation } = await unitOfWork.run(async (session) => {
@@ -148,12 +151,30 @@ function createGroupUseCases({
     };
   }
 
+  async function recordMembershipAction(action, operation) {
+    try {
+      const result = await operation();
+      telemetry.increment('circle_membership_actions_total', { action, outcome: 'success' });
+      return result;
+    } catch (error) {
+      telemetry.increment('circle_membership_actions_total', {
+        action,
+        outcome: Number(error?.status) >= 400 && Number(error?.status) < 500 ? 'rejected' : 'error',
+      });
+      throw error;
+    }
+  }
+
   function leaveGroup({ userId, groupId }) {
-    return endMembership({ actorId: userId, groupId, targetUserId: userId, selfLeave: true });
+    return recordMembershipAction('leave', () =>
+      endMembership({ actorId: userId, groupId, targetUserId: userId, selfLeave: true })
+    );
   }
 
   function removeMember({ userId, groupId, memberUserId }) {
-    return endMembership({ actorId: userId, groupId, targetUserId: memberUserId, selfLeave: false });
+    return recordMembershipAction('remove', () =>
+      endMembership({ actorId: userId, groupId, targetUserId: memberUserId, selfLeave: false })
+    );
   }
 
   return {
