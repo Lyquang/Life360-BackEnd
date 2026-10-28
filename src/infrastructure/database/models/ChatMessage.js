@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 
 const MESSAGE_TYPES = ['text', 'image', 'voice'];
 
+const sosSchema = new mongoose.Schema({
+  id: { type: mongoose.Schema.Types.ObjectId, ref: 'SosIncident', required: true },
+  kind: { type: String, enum: ['alert', 'assistance'], required: true },
+}, { _id: false });
+
 const attachmentSchema = new mongoose.Schema(
   {
     url: { type: String, required: true },
@@ -37,6 +42,10 @@ const chatMessageSchema = new mongoose.Schema(
       default: '',
       maxlength: 2000,
     },
+    sos: {
+      type: sosSchema,
+      validate: { validator: function () { return this.type === 'text'; }, message: 'SOS messages must be text.' },
+    },
     attachment: {
       type: attachmentSchema,
       default: null,
@@ -68,6 +77,14 @@ const chatMessageSchema = new mongoose.Schema(
 
 // Serves history pagination and unread counting: { conversationId, _id: { $gt: lastReadMessageId } }.
 chatMessageSchema.index({ conversationId: 1, _id: 1 });
+chatMessageSchema.index({ conversationId: 1, 'sos.id': 1 }, {
+  unique: true,
+  partialFilterExpression: { 'sos.kind': 'alert' },
+});
+chatMessageSchema.index({ conversationId: 1, 'sos.id': 1, senderId: 1 }, {
+  unique: true,
+  partialFilterExpression: { 'sos.kind': 'assistance' },
+});
 
 const ChatMessage = mongoose.model('ChatMessage', chatMessageSchema);
 ChatMessage.TYPES = MESSAGE_TYPES;

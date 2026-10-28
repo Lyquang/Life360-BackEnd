@@ -27,6 +27,13 @@ function toMessageView(message, senderName = null) {
     view.fileSize = message.fileSize;
     view.mimeType = message.mimeType;
   }
+  if (message.sos) {
+    view.sos = {
+      id: message.sos.id.toString(),
+      kind: message.sos.kind,
+      ...(message.sos.kind === 'assistance' && { responderId: message.senderId.toString() }),
+    };
+  }
   return view;
 }
 

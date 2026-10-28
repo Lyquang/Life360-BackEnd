@@ -60,7 +60,7 @@ module.exports = {
   },
 
   /** GREATEST semantics: concurrent sends can never move lastMessage backwards. */
-  recordLastMessage(id, messageId, at) {
-    return Conversation.updateOne({ _id: id }, { $max: { lastMessageId: messageId, lastMessageAt: at } });
+  recordLastMessage(id, messageId, at, { session } = {}) {
+    return Conversation.updateOne({ _id: id }, { $max: { lastMessageId: messageId, lastMessageAt: at } }, { session });
   },
 };

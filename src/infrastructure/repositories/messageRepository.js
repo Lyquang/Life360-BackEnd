@@ -11,6 +11,15 @@ module.exports = {
     return ChatMessage.create({ conversationId, senderId, type, content, attachment, mediaUrl, duration, fileSize, mimeType });
   },
 
+  async createSosMessage({ conversationId, senderId, content, sos }, { session } = {}) {
+    if (!session?.inTransaction()) throw new Error('SOS messages require an active MongoDB transaction.');
+    if (!sos?.id || !sos?.kind) throw new TypeError('SOS message metadata is required.');
+    const [message] = await ChatMessage.create([
+      { conversationId, senderId, type: 'text', content, sos },
+    ], { session });
+    return message;
+  },
+
   findInConversation(messageId, conversationId) {
     return ChatMessage.findOne({ _id: messageId, conversationId }).lean();
   },

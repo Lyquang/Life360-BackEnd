@@ -1,5 +1,13 @@
 # Progress Log
 
+### SOS assistance S1b: chat metadata and durable outbox (2026-10-28)
+
+- Added optional server-owned SOS metadata to text messages and additive message DTOs. Partial unique indexes enforce one alert per incident/conversation and one assistance message per incident/conversation/sender. Ordinary message creation still ignores injected SOS metadata.
+- Added transaction-only createSosMessage and optional session propagation for conversation lastMessage/member read-pointer updates. Integration test verifies all writes, including incident/outbox, roll back together; ordinary chat remains compatible.
+- Added per-recipient reference-only SosOutbox and repository: unique event keys, atomic claim, expiring token-protected lease, retry scheduling, attempt limits and recovery of a final-attempt crash. Dispatcher, backoff policy, permission revalidation and API/socket wiring are upcoming; no notifications emitted by this slice.
+- Verification: seven new tests pass; full suite 231/231 tests in 54 suites. Lint, explicit syntax checks for eight changed JS files, graph refresh and diff check pass. Updated CLAUDE.md and SOS Study progress. No stage/commit/push.
+- Suggested commit: `feat(sos): add chat metadata and durable outbox`. Next: application use cases and membership authorization, followed by dispatcher and HTTP/socket wiring.
+
 ### SOS assistance S1a: persistence foundation (2026-10-28)
 
 - Added pure SOS state/self-assistance rules, SosIncident/SosResponse models and an aggregate repository. Unique indexes enforce one active incident per owner, per-owner optional request IDs, and one response per incident/responder. No expiry/TTL policy has been enabled.

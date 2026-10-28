@@ -26,8 +26,8 @@ module.exports = {
     );
   },
 
-  find(conversationId, userId) {
-    return ConversationMember.findOne({ conversationId, userId }).lean();
+  find(conversationId, userId, { session } = {}) {
+    return ConversationMember.findOne({ conversationId, userId }).session(session || null).lean();
   },
 
   listByUser(userId) {
@@ -46,7 +46,7 @@ module.exports = {
    * lastReadMessageId = GREATEST(lastReadMessageId, messageId), atomically.
    * Returns the document as it was BEFORE the update (null if not a member).
    */
-  advanceLastRead(conversationId, userId, messageId, at) {
+  advanceLastRead(conversationId, userId, messageId, at, { session } = {}) {
     const target = toObjectId(messageId);
     return ConversationMember.findOneAndUpdate(
       { conversationId, userId },
@@ -60,7 +60,7 @@ module.exports = {
           },
         },
       ],
-      { new: false }
+      { new: false, session }
     ).lean();
   },
 };

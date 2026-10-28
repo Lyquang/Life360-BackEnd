@@ -1,6 +1,6 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: Da duoc yeu cau hien thuc theo tung phan nho; S1a persistence hoan thanh de review.
+Trang thai: Hien thuc theo tung phan nho; S1a persistence va S1b chat/outbox hoan thanh de review.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
@@ -15,11 +15,26 @@ Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach t
   use case chi load ket qua replay SAU rollback, khong tiep tuc query transaction da abort.
 - Chua them expiry tu dong/TTL; status expired duoc du tru nhung chua co job hoac deadline.
   Chua tu chon push provider, response withdrawal hoac retention.
-- S1b tiep theo: chat metadata/index/session support va outbox. Sau do S2/S3 noi
-  use case, authorization/membership race, API/socket; S4 can tich hop iOS/push.
+- S1b: ChatMessage.sos (id/kind) optional, unique partial indexes alert/assistance;
+  mapper them responderId tu senderId cho assistance. Tin thuong khong co field sos moi.
+  messageRepo.create van whitelist khong nhan sos; createSosMessage rieng bat buoc transaction.
+  lastMessage/read pointer repositories nhan session optional de rollback cung tin SOS.
+- S1b outbox: `SosOutbox.js`/`sosOutboxRepository.js` luu eventKey, kind,
+  sosId, recipientId, messageId (bat buoc voi chat_message), revision va lease state.
+  Moi event danh cho mot user; dispatcher sau nay phai nap tham chieu va recheck quyen.
+  Khong luu raw payload/token/toa do. Lease token thay moi khi reclaim; ack/retry can token
+  va lease con han. Attempts tang khi claim, het budget thi failed, ke ca crash lan cuoi.
+  LeaseMs/maxAttempts/retryAt do caller truyen; backoff/jitter va worker chua noi o phan nay.
+- `delivered` chi la trang thai worker bao transport da xu ly; KHONG phai nguoi nhan da doc
+  hay da nhan ho tro. Dispatcher S2 se quan ly bo qua recipient mat quyen va dedupe client.
+- S2/S3 tiep theo noi use case, authorization/membership race, dispatcher, API/socket;
+  S4 can tich hop iOS/push. Hien chua tao outbox tu luong SOS cu hay gui event moi.
 - Kiem chung S1a: 9 tests moi pass tren MongoMemoryReplSet; full suite 224/224 tests,
   53 suites. Lint, syntax tung file moi, diff check va context graph refresh pass.
   Chua co endpoint SOS moi de mobile test. Khong stage/commit/push.
+- Kiem chung S1b: 7 tests moi cho DTO, unique indexes, transaction rollback toan bo,
+  enqueue dedup, concurrent claims, stale lease, retry va crash o attempt cuoi. Full suite
+  231/231 tests, 54 suites pass; lint, syntax 8 file JS, graph refresh va diff check pass.
 
 ## 1. Viet lai yeu cau de xac nhan
 

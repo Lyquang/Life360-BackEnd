@@ -165,12 +165,25 @@ Gateways receive `{ chat, location, logger }` and register events with `socket.o
 ```js
 {
   conversationId, senderId,
-  type: 'text' | 'image',
+  type: 'text' | 'image' | 'voice',
   content: String,
+  sos: { id: ObjectId, kind: 'alert' | 'assistance' }, // optional, server-created text only
   attachment: { url, key, width, height, blurhash, mimeType, size }
   // index: { conversationId: 1, _id: 1 }
 }
 ```
+
+### SOS persistence (implementation in progress)
+
+- `SosIncident` and `SosResponse`: one active incident per owner, optional request-ID deduplication,
+  and one response per incident/responder. SOS mutations require an active MongoDB transaction.
+- `messageRepository.createSosMessage` writes server-owned SOS metadata inside that transaction;
+  ordinary `create` ignores SOS metadata. Partial indexes deduplicate alert/assistance messages.
+- `SosOutbox` stores per-recipient event references, not raw payloads. Its repository supports
+  atomic claims, expiring leases, retry scheduling and failed-attempt limits. A stale lease cannot
+  acknowledge a reclaimed event. `delivered` is not a client delivery/read receipt.
+- SOS use cases, authorization, outbox dispatcher and new API/socket contracts are not wired yet.
+  The existing `sos_alert` flow still only broadcasts. See `Study/SOS_GROUP_CHAT_ASSISTANCE.md`.
 
 ### User
 ```js
