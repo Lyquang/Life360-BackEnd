@@ -1,5 +1,37 @@
 # Grafana observability: M0
 
+## M4 local benchmark result (2026-10-28)
+
+Chạy `npm run benchmark:monitoring` trong Docker Compose local: warmup 30 giây, đo 120 giây mỗi case, ba cặp metrics-off/on, một user và hai sockets. Đây là dữ liệu synthetic trên Docker Desktop, không phải benchmark production hay capacity nhiều người dùng.
+
+| Repeat | HTTP p95 off -> on | HTTP delta | Socket p95 off -> on | Socket delta | RSS delta on-vs-off |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1502.5 -> 2293.6 ms | +52.7% | 1091.1 -> 1103.8 ms | +1.2% | -0.15 MiB |
+| 2 | 1465.4 -> 1408.3 ms | -3.9% | 879.9 -> 1177.3 ms | +33.8% | +0.16 MiB |
+| 3 | 1602.9 -> 1395.5 ms | -12.9% | 1396.3 -> 1184.1 ms | -15.2% | +2.18 MiB |
+
+Chỉ repeat 3 đạt đầy đủ ngưỡng p95 <=5% cho HTTP/Socket và RSS <=20 MiB; hai repeat còn lại không đạt p95. Dao động trái chiều và số mẫu mỗi case 90-130 cho thấy độ nhiễu lớn, không thể kết luận metrics gây ra hay không gây ra chênh lệch. Gate overhead chưa được xác nhận; không bật log shipping/Cloud và không coi kết quả là bằng chứng cho Render Free. RSS chỉ lấy mẫu trước/sau, không phải peak. Safe JSON logger bật ở cả hai cấu hình nên benchmark cô lập tác động metrics, không phải toàn bộ observability.
+
+## M2c Mongo pool và transaction outcomes (2026-10-28)
+
+| Metric (prefix `familytracker_`) | Ý nghĩa |
+| --- | --- |
+| `mongo_pool_events_total{event}` | Pool/connection lifecycle và checkout failure được Mongo driver phát ra sau khi observer gắn. Không phải số connection hiện tại hay MongoDB command count. |
+| `mongo_repository_operations_total{operation,outcome}` | Kết quả các phương thức repository, gom vào read/write/bulk_read/bulk_write/other và success/error. Không có nhãn tên repository hay method. |
+| `mongo_repository_duration_seconds{operation}` | Thời gian đồng bộ/asynchronous của repository method, đơn vị giây; không đo network wire hoặc thời gian chờ ngoài method. |
+| `mongo_transactions_total{outcome}` | Kết quả unit-of-work: success/error; `unsupported` là lần chạy fallback không transaction trên Mongo standalone. |
+
+Repository methods được bọc tại composition root, chỉ khi metrics bật; cache hit không bị tính như Mongo call vì wrapper nằm dưới cache decorator. Classifier dùng allowlist tên method nội bộ và chỉ xuất 5 nhóm nhãn cố định. Không bật command monitoring và không đọc filter, document, query hay collection stats. Pool observer chỉ lắng nghe lifecycle/check-out event của Mongo driver; listener gắn ngay sau connect, trước model/index init và tháo trước khi Mongo client đóng. Events phát sinh trong handshake trước khi connect hoàn tất không được đếm; do đó counter là lower-bound theo process, không dùng làm gauge trạng thái pool. Lỗi telemetry fail-soft, lỗi transaction vẫn được ném lại như trước. Không migration, query bổ sung hay biến môi trường mới.
+
+```promql
+sum by (event) (rate(familytracker_mongo_pool_events_total[5m]))
+sum by (operation, outcome) (rate(familytracker_mongo_repository_operations_total[5m]))
+histogram_quantile(0.95, sum by (operation, le) (rate(familytracker_mongo_repository_duration_seconds_bucket[5m])))
+sum by (outcome) (rate(familytracker_mongo_transactions_total[5m]))
+```
+
+Theoretical maximum from all currently defined metric label combinations is 877 series, below the 2,500 cap. Local verification sau rebuild cuối: authenticated gzip scrape có 8 `connection_created`, 8 `connection_ready`, 1 bulk-read, 22 write và 22 bulk-write repository calls; exposition có 61 series trong workload startup này. Chưa có transaction sample vì startup workload không gọi UnitOfWork transaction. Dashboard panels chi tiết Mongo sẽ được cập nhật sau khi hoàn thành phần Redis/cache metrics.
+
 ## M2b Location/Live Trail business metrics (2026-10-28)
 
 Các chỉ số này giải thích những bước bên trong use case; không cộng chúng với số action Socket để suy ra số request. Tất cả dùng prefix `familytracker_`, bật theo `METRICS_ENABLED` hiện có và scrape qua endpoint có bearer riêng.

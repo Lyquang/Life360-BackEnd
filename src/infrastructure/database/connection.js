@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { attachMongoMetricsObserver } = require('./mongoMetricsObserver');
 
 // Registers all schemas so init() below builds every collection/index before traffic.
 require('./models/User');
@@ -19,7 +20,7 @@ async function detectTransactionSupport() {
 /**
  * @returns {Promise<{ supportsTransactions: boolean, usingInMemory: boolean, disconnect: () => Promise<void> }>}
  */
-async function connectDatabase({ uri, isProduction, allowInMemoryFallback, logger = console }) {
+async function connectDatabase({ uri, isProduction, allowInMemoryFallback, logger = console, metrics }) {
   let memoryServer = null;
 
   try {
@@ -33,6 +34,7 @@ async function connectDatabase({ uri, isProduction, allowInMemoryFallback, logge
     await mongoose.connect(memoryServer.getUri());
   }
 
+  const detachMetrics = attachMongoMetricsObserver(mongoose.connection.getClient(), metrics);
   const supportsTransactions = await detectTransactionSupport();
   if (!supportsTransactions && isProduction) {
     await mongoose.connection.close();
@@ -45,6 +47,7 @@ async function connectDatabase({ uri, isProduction, allowInMemoryFallback, logge
     supportsTransactions,
     usingInMemory: Boolean(memoryServer),
     async disconnect() {
+      detachMetrics();
       await mongoose.connection.close();
       if (memoryServer) await memoryServer.stop();
     },

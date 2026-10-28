@@ -1,11 +1,16 @@
 # Progress Log
 
+### Grafana M2c Mongo pool/transaction metrics (2026-10-28)
+
+- Added bounded Mongo driver pool/connection lifecycle and checkout-failure counters, repository operation outcome/duration metrics grouped into five fixed operation classes, and unit-of-work transaction outcomes. Metrics are fail-soft; no Mongo command monitoring, query/document payload capture, collection scan, or schema/env change. Listener attaches after connect and before model/index init; handshake events may be missed, so pool counters are observed-event counts, not current pool gauges.
+- Added tests for allowlisted pool events, detach behavior, repository wrapping/disabled mode, transaction success/error and standalone fallback. Targeted tests 4/4; full suite 206/206 across 49 suites; lint, diff check and graph refresh pass. Theoretical max is 877 series; final local gzip scrape observed 8 connection-created, 8 connection-ready, 45 repository calls and 61 active series. No transaction sample in startup workload. No commit/push. Suggested commit: `feat(observability): expose MongoDB pool metrics`.
+
 ### Grafana M4 local monitoring and benchmark (2026-10-28)
 
 - Added an isolated localhost-only Docker Compose stack with synthetic MongoDB replica set, backend capped at 0.1 CPU/512 MiB, Prometheus and Grafana; local-only credentials are generated under ignored `.local/` files. Provisioned HTTP/runtime, Socket and Location/Live Trail dashboards. No production `.env`, Cloud datasource, Redis or Loki.
 - Verified all four containers healthy, Prometheus target `up=1`, Grafana datasource and all three dashboards provisioned, and all 19 dashboard PromQL expressions accepted. `/metrics` returns 401 without bearer and 200 with the local scrape credential.
-- Full paired benchmark completed (30s warmup, 120s per case, 3 repeats; one user/two sockets). Only repeat 2 met the <=5% HTTP/Socket p95 and <=20 MiB RSS gate; repeats 1 and 3 failed on Socket p95 (+26.3%) and HTTP p95 (+35.5%), respectively. RSS stayed within threshold in all pairs. This is noisy, synthetic single-user local evidence, not production capacity proof; do not enable Loki/Cloud from this result.
-- Smoke passed once but is non-acceptance. The full benchmark first hit a transient HTTP timeout, then completed on retry. Updated benchmark errors to identify the failed synthetic endpoint. Final stack restored with metrics enabled and healthy. `node --check scripts/benchmark-monitoring.js` passes. No commit/push.
+- Full paired benchmark (30s warmup, 120s per case, 3 repeats; one user/two sockets): repeat 1 HTTP p95 +52.7% / Socket +1.2%; repeat 2 HTTP -3.9% / Socket +33.8%; repeat 3 HTTP -12.9% / Socket -15.2%. RSS deltas: -0.15, +0.16, +2.18 MiB. Only repeat 3 met both p95 <=5% and RSS <=20 MiB. High variance and 90-130 samples/case mean the overhead gate is not established; this is not production capacity evidence and does not approve Loki/Cloud.
+- Smoke is non-acceptance. Full run completed and restored metrics enabled. Results are in ignored `ops/monitoring/.local/benchmark.json`; `node --check scripts/benchmark-monitoring.js` passed. No commit/push.
 
 ### Grafana M2b Location/Live Trail metrics (2026-10-28)
 
@@ -13,7 +18,7 @@
 - Added fail-soft metrics facade for application code. Timer-driven trail flush now catches emit failures and records an error instead of allowing an uncaught exception. Business payloads and batch result contracts are unchanged.
 - Verification: 202/202 tests pass (49 suites); new sampling/failure/real-batch tests 3/3 pass; lint and diff check pass; graph regenerated. Enumerated all labelsets: 810 application + 16 runtime = 826 series, 71,764 plain bytes / 4,717 gzip bytes on local synthetic snapshot. M4 overhead still unmeasured.
 - Updated Study/grafana-observability.md with metric semantics, sampling bias, PromQL and rollback. No new env or schema migration. No stage/commit/push. Suggested commit: `feat(observability): instrument location and live trail workflows`.
-- Next approved phase: M4 local Compose monitoring and benchmark, before M2c-e and separately approved M5 Cloud export.
+- M4 local Compose benchmark is complete but noisy and does not establish the <=5% p95 gate. M2c-e instrumentation may continue for local evaluation; production enablement and M5 Cloud export remain gated.
 
 ### Grafana M2a Socket performance metrics (2026-10-28)
 

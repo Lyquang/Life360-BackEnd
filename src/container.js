@@ -21,6 +21,7 @@ const { createSocketRealtime } = require('./infrastructure/realtime/socketRealti
 const { createLiveTrailAccessInvalidator } = require('./infrastructure/realtime/liveTrailAccessInvalidator');
 const { createOAuthProviderFactory } = require('./infrastructure/oauth/oauthProviderFactory');
 const { createUnitOfWork } = require('./infrastructure/database/unitOfWork');
+const { instrumentMongoRepositories } = require('./infrastructure/database/mongoRepositoryMetrics');
 const { createAuthUseCases } = require('./application/auth/authUseCases');
 const { createGroupUseCases } = require('./application/groups/groupUseCases');
 const { createPlaceUseCases } = require('./application/places/placeUseCases');
@@ -47,9 +48,9 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
       ? createRedisCacheManager({ config: config.redis, logger })
       : createNoopCacheManager({ reason: 'Redis is disabled or REDIS_URL is missing.' });
 
-  const repos = {
-    userRepo: createCachedUserRepository({ userRepo, cacheManager }),
-    groupRepo: createCachedGroupRepository({ groupRepo, cacheManager }),
+  const measuredRepositories = instrumentMongoRepositories({
+    userRepo,
+    groupRepo,
     placeRepo,
     locationHistoryRepo,
     digestRepo,
@@ -59,10 +60,23 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     userSocialAccountRepo,
     refreshSessionRepo,
     liveTrailRepo,
+  }, metrics);
+  const repos = {
+    userRepo: createCachedUserRepository({ userRepo: measuredRepositories.userRepo, cacheManager }),
+    groupRepo: createCachedGroupRepository({ groupRepo: measuredRepositories.groupRepo, cacheManager }),
+    placeRepo: measuredRepositories.placeRepo,
+    locationHistoryRepo: measuredRepositories.locationHistoryRepo,
+    digestRepo: measuredRepositories.digestRepo,
+    conversationRepo: measuredRepositories.conversationRepo,
+    conversationMemberRepo: measuredRepositories.conversationMemberRepo,
+    messageRepo: measuredRepositories.messageRepo,
+    userSocialAccountRepo: measuredRepositories.userSocialAccountRepo,
+    refreshSessionRepo: measuredRepositories.refreshSessionRepo,
+    liveTrailRepo: measuredRepositories.liveTrailRepo,
   };
   const services = {
     metrics,
-    unitOfWork: createUnitOfWork({ supportsTransactions, logger }),
+    unitOfWork: createUnitOfWork({ supportsTransactions, logger, metrics }),
     realtime: createSocketRealtime(io, metrics),
     liveTrailAccessInvalidator: createLiveTrailAccessInvalidator({ logger }),
     tokenService: createTokenService(config.jwt),

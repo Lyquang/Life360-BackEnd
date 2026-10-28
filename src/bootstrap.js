@@ -15,12 +15,20 @@ const { createSafeLogger } = require('./infrastructure/observability/safeLogger'
  * @param {ReturnType<import('./config/env').loadConfig>} config
  */
 async function createServer(config, { logger = createSafeLogger(), digestIntervalMs } = {}) {
-  const db = await connectDatabase({
-    uri: config.mongodbUri,
-    isProduction: config.isProduction,
-    allowInMemoryFallback: config.allowInMemoryDatabase,
-    logger,
-  });
+  const metrics = createMetrics({ ...config.metrics, runtime: true });
+  let db;
+  try {
+    db = await connectDatabase({
+      uri: config.mongodbUri,
+      isProduction: config.isProduction,
+      allowInMemoryFallback: config.allowInMemoryDatabase,
+      logger,
+      metrics,
+    });
+  } catch (error) {
+    metrics.close();
+    throw error;
+  }
 
   // The app must be the server's request listener before Socket.IO attaches to it.
   const app = express();
@@ -30,7 +38,6 @@ async function createServer(config, { logger = createSafeLogger(), digestInterva
     maxHttpBufferSize: 100 * 1024,
   });
 
-  const metrics = createMetrics({ ...config.metrics, runtime: true });
   const container = createContainer({ config, io, supportsTransactions: db.supportsTransactions, logger, metrics });
   const { useCases, services } = container;
   if (services.cacheManager.connect) await services.cacheManager.connect();
