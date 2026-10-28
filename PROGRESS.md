@@ -4,6 +4,12 @@
 
 Deliver a gated, cursor-safe live journey trail without breaking existing location and offline-sync clients.
 
+### Grafana M3d-a auth/cache/database logs (2026-10-28)
+
+- Normalized Redis-ready, Mongo fallback/standalone, auth blacklist failure and Circle realtime-cleanup warnings to fixed allowlisted event codes. Removed unused caught errors and dynamic error-name metadata; no fallback, revocation or membership behavior changed.
+- Exactly eight review files: `src/infrastructure/observability/safeLogger.js`, `src/infrastructure/cache/RedisCacheManager.js`, `src/infrastructure/database/connection.js`, `src/infrastructure/database/unitOfWork.js`, `src/application/auth/authUseCases.js`, `src/application/groups/groupUseCases.js`, `tests/safeLogger.test.js`, `PROGRESS.md`. No git add/commit/push. Suggested commit: `refactor(observability): normalize auth cache and database log events`.
+- Verification: full suite 196/196 passed (49 suites), targeted logger test 4/4 passed, lint passed. Remaining dynamic location/Live Trail logs are M3d-b. Loki/Cloud transport and any worker stay deferred until the local M4 benchmark and separate M5 approval.
+
 ### Grafana M3c Socket correlation (2026-10-28)
 
 - Each Socket connection now receives a generated `connectionId`; every event handler receives a fresh `eventId` and a bounded event name in AsyncLocalStorage. The three gateways preserve their existing client payloads and ack behavior. Live Trail and digest scheduler failures use fixed event codes without raw error names/messages.

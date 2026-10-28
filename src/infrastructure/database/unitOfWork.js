@@ -11,7 +11,7 @@ function createUnitOfWork({ supportsTransactions, logger = console }) {
     async run(work) {
       if (!supportsTransactions) {
         if (!warned) {
-          logger.warn('⚠️  MongoDB is standalone: running WITHOUT transactions (development only).');
+          logger.warn('DATABASE_TRANSACTIONS_UNAVAILABLE');
           warned = true;
         }
         return work(null);

@@ -23,12 +23,12 @@ function createRedisCacheManager({ config, logger = console }) {
 
   client.on('ready', () => {
     healthy = true;
-    logger.log('Redis cache connected.');
+    logger.log('REDIS_CONNECTED');
   });
   client.on('end', () => {
     healthy = false;
   });
-  client.on('error', (error) => {
+  client.on('error', () => {
     healthy = false;
     logger.warn('REDIS_CONNECTION_ERROR');
   });
@@ -36,7 +36,7 @@ function createRedisCacheManager({ config, logger = console }) {
   async function safe(operation, fallback) {
     try {
       return await operation();
-    } catch (error) {
+    } catch {
       healthy = false;
       logger.warn('REDIS_OPERATION_FAILED');
       return fallback;

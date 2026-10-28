@@ -50,7 +50,7 @@ function createAuthUseCases({
     const ttl = ttlFromDate(expiresAt);
     if (!hash || ttl <= 0) return;
     const stored = await cacheManager.setWithTTL(tokenBlacklistKey(hash), context, ttl);
-    if (!stored) logger.warn('Access token blacklist unavailable; continuing with MongoDB session revocation.');
+    if (!stored) logger.warn('AUTH_BLACKLIST_UNAVAILABLE');
   }
 
   async function applyRevocationEffects(sessions, familyIds, userId) {
@@ -244,7 +244,7 @@ function createAuthUseCases({
       { userId: userId.toString(), familyId: payload?.familyId || null },
       ttl
     );
-    if (!stored) logger.warn('Access token blacklist unavailable during logout.');
+    if (!stored) logger.warn('AUTH_BLACKLIST_UNAVAILABLE');
   }
 
   async function logout({ userId, accessToken, refreshToken, allDevices = false }) {

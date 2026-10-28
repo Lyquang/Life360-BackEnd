@@ -101,10 +101,8 @@ function createGroupUseCases({
         removedBy: String(actorId),
       });
       await liveTrailAccessInvalidator.revalidateForMembershipChange(userId);
-    } catch (error) {
-      logger.warn('Circle membership committed but realtime cleanup failed; watch lease remains active.', {
-        errorName: error?.name || 'Error',
-      });
+    } catch {
+      logger.warn('GROUP_REALTIME_CLEANUP_FAILED');
     }
   }
 

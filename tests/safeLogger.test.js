@@ -4,6 +4,7 @@ const { randomBytes } = require('node:crypto');
 const { createSafeLogger } = require('../src/infrastructure/observability/safeLogger');
 const { newRequestId, newConnectionId, withLogContext } = require('../src/infrastructure/observability/logContext');
 const { assertLogger } = require('../src/application/ports/logger');
+const { createUnitOfWork } = require('../src/infrastructure/database/unitOfWork');
 
 function capture() {
   let output = '';
@@ -58,4 +59,21 @@ test('malformed metadata and thrown property getters fail closed', () => {
   const lines = output.lines();
   assert.equal(lines.at(-1).event, 'update_location');
   assert.equal(lines.at(-1).statusCode, undefined);
+});
+
+test('auth, cache and database event codes retain meaning without leaking details', async () => {
+  const output = capture();
+  const logger = createSafeLogger({ destination: output.destination });
+  const codes = [
+    'REDIS_CONNECTED', 'DATABASE_IN_MEMORY_FALLBACK_STARTED',
+    'AUTH_BLACKLIST_UNAVAILABLE', 'GROUP_REALTIME_CLEANUP_FAILED',
+  ];
+  for (const code of codes) {
+    logger.warn(code, { userId: 'private-user', errorName: 'private-error', uri: 'private-uri' });
+  }
+  const unitOfWork = createUnitOfWork({ supportsTransactions: false, logger });
+  assert.equal(await unitOfWork.run(async () => 1), 1);
+  assert.equal(await unitOfWork.run(async () => 2), 2);
+  assert.deepEqual(output.lines().map(line => line.msg), [...codes, 'DATABASE_TRANSACTIONS_UNAVAILABLE']);
+  assert.doesNotMatch(output.raw(), /private-user|private-error|private-uri/);
 });

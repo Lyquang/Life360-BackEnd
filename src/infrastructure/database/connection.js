@@ -27,7 +27,7 @@ async function connectDatabase({ uri, isProduction, allowInMemoryFallback, logge
   } catch (error) {
     if (!allowInMemoryFallback) throw error;
     logger.warn('DATABASE_CONNECTION_FALLBACK');
-    logger.warn('⚠️  Starting in-memory MongoDB replica set (data is lost on stop)...');
+    logger.warn('DATABASE_IN_MEMORY_FALLBACK_STARTED');
     const { MongoMemoryReplSet } = require('mongodb-memory-server');
     memoryServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     await mongoose.connect(memoryServer.getUri());
