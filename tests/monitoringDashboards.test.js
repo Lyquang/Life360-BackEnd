@@ -18,12 +18,20 @@ describe('provisioned Grafana dashboards', () => {
       assert.equal(new Set(ids).size, ids.length, `${name} has duplicate panel IDs`);
       for (const panel of dashboard.panels) {
         assert.ok(panel.title, `${name} panel ${panel.id} must have a title`);
+        assert.ok(typeof panel.description === 'string' && panel.description.trim().length >= 30,
+          `${name} panel ${panel.id} must explain what the chart means`);
         assert.ok(panel.targets.length > 0, `${name} panel ${panel.id} must have a query`);
         for (const target of panel.targets) {
-          assert.equal(panel.datasource.uid, 'familytracker-prometheus', `${name} panel ${panel.id} datasource`);
-          assert.equal(typeof target.expr, 'string');
-          assert.ok(target.expr.length > 0, `${name} panel ${panel.id} query`);
-          assert.doesNotMatch(target.expr, /\b(user_id|group_id|conversation_id|email|latitude|longitude|token)\b/i);
+          if (panel.type === 'logs') {
+            assert.equal(panel.datasource.uid, 'familytracker-loki', `${name} panel ${panel.id} datasource`);
+            assert.equal(typeof target.expr, 'string');
+            assert.match(target.expr, /service="familytracker-backend"/);
+          } else {
+            assert.equal(panel.datasource.uid, 'familytracker-prometheus', `${name} panel ${panel.id} datasource`);
+            assert.equal(typeof target.expr, 'string');
+            assert.ok(target.expr.length > 0, `${name} panel ${panel.id} query`);
+            assert.doesNotMatch(target.expr, /\b(user_id|group_id|conversation_id|email|latitude|longitude|token)\b/i);
+          }
         }
       }
     }

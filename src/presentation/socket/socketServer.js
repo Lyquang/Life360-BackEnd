@@ -3,6 +3,7 @@ const { registerChatGateway } = require('./gateways/chatGateway');
 const { registerLiveTrailGateway } = require('./gateways/liveTrailGateway');
 const { newConnectionId, newRequestId, withLogContext } = require('../../infrastructure/observability/logContext');
 const { createSocketMeasurement } = require('./socketMetrics');
+const { withSpan } = require('../../infrastructure/observability/tracing');
 
 function registerSocketServer(
   io,
@@ -36,7 +37,9 @@ function registerSocketServer(
     const user = socket.data.user;
     const connectionId = newConnectionId();
     const withEventContext = (event, callback) =>
-      withLogContext({ connectionId, eventId: newRequestId(), event }, () => measure(event, callback));
+      withLogContext({ connectionId, eventId: newRequestId(), event }, () =>
+        withSpan(`socket ${event}`, { 'messaging.system': 'socket.io', 'messaging.operation.name': event },
+          () => measure(event, callback)));
     withEventContext('connect', () => logger.log('SOCKET_CONNECTED'));
 
     // Handlers are registered synchronously so events sent right after connect are never dropped.

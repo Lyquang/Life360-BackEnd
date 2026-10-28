@@ -46,7 +46,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Tốc độ quyết định ghi/loại điểm lịch sử theo outcome; dùng để xem bộ lọc vị trí đang giữ hay bỏ bao nhiêu điểm."
     },
     {
       "id": 2,
@@ -80,7 +81,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số điểm vị trí đồng bộ offline mỗi giây theo kết quả, gồm accepted/duplicate/rejected nếu có dữ liệu."
     },
     {
       "id": 3,
@@ -114,7 +116,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số lần timestamp client bị bỏ qua và thay bằng giờ server, phân loại theo nguyên nhân (ví dụ quá cũ hoặc tương lai)."
     },
     {
       "id": 4,
@@ -148,7 +151,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Kết quả dựng hình học hành trình theo nhóm ngày. Error tăng có thể khiến geometry không cập nhật; không chứa tọa độ."
     },
     {
       "id": 5,
@@ -182,7 +186,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Trạng thái matcher hiện hành dưới dạng gauge; 0/1 phụ thuộc trạng thái bật và khả dụng của adapter."
     },
     {
       "id": 6,
@@ -216,7 +221,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số lỗi mỗi giây khi công bố cập nhật Live Trail, theo thao tác realtime/batch/flush."
     },
     {
       "id": 7,
@@ -250,7 +256,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Kích thước JSON payload ở phân vị 95, chỉ đo một trong mười lần broadcast để giảm overhead. Giá trị tính theo byte."
     }
   ]
 }

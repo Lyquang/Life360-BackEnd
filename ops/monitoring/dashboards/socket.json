@@ -46,7 +46,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số Socket action mỗi giây theo event và kết quả. error là lỗi server; rejected thường là yêu cầu hợp lệ bị từ chối nghiệp vụ. Success không đảm bảo client đã nhận event."
     },
     {
       "id": 2,
@@ -80,7 +81,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Phân vị 95 thời gian xử lý action phía server theo event; không tính độ trễ truyền mạng hay thời gian client xử lý."
     },
     {
       "id": 3,
@@ -114,7 +116,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số Socket đang kết nối trong namespace mặc định tại thời điểm scrape."
     },
     {
       "id": 4,
@@ -148,7 +151,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số room của Socket.IO, bao gồm room riêng tự tạo cho từng socket; không đồng nghĩa số Circle."
     },
     {
       "id": 5,
@@ -182,7 +186,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số đăng ký theo dõi Live Trail đang hoạt động trên các Socket. Có thể lớn hơn số người dùng do một socket có thể watch nhiều trail."
     },
     {
       "id": 6,
@@ -216,7 +221,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số lần backend gọi broadcast mỗi giây theo channel. Đây là số lần emit từ server, không phải số client xác nhận nhận được."
     }
   ]
 }

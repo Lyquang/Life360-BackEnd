@@ -5,134 +5,444 @@
   "version": 1,
   "editable": false,
   "refresh": "1m",
-  "time": { "from": "now-6h", "to": "now" },
-  "tags": ["familytracker", "local"],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "tags": [
+    "familytracker",
+    "local"
+  ],
   "panels": [
     {
       "id": 1,
       "title": "Mongo repository operations / second",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (operation, outcome) (rate(familytracker_mongo_repository_operations_total[5m]))", "legendFormat": "{{operation}} / {{outcome}}" }],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (operation, outcome) (rate(familytracker_mongo_repository_operations_total[5m]))",
+          "legendFormat": "{{operation}} / {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Tốc độ thao tác repository MongoDB theo loại thao tác và kết quả. Đây là các lời gọi ở tầng repository, không nhất thiết tương ứng một lệnh wire đơn lẻ."
     },
     {
       "id": 2,
       "title": "Mongo repository p95 duration",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum by (operation, le) (rate(familytracker_mongo_repository_duration_seconds_bucket[5m])))", "legendFormat": "{{operation}}" }],
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (operation, le) (rate(familytracker_mongo_repository_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Phân vị 95 thời gian thao tác repository MongoDB theo lớp thao tác; giúp tìm nhóm đọc/ghi chậm."
     },
     {
       "id": 3,
       "title": "Mongo pool lifecycle events",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (event) (rate(familytracker_mongo_pool_events_total[5m]))", "legendFormat": "{{event}}" }],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (event) (rate(familytracker_mongo_pool_events_total[5m]))",
+          "legendFormat": "{{event}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Tốc độ sự kiện vòng đời connection pool MongoDB. checkout_failed là lỗi cần điều tra; created/closed có thể bình thường khi scale pool."
     },
     {
       "id": 4,
       "title": "Mongo transaction outcomes",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (outcome) (rate(familytracker_mongo_transactions_total[5m]))", "legendFormat": "{{outcome}}" }],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(familytracker_mongo_transactions_total[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Tốc độ kết quả transaction theo success/error/unsupported. unsupported thường nghĩa deployment Mongo hiện tại không hỗ trợ transaction."
     },
     {
       "id": 5,
       "title": "Cache operations by result",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (key_type, outcome) (rate(familytracker_cache_requests_total[5m]))", "legendFormat": "{{key_type}} / {{outcome}}" }],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (key_type, outcome) (rate(familytracker_cache_requests_total[5m]))",
+          "legendFormat": "{{key_type}} / {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Tốc độ truy vấn cache theo loại key và kết quả: hit/miss/error/disabled. Miss dẫn tới đọc nguồn chính; error cho biết thao tác cache thất bại."
     },
     {
       "id": 6,
       "title": "Redis command errors / second",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (command) (rate(familytracker_redis_commands_total{outcome=\"error\"}[5m]))", "legendFormat": "{{command}}" }],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (command) (rate(familytracker_redis_commands_total{outcome=\"error\"}[5m]))",
+          "legendFormat": "{{command}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Tốc độ lệnh Redis lỗi theo nhóm command. Nếu Redis được tắt có chủ ý, hãy phân biệt trạng thái disabled với outage."
     },
     {
       "id": 7,
       "title": "Redis adapter p95 duration",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum by (command, le) (rate(familytracker_redis_command_duration_seconds_bucket[5m])))", "legendFormat": "{{command}}" }],
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (command, le) (rate(familytracker_redis_command_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{command}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Phân vị 95 thời gian thực thi lệnh Redis theo nhóm command, tính ở adapter backend."
     },
     {
       "id": 8,
       "title": "Authentication blacklist fail-open",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (reason) (increase(familytracker_auth_blacklist_fail_open_total[15m]))", "legendFormat": "{{reason}}" }],
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (reason) (increase(familytracker_auth_blacklist_fail_open_total[15m]))",
+          "legendFormat": "{{reason}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Số lần kiểm tra blacklist không truy cập được Redis và auth tiếp tục theo chính sách fail-open. Tăng số này là tín hiệu rủi ro bảo mật/vận hành."
     },
     {
       "id": 9,
       "title": "Privacy and Circle membership actions",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
       "targets": [
-        { "refId": "A", "expr": "sum by (action, outcome) (rate(familytracker_privacy_actions_total[5m]))", "legendFormat": "privacy / {{action}} / {{outcome}}" },
-        { "refId": "B", "expr": "sum by (action, outcome) (rate(familytracker_circle_membership_actions_total[5m]))", "legendFormat": "membership / {{action}} / {{outcome}}" }
+        {
+          "refId": "A",
+          "expr": "sum by (action, outcome) (rate(familytracker_privacy_actions_total[5m]))",
+          "legendFormat": "privacy / {{action}} / {{outcome}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (action, outcome) (rate(familytracker_circle_membership_actions_total[5m]))",
+          "legendFormat": "membership / {{action}} / {{outcome}}"
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Tốc độ thao tác tạm dừng/tiếp tục chia sẻ vị trí, rời Circle hoặc xóa thành viên theo kết quả. Không bao gồm định danh người dùng."
     },
     {
       "id": 10,
       "title": "Media upload tickets",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (media_type, outcome) (rate(familytracker_media_tickets_total[5m]))", "legendFormat": "{{media_type}} / {{outcome}}" }],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (media_type, outcome) (rate(familytracker_media_tickets_total[5m]))",
+          "legendFormat": "{{media_type}} / {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Tốc độ cấp ticket upload ảnh/voice theo loại media và outcome; không đo lượng byte đã tải lên R2."
     },
     {
       "id": 11,
       "title": "Digest job outcomes",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 0, "y": 40, "w": 12, "h": 8 },
-      "targets": [{ "refId": "A", "expr": "sum by (outcome) (rate(familytracker_job_runs_total{job=\"digest\"}[15m]))", "legendFormat": "{{outcome}}" }],
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(familytracker_job_runs_total{job=\"digest\"}[15m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Kết quả chạy job digest theo outcome trong cửa sổ 15 phút; error cho biết một lượt chạy thất bại."
     },
     {
       "id": 12,
       "title": "Digest p95 runtime and scheduler delay",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
-      "gridPos": { "x": 12, "y": 40, "w": 12, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
       "targets": [
-        { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(familytracker_job_duration_seconds_bucket{job=\"digest\"}[1h])))", "legendFormat": "runtime p95" },
-        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(familytracker_job_schedule_delay_seconds_bucket{job=\"digest\"}[1h])))", "legendFormat": "schedule delay p95" }
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(familytracker_job_duration_seconds_bucket{job=\"digest\"}[1h])))",
+          "legendFormat": "runtime p95"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(familytracker_job_schedule_delay_seconds_bucket{job=\"digest\"}[1h])))",
+          "legendFormat": "schedule delay p95"
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "description": "Phân vị 95 thời gian chạy job và độ trễ scheduler; runtime cao là xử lý lâu, scheduler delay cao nghĩa job bắt đầu muộn."
     }
   ]
 }

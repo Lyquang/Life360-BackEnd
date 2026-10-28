@@ -1,4 +1,7 @@
 const pino = require('pino');
+const fs = require('node:fs');
+const path = require('node:path');
+const { trace } = require('@opentelemetry/api');
 const { getLogContext } = require('./logContext');
 
 const EVENT_CODES = new Set([
@@ -24,7 +27,7 @@ const EVENT_CODES = new Set([
 const ID = /^[0-9a-f]{32}$/;
 const ROUTE = new Set(['auth', 'groups', 'privacy', 'history', 'locations', 'conversations', 'chat', 'system', 'unmatched', 'other']);
 const SOCKET_EVENT = new Set(['connect', 'disconnect', 'update_location', 'sos_alert', 'chat:send_message', 'chat:typing', 'chat:mark_read', 'journey:watch', 'journey:unwatch', 'journey:lease', 'session:ready']);
-const SAFE_KEYS = new Set(['requestId', 'connectionId', 'eventId', 'route', 'statusCode', 'durationMs', 'event', 'errorCode', 'count']);
+const SAFE_KEYS = new Set(['requestId', 'connectionId', 'eventId', 'traceId', 'spanId', 'route', 'statusCode', 'durationMs', 'event', 'errorCode', 'count']);
 
 function safeFields(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
@@ -32,7 +35,8 @@ function safeFields(input) {
   for (const key of SAFE_KEYS) {
     let value;
     try { value = input[key]; } catch { continue; }
-    if (['requestId', 'connectionId', 'eventId'].includes(key) && typeof value === 'string' && ID.test(value)) result[key] = value;
+    if (['requestId', 'connectionId', 'eventId', 'traceId'].includes(key) && typeof value === 'string' && ID.test(value)) result[key] = value;
+    else if (key === 'spanId' && typeof value === 'string' && /^[0-9a-f]{16}$/.test(value)) result[key] = value;
     else if (key === 'route' && ROUTE.has(value)) result[key] = value;
     else if (key === 'event' && SOCKET_EVENT.has(value)) result[key] = value;
     else if (key === 'errorCode' && EVENT_CODES.has(value)) result[key] = value;
@@ -51,7 +55,10 @@ function createSafeLogger({ destination = process.stdout, level = 'info' } = {})
   function write(method, eventCode, fields) {
     try {
       const msg = EVENT_CODES.has(eventCode) ? eventCode : 'UNCLASSIFIED_EVENT';
-      const meta = safeFields({ ...safeFields(getLogContext()), ...safeFields(fields) });
+      const activeSpan = trace.getActiveSpan();
+      const activeSpanContext = activeSpan?.spanContext();
+      const correlation = activeSpanContext ? { traceId: activeSpanContext.traceId, spanId: activeSpanContext.spanId } : {};
+      const meta = safeFields({ ...correlation, ...safeFields(getLogContext()), ...safeFields(fields) });
       writer[method](meta, msg);
     } catch { /* Logging must never interrupt the business operation. */ }
   }
@@ -63,4 +70,19 @@ function createSafeLogger({ destination = process.stdout, level = 'info' } = {})
   });
 }
 
-module.exports = { createSafeLogger, safeFields };
+function createLogDestination(filePath, output = process.stdout) {
+  if (!filePath) return output;
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    const file = fs.createWriteStream(filePath, { flags: 'a', mode: 0o600 });
+    file.on('error', () => {});
+    return pino.multistream([
+      { level: 'trace', stream: output },
+      { level: 'trace', stream: file },
+    ]);
+  } catch {
+    return output;
+  }
+}
+
+module.exports = { createSafeLogger, createLogDestination, safeFields };

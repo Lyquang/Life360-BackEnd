@@ -21,11 +21,15 @@
     "monitoring:up": "node scripts/monitoring-local.js up",
     "monitoring:down": "node scripts/monitoring-local.js down",
     "monitoring:status": "node scripts/monitoring-local.js status",
+    "monitoring:validate-alerts": "node scripts/validate-monitoring-alerts.js",
     "benchmark:monitoring": "node scripts/benchmark-monitoring.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1143.0",
     "@aws-sdk/s3-request-presigner": "^3.1143.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.220.0",
+    "@opentelemetry/sdk-node": "0.220.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

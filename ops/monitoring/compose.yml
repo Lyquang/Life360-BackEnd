@@ -1,5 +1,11 @@
 name: familytracker-monitoring
 services:
+  log-volume-init:
+    image: busybox:1.37
+    user: '0:0'
+    command: [sh, -c, 'chown -R 1001:1001 /var/log/familytracker']
+    volumes: [backend-logs:/var/log/familytracker]
+    restart: 'no'
   mongo:
     image: mongo:8.0.12
     command: [mongod, --replSet, rs0, --bind_ip_all]
@@ -23,11 +29,18 @@ services:
       AUTH_RATE_LIMIT: 10000
       LIVE_TRAIL_ENABLED: 'true'
       LIVE_TRAIL_MATCHER_ENABLED: 'false'
-    command: [node, -e, "const fs=require('fs'); process.env.JWT_SECRET=fs.readFileSync('/run/secrets/jwt','utf8').trim(); process.env.METRICS_TOKEN=fs.readFileSync('/run/secrets/metrics','utf8').trim(); require('./server');"]
+      LOG_FILE_PATH: /var/log/familytracker/backend.jsonl
+      OTEL_ENABLED: 'true'
+      OTEL_SERVICE_NAME: familytracker-backend
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tempo:4318/v1/traces
+      OTEL_TRACES_SAMPLER: always_on
+    command: [node, -e, "const fs=require('fs'); const path=require('path'); if(process.env.LOG_FILE_PATH){fs.mkdirSync(path.dirname(process.env.LOG_FILE_PATH),{recursive:true}); fs.closeSync(fs.openSync(process.env.LOG_FILE_PATH,'a',0o600));} process.env.JWT_SECRET=fs.readFileSync('/run/secrets/jwt','utf8').trim(); process.env.METRICS_TOKEN=fs.readFileSync('/run/secrets/metrics','utf8').trim(); require('./server');"]
     secrets: [jwt, metrics]
+    volumes: [backend-logs:/var/log/familytracker]
     ports: ['127.0.0.1:3100:3000']
     depends_on:
       mongo: {condition: service_healthy}
+      log-volume-init: {condition: service_completed_successfully}
     healthcheck:
       test: [CMD, wget, -qO-, 'http://127.0.0.1:3000/api/health']
       interval: 10s
@@ -45,7 +58,7 @@ services:
     depends_on:
       backend: {condition: service_healthy}
   grafana:
-    image: grafana/grafana:12.1.0
+    image: grafana/grafana:12.3.0
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana
@@ -53,18 +66,52 @@ services:
       GF_ANALYTICS_REPORTING_ENABLED: 'false'
       GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
-    secrets: [grafana]
+      GF_SMTP_ENABLED: 'true'
+      GF_SMTP_HOST: smtp.gmail.com:587
+      GF_SMTP_USER: lythanhnhatquangthongnhat2004@gmail.com
+      GF_SMTP_FROM_ADDRESS: lythanhnhatquangthongnhat2004@gmail.com
+      GF_SMTP_FROM_NAME: FamilyTracker Grafana
+      GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
+      GF_SMTP_PASSWORD__FILE: /run/secrets/gmail_app_password
+    secrets: [grafana, gmail_app_password]
     volumes:
       - ./provisioning:/etc/grafana/provisioning:ro
       - ./dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     ports: ['127.0.0.1:3101:3000']
-    depends_on: [prometheus]
+    depends_on: [prometheus, loki, tempo]
+  loki:
+    image: grafana/loki:3.7.8
+    command: [-config.file=/etc/loki/config.yml]
+    volumes:
+      - ./loki.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+  tempo:
+    image: grafana/tempo:3.1.1
+    command: [-target=all, -config.file=/etc/tempo/config.yml]
+    volumes:
+      - ./tempo.yml:/etc/tempo/config.yml:ro
+      - tempo-data:/var/tempo
+  alloy:
+    image: grafana/alloy:v1.21.2
+    command: [run, --storage.path=/var/lib/alloy/data, /etc/alloy/config.alloy]
+    volumes:
+      - ./alloy.alloy:/etc/alloy/config.alloy:ro
+      - backend-logs:/var/log/familytracker:ro
+      - alloy-data:/var/lib/alloy/data
+    depends_on:
+      backend: {condition: service_healthy}
+      loki: {condition: service_started}
 secrets:
   jwt: {file: ./.local/jwt}
   metrics: {file: ./.local/metrics}
   grafana: {file: ./.local/grafana}
+  gmail_app_password: {file: ./.local/gmail-app-password}
 volumes:
   mongo-data:
   prometheus-data:
   grafana-data:
+  backend-logs:
+  loki-data:
+  tempo-data:
+  alloy-data:

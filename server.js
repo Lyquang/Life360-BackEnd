@@ -1,10 +1,13 @@
 require('dotenv').config();
 
+const { initializeTracing, shutdownTracing } = require('./src/infrastructure/observability/tracing');
+initializeTracing();
+
 const { loadConfig } = require('./src/config/env');
 const { createServer } = require('./src/bootstrap');
-const { createSafeLogger } = require('./src/infrastructure/observability/safeLogger');
+const { createSafeLogger, createLogDestination } = require('./src/infrastructure/observability/safeLogger');
 
-const logger = createSafeLogger();
+const logger = createSafeLogger({ destination: createLogDestination(process.env.LOG_FILE_PATH) });
 
 async function main() {
   let config;
@@ -38,6 +41,7 @@ async function main() {
     setTimeout(() => process.exit(1), 10000).unref();
     try {
       await instance.close();
+      await shutdownTracing();
       logger.log('SERVER_SHUTDOWN_COMPLETE');
       process.exit(0);
     } catch (error) {

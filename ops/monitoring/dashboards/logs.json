@@ -1,0 +1,40 @@
+{
+  "annotations": { "list": [] },
+  "description": "Safe structured backend logs collected locally by Alloy and stored in Loki.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "loki", "uid": "familytracker-loki" },
+      "description": "JSON structured events from the local backend. Fields are allowlisted; request payloads, credentials, user identifiers and coordinates are not collected. Select a line to inspect its safe fields or use traceId to open a correlated Tempo trace.",
+      "gridPos": { "h": 18, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "familytracker-loki" },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{service=\"familytracker-backend\", environment=\"local\"} | json",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Backend structured logs",
+      "type": "logs"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["familytracker", "logs"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "FamilyTracker / Logs",
+  "uid": "familytracker-logs",
+  "version": 1
+}

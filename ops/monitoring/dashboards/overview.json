@@ -46,7 +46,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số request HTTP hoàn tất mỗi giây, nhóm theo route. Dùng để nhận biết lưu lượng tăng/giảm; đây là tốc độ trung bình cửa sổ 5 phút, không phải tổng request."
     },
     {
       "id": 2,
@@ -80,7 +81,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Phân vị 95 của thời gian xử lý HTTP theo route: 95% request nhanh hơn hoặc bằng giá trị này. Không bao gồm thời gian phía client và mạng."
     },
     {
       "id": 3,
@@ -114,7 +116,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "RSS là lượng RAM đang được tiến trình backend giữ trong bộ nhớ. Theo dõi xu hướng và so với giới hạn RAM của container."
     },
     {
       "id": 4,
@@ -148,7 +151,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Độ trễ event loop ở phân vị 99. Giá trị cao cho thấy JavaScript bị bận/chặn, có thể làm chậm API và Socket."
     },
     {
       "id": 5,
@@ -182,7 +186,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "Số giây CPU mà process tiêu thụ trong mỗi giây thực. Gần 1 nghĩa là xấp xỉ một lõi CPU được dùng liên tục."
     },
     {
       "id": 6,
@@ -216,7 +221,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "description": "1 nghĩa là Prometheus lấy metrics thành công ở lần scrape gần nhất; 0 nghĩa là target không scrape được."
     }
   ]
 }

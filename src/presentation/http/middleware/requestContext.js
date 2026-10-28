@@ -1,4 +1,5 @@
 const { newRequestId, withLogContext } = require('../../../infrastructure/observability/logContext');
+const { startSpan } = require('../../../infrastructure/observability/tracing');
 
 const ROUTES = new Set(['auth', 'groups', 'privacy', 'history', 'locations', 'conversations', 'chat']);
 
@@ -14,7 +15,12 @@ function createRequestContext(logger) {
   return (req, res, next) => {
     const requestId = newRequestId();
     const started = process.hrtime.bigint();
+    const group = routeGroup(req);
     res.set('X-Request-Id', requestId);
+    const span = startSpan(`${req.method} ${group}`, {
+      'http.request.method': req.method,
+      'http.route.group': group,
+    });
     let recorded = false;
     const record = () => {
       if (recorded) return;
@@ -25,10 +31,11 @@ function createRequestContext(logger) {
         statusCode: res.statusCode,
         durationMs: Number(process.hrtime.bigint() - started) / 1e6,
       });
+      span.end(res.statusCode);
     };
     res.once('finish', record);
     res.once('close', record);
-    withLogContext({ requestId }, next);
+    withLogContext({ requestId }, () => span.run(next));
   };
 }
 

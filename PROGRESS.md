@@ -1,5 +1,19 @@
 # Progress Log
 
+### Grafana local logs, traces, Gmail alerts and dashboard descriptions (2026-10-28)
+
+- Added local Loki 3.7.8 + Alloy 1.21.2 log collection and Tempo 3.1.1 traces, Grafana 12.3.0 datasources, and manual request/Socket spans with bounded attributes. Logs stay local; only allowlisted JSON fields and static Loki labels are indexed, with traceId/spanId correlation.
+- Added a Logs dashboard; added Vietnamese descriptions to all 31 metrics panels and test enforcement. Provisioned seven alert rules plus Gmail contact point to `lythanhnhatquangthongnhat2004@gmail.com`, including any backend error-level log event; SMTP uses an ignored local secret placeholder. Real email delivery remains unverified until user sets Gmail App Password. Cloud log/trace export remains disabled and gated.
+- Updated local monitoring README and Study doc. No Render configuration, production secrets, commit, or push. Suggested commit: `feat(observability): add local logs traces and email alerts`.
+- Verification: full `npm test` 215/215 across 51 suites; lint and `npm audit --audit-level=high` pass with zero vulnerabilities; Compose config and `git diff --check` pass. Grafana has all seven evaluated rules and the Gmail contact point, all three datasource health checks are `OK`; Loki returns correlated JSON log lines and Tempo trace lookup returned HTTP 200. 31 metrics panel descriptions are present; Grafana Logs dashboard API returned HTTP 200. No email was sent because the ignored Gmail App Password file is still a placeholder. No commit/push. M4 performance gate with Loki/Tempo remains unmeasured.
+
+### Grafana M4c local alert rules (2026-10-28)
+
+- Added four Grafana-provisioned local rules: backend scrape down, Mongo pool checkout failure, Redis connection error, digest job error. No contact point/policy/SMTP and no Cloud telemetry export.
+- Added `npm run monitoring:validate-alerts`, a Grafana API validation command, plus local-only fire/recovery instructions. Benchmark evidence remains noisy: one of three repeats met the p95 gate; no acceptance claim.
+- Files changed: `ops/monitoring/provisioning/alerting/familytracker.yml`, `scripts/validate-monitoring-alerts.js`, `package.json`, `ops/monitoring/README.md`, `Study/grafana-observability.md`, `PROGRESS.md`. No commit/push. Suggested commit: `feat(monitoring): provision local alert rules`.
+- Verification: Grafana 12.1.0 loaded/evaluated all four rules; backend-down smoke fired and recovered after local Compose stop/start. `NoData` for unused error counters is expected and separately validated. Full test suite 214/214 and lint pass; final validator/graph/diff checks pending.
+
 ### Grafana M4 local database/cache/workflow dashboard (2026-10-28)
 
 - Added a 12-panel Grafana dashboard for Mongo pool/repository/transactions, Redis/cache/auth blacklist, privacy/Circle membership, media ticket and digest job metrics. Updated local monitoring runbook and Study notes; no Cloud datasource, Loki, alert rule, env or business-code change.

@@ -77,3 +77,20 @@ test('auth, cache and database event codes retain meaning without leaking detail
   assert.deepEqual(output.lines().map(line => line.msg), [...codes, 'DATABASE_TRANSACTIONS_UNAVAILABLE']);
   assert.doesNotMatch(output.raw(), /private-user|private-error|private-uri/);
 });
+
+test('trace correlation is retained only for valid opaque IDs', () => {
+  const output = capture();
+  const logger = createSafeLogger({ destination: output.destination });
+  logger.log('SAFE_EVENT', {
+    traceId: 'a'.repeat(32),
+    spanId: 'b'.repeat(16),
+    url: 'https://private.example/user/123',
+    userId: 'private-user',
+  });
+  logger.log('SAFE_EVENT', { traceId: 'not-a-trace-id', spanId: 'not-a-span-id' });
+  assert.equal(output.lines()[0].traceId, 'a'.repeat(32));
+  assert.equal(output.lines()[0].spanId, 'b'.repeat(16));
+  assert.equal(output.lines()[1].traceId, undefined);
+  assert.equal(output.lines()[1].spanId, undefined);
+  assert.doesNotMatch(output.raw(), /private\.example|private-user/);
+});

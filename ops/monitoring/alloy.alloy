@@ -1,0 +1,19 @@
+logging {
+  level = "info"
+}
+
+loki.source.file "backend" {
+  targets = [{
+    __path__    = "/var/log/familytracker/backend.jsonl",
+    job         = "familytracker-backend",
+    service     = "familytracker-backend",
+    environment = "local",
+  }]
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

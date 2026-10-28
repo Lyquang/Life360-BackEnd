@@ -1,0 +1,211 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: familytracker-local-health
+    folder: FamilyTracker
+    interval: 60s
+    rules:
+      - uid: ft_backend_scrape_down
+        title: FamilyTracker backend scrape down
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: familytracker-prometheus
+            model:
+              datasource: { type: prometheus, uid: familytracker-prometheus }
+              expr: 'up{job="familytracker-local"} == bool 0'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+              range: false
+              editorMode: code
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: Prometheus cannot scrape the FamilyTracker backend.
+          runbook_url: ops/monitoring/README.md#alerts
+        labels: { service: familytracker-backend, severity: warning }
+        notification_settings:
+          receiver: familytracker-gmail
+          group_by: [alertname]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+      - uid: ft_mongo_pool_checkout_failures
+        title: FamilyTracker Mongo pool checkout failures
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: familytracker-prometheus
+            model:
+              datasource: { type: prometheus, uid: familytracker-prometheus }
+              expr: 'sum(increase(familytracker_mongo_pool_events_total{event="checkout_failed"}[5m])) > 0'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+              range: false
+              editorMode: code
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: MongoDB connection-pool checkout failures were observed.
+          runbook_url: ops/monitoring/README.md#alerts
+        labels: { service: familytracker-backend, severity: warning }
+        notification_settings:
+          receiver: familytracker-gmail
+          group_by: [alertname]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+      - uid: ft_redis_connection_errors
+        title: FamilyTracker Redis connection errors
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: familytracker-prometheus
+            model:
+              datasource: { type: prometheus, uid: familytracker-prometheus }
+              expr: 'sum(increase(familytracker_redis_connection_events_total{event="error"}[5m])) > 0'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+              range: false
+              editorMode: code
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: Redis connection errors were observed; distinguish disabled Redis from an outage.
+          runbook_url: ops/monitoring/README.md#alerts
+        labels: { service: familytracker-backend, severity: warning }
+        notification_settings:
+          receiver: familytracker-gmail
+          group_by: [alertname]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+      - uid: ft_digest_job_errors
+        title: FamilyTracker digest job errors
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: familytracker-prometheus
+            model:
+              datasource: { type: prometheus, uid: familytracker-prometheus }
+              expr: 'sum(increase(familytracker_job_runs_total{job="digest",outcome="error"}[15m])) > 0'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+              range: false
+              editorMode: code
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: One or more digest job runs failed in the last 15 minutes.
+          runbook_url: ops/monitoring/README.md#alerts
+        labels: { service: familytracker-backend, severity: warning }
+        notification_settings:
+          receiver: familytracker-gmail
+          group_by: [alertname]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+      - uid: ft_http_5xx
+        title: FamilyTracker elevated HTTP 5xx rate
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: familytracker-prometheus
+            model:
+              datasource: { type: prometheus, uid: familytracker-prometheus }
+              expr: 'sum(increase(familytracker_http_requests_total{status_class="5xx"}[5m])) >= 5'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+              range: false
+              editorMode: code
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: At least five HTTP 5xx responses occurred in five minutes.
+          runbook_url: ops/monitoring/README.md#alerts
+        labels: { service: familytracker-backend, severity: warning }
+        notification_settings:
+          receiver: familytracker-gmail
+          group_by: [alertname]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+      - uid: ft_socket_action_errors
+        title: FamilyTracker Socket action errors
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: familytracker-prometheus
+            model:
+              datasource: { type: prometheus, uid: familytracker-prometheus }
+              expr: 'sum(increase(familytracker_socket_actions_total{outcome="error"}[5m])) >= 3'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+              range: false
+              editorMode: code
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: At least three Socket action errors occurred in five minutes.
+          runbook_url: ops/monitoring/README.md#alerts
+        labels: { service: familytracker-backend, severity: warning }
+        notification_settings:
+          receiver: familytracker-gmail
+          group_by: [alertname]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+      - uid: ft_backend_error_log
+        title: FamilyTracker backend error-level log event
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: familytracker-loki
+            model:
+              datasource: { type: loki, uid: familytracker-loki }
+              expr: 'sum(count_over_time({service="familytracker-backend", environment="local"} | json | level="50" [5m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              queryType: instant
+              refId: A
+              range: false
+              editorMode: code
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: A backend error-level event was logged in the last five minutes.
+          runbook_url: ops/monitoring/README.md#alerts
+        labels: { service: familytracker-backend, severity: warning }
+        notification_settings:
+          receiver: familytracker-gmail
+          group_by: [alertname]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h

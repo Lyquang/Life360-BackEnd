@@ -1,0 +1,10 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: familytracker-gmail
+    receivers:
+      - uid: familytracker-gmail
+        type: email
+        settings:
+          addresses: lythanhnhatquangthongnhat2004@gmail.com
+        disableResolveMessage: false

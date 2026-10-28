@@ -65,6 +65,28 @@ Chạy `npm run benchmark:monitoring` trong Docker Compose local: warmup 30 giâ
 
 Chỉ repeat 3 đạt đầy đủ ngưỡng p95 <=5% cho HTTP/Socket và RSS <=20 MiB; hai repeat còn lại không đạt p95. Dao động trái chiều và số mẫu mỗi case 90-130 cho thấy độ nhiễu lớn, không thể kết luận metrics gây ra hay không gây ra chênh lệch. Gate overhead chưa được xác nhận; không bật log shipping/Cloud và không coi kết quả là bằng chứng cho Render Free. RSS chỉ lấy mẫu trước/sau, không phải peak. Safe JSON logger bật ở cả hai cấu hình nên benchmark cô lập tác động metrics, không phải toàn bộ observability.
 
+## M4d local logs, traces, descriptions and Gmail alert delivery (2026-10-28)
+
+Local stack bổ sung Loki 3.7.8, Tempo 3.1.1 và Alloy 1.21.2; Grafana 12.3.0 cung cấp datasource Tempo tích hợp. Backend Pino JSON tiếp tục ghi stdout; khi `LOG_FILE_PATH` được set (chỉ Compose local), ghi thêm file trong named volume để Alloy tail sang Loki. `log-volume-init` chỉ sửa owner volume cho UID 1001, backend vẫn non-root. Loki giữ log 7 ngày; log fields allowlist vẫn là ranh giới lọc và Grafana labels chỉ `service`, `environment`, `job`.
+
+OpenTelemetry JS SDK/exporter được pin `0.220.0`, tương thích Node 20 và không còn npm audit finding. Instrumentation là manual span cho HTTP request (method, route group, response status) và Socket action (tên event allowlist). Không bật auto-instrumentation; không thu full URL/query, body, user ID, email, địa chỉ IP hoặc tọa độ. HTTP log chứa `traceId`/`spanId` hợp lệ để Grafana liên kết Loki ↔ Tempo. Compose local lấy mẫu 100%; chưa cấu hình OTel/Alloy/Loki/Tempo trên Render hoặc Cloud. Đây là tracing ở ranh giới request/event, không phải spans riêng cho Mongo/Redis.
+
+Dashboard `FamilyTracker / Logs` truy vấn JSON logs trong Loki; Tempo dùng qua Explore. 31 panel metrics hiện có được bổ sung description tiếng Việt giải thích ý nghĩa, đơn vị/phân vị và cách diễn giải; test dashboard buộc description không bị bỏ sót. Loki/Tempo datasource health API trả `OK`; smoke trace: `/api/health` tạo log có trace ID, Loki trả dòng đó, Tempo `GET /api/traces/<traceId>` trả HTTP 200 với resource `familytracker-backend`. Log dashboard API trả HTTP 200.
+
+Provision bảy alert rules và contact point `familytracker-gmail`: backend down, Mongo checkout failures, Redis errors, digest job errors, HTTP 5xx >=5/5m trong 2m, Socket errors >=3/5m trong 1m, và bất kỳ error-level backend log nào trong 5m. Notification group wait 30s, repeat 4h. Các query chưa có sample dùng state `OK` (ngoại trừ backend scrape rule), để tránh thư NoData cho Redis disabled/test jobs. Summary email không chứa log/trace data. Gmail SMTP host/user/from đã cấu hình; App Password vẫn là placeholder local trong `.local/gmail-app-password`, vì vậy email send thật CHƯA test. Chỉ thay bằng App Password tạo ở Google Account rồi recreate Grafana; không ghi secret vào repo/chat. Yêu cầu email được chấp thuận riêng; M5 vẫn cấm shipping observability data lên Cloud.
+
+Local verification: `monitoring:validate-alerts` xác nhận 7 rules, contact point và cả ba datasource; query chưa có sample không có query error. Loki query trả log JSON và trace link; Tempo trace lookup thành công. Không chạy fire-test sau khi thêm email để tránh gửi thư test trước khi App Password người dùng cấu hình. Benchmark M4 cũ không có Loki/Tempo, nên overhead gate sau bổ sung chưa được đo; không kết luận production/Render Free an toàn tài nguyên.
+
+## M4c local alert rules (2026-10-28, superseded)
+
+Provision ban đầu bốn Grafana-managed rules trong `ops/monitoring/provisioning/alerting/familytracker.yml`; M4d mở rộng thành sáu rules và thêm email contact point.
+
+`npm run monitoring:validate-alerts` kiểm tra rules/Uids, contact point, datasources và evaluation health.
+
+Mục này chỉ là lịch sử ban đầu; trạng thái mới được ghi tại M4d.
+
+Benchmark acceptance vẫn **chưa đạt**: ba lượt paired trước đó chỉ có một lượt qua ngưỡng p95 <=5% cho cả HTTP/Socket; RSS tăng tối đa quan sát được +2.18 MiB, dưới +20 MiB nhưng chỉ lấy mẫu trước/sau. Độ nhiễu và cỡ mẫu nhỏ khiến overhead gate chưa được xác nhận; alert provisioning không thay đổi backend hot path nên không chạy lại workload benchmark ở giai đoạn này.
+
 ## M2c Mongo pool và transaction outcomes (2026-10-28)
 
 | Metric (prefix `familytracker_`) | Ý nghĩa |
@@ -159,7 +181,7 @@ Khong dinh kem error.name/error.message cua provider vao log. Rollback phan nay 
 
 M0 đã duyệt, chưa cho phép Cloud shipping. Thứ tự mới: M3-0, M1a, M1b, M3a-c, M2a, M2b, M4, M2c-e, M5. Các đề xuất cũ bên dưới được thay thế khi xung đột với mục này.
 M3-0 dùng event-code cố định trước Pino. Chia lượt tối đa khoảng 8 file kể cả tài liệu/test: xử lý connection/server/HTTP/Redis trước, socket/auth/stay/chat/digest sau. Không tự commit. M3 JSON sạch ra stdout; hoãn Loki shipping và quyết định worker đến sau benchmark M4, đo riêng CPU/RSS worker nếu dùng.
-Staging chỉ Docker Compose local, không thêm Render service. C trước A; prom-client scrape 60s, bearer riêng; gzip bắt buộc trên /metrics; đo exposition nén/chưa nén ở M1b. Budget 2.000–2.500 series/env, HTTP route-group allowlist thay 60 method-route pairs, giảm buckets. requestId luôn do server sinh, bỏ X-Request-Id inbound. Không traces/Sentry; alert email, recipient chưa cấu hình. Sample payload 1/10; p95 overhead <=5%, RSS delta <=20 MB. Đo RSS baseline trước khi bật metrics; production RSS cần Render runtime access, không lấy local thay thế. M5 chờ duyệt riêng sau Terms/DPA.
+Staging chỉ Docker Compose local, không thêm Render service. C trước A; prom-client scrape 60s, bearer riêng; gzip bắt buộc trên /metrics; đo exposition nén/chưa nén ở M1b. Budget 2.000–2.500 series/env, HTTP route-group allowlist thay 60 method-route pairs, giảm buckets. requestId luôn do server sinh, bỏ X-Request-Id inbound. No Sentry/auto-instrumentation; M4d bổ sung manual local-only HTTP/Socket traces. Alert email cho người nhận được duyệt; không gửi log thô. Sample payload 1/10; p95 overhead <=5%, RSS delta <=20 MB. Đo RSS baseline trước khi bật metrics; production RSS cần Render runtime access, không lấy local thay thế. M5 Cloud export chờ duyệt riêng sau Terms/DPA.
 
 Exposure connection.js:29: chỉ khi connect lỗi và allowInMemoryFallback=true. uri.split('@').pop() giữ host/IP/port/database/query sau @ cuối, bỏ userinfo trước @ trong URI chuẩn; nếu không có @ thì giữ nguyên toàn bộ chuỗi. Query/malformed URI có thể mang credentials. error.message được nối nguyên văn, có thể mang URI hoặc đầu vào driver; không đảm bảo redacted. Fallback=false vẫn throw tới server.js ghi message. Chưa kiểm tra log vận hành, không khẳng định đã lộ password. Không sao chép URI/secret vào tài liệu; chủ dự án quyết định rotation.
 
