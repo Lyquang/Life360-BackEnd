@@ -1,5 +1,10 @@
 # Progress Log
 
+### Grafana M4 local database/cache/workflow dashboard (2026-10-28)
+
+- Added a 12-panel Grafana dashboard for Mongo pool/repository/transactions, Redis/cache/auth blacklist, privacy/Circle membership, media ticket and digest job metrics. Updated local monitoring runbook and Study notes; no Cloud datasource, Loki, alert rule, env or business-code change.
+- Grafana provisioned the dashboard with 12 panels; all 33 PromQL queries across four local dashboards were accepted by Prometheus. Full `npm test` 214/214 across 51 suites; dashboard structure/privacy test passes; lint, graph refresh and diff check pass. Stack remains healthy at localhost. Redis is intentionally disabled locally, so Redis command panels correctly have no samples. No stage/commit/push. Suggested commit: `feat(observability): add database cache and workflow dashboard`.
+
 ### Grafana M2e privacy, membership, media and digest metrics (2026-10-28)
 
 - Added bounded workflow counters for location-sharing pause/resume, Circle leave/remove, media upload tickets, and digest job outcomes; digest duration and scheduler delay histograms use fixed buckets. Rejections (4xx) are separate from system errors. No actor/group/conversation IDs, content, URLs, or object keys in labels.

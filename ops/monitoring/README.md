@@ -11,6 +11,7 @@ npm run monitoring:status
 ```
 
 - Grafana: http://localhost:3101 ; user `admin`, password xem file `ops/monitoring/.local/grafana` trên máy. Không gửi password vào chat.
+- Dashboard DB/cache/workflows: http://localhost:3101/d/familytracker-data/familytracker-database-cache-and-workflows
 - Prometheus: http://localhost:9091 ; kiểm tra Targets và query `up{job="familytracker-local"}`.
 - Backend/Swagger riêng: http://localhost:3100/api-docs . Tài khoản local tách biệt production.
 
@@ -18,7 +19,7 @@ Chỉ bind localhost; MongoDB không publish port. Nếu port đã bị chiếm,
 
 Prometheus scrape 60 giây bằng bearer riêng qua secret file, gzip, giới hạn 2.500 sample/lần và retention 3 ngày/512 MB. Chờ ít nhất hai scrape để biểu đồ rate có dữ liệu. `No data` nghĩa là chưa có mẫu, không phải zero. Backend bị giới hạn 0,1 CPU/512 MB; Docker Desktop và Mongo/Prometheus/Grafana vẫn dùng tài nguyên máy chủ riêng.
 
-Metrics scrape hiện bao gồm HTTP/runtime, Socket/Location/Live Trail, Mongo pool/repository/transaction, Redis/cache/auth-blacklist, privacy/membership, media ticket và digest job outcomes. Dashboard được provision trong folder FamilyTracker: HTTP & Runtime, Socket Actions, Location & Live Trail; dashboard chuyên sâu cho DB/cache/auth/privacy/jobs và Loki datasource chưa được thêm. Log hiện xem bằng Docker logs của backend. Không có remote_write hay Cloud datasource.
+Metrics scrape hiện bao gồm HTTP/runtime, Socket/Location/Live Trail, Mongo pool/repository/transaction, Redis/cache/auth-blacklist, privacy/membership, media ticket và digest job outcomes. Bốn dashboard được provision trong folder FamilyTracker: HTTP & Runtime, Socket Actions, Location & Live Trail, Database/Cache/Workflows. Redis panels sẽ không có sample khi Redis bị tắt; `No data` không phải giá trị zero. Chưa có Loki datasource. Log hiện xem bằng Docker logs của backend. Không có remote_write hay Cloud datasource.
 
 ## Benchmark
 

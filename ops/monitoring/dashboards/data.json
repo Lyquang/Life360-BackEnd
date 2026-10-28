@@ -1,0 +1,138 @@
+{
+  "uid": "familytracker-data",
+  "title": "FamilyTracker / Database, Cache & Workflows",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "tags": ["familytracker", "local"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Mongo repository operations / second",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (operation, outcome) (rate(familytracker_mongo_repository_operations_total[5m]))", "legendFormat": "{{operation}} / {{outcome}}" }],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 2,
+      "title": "Mongo repository p95 duration",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum by (operation, le) (rate(familytracker_mongo_repository_duration_seconds_bucket[5m])))", "legendFormat": "{{operation}}" }],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 3,
+      "title": "Mongo pool lifecycle events",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (event) (rate(familytracker_mongo_pool_events_total[5m]))", "legendFormat": "{{event}}" }],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 4,
+      "title": "Mongo transaction outcomes",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (outcome) (rate(familytracker_mongo_transactions_total[5m]))", "legendFormat": "{{outcome}}" }],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 5,
+      "title": "Cache operations by result",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (key_type, outcome) (rate(familytracker_cache_requests_total[5m]))", "legendFormat": "{{key_type}} / {{outcome}}" }],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 6,
+      "title": "Redis command errors / second",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (command) (rate(familytracker_redis_commands_total{outcome=\"error\"}[5m]))", "legendFormat": "{{command}}" }],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 7,
+      "title": "Redis adapter p95 duration",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum by (command, le) (rate(familytracker_redis_command_duration_seconds_bucket[5m])))", "legendFormat": "{{command}}" }],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 8,
+      "title": "Authentication blacklist fail-open",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (reason) (increase(familytracker_auth_blacklist_fail_open_total[15m]))", "legendFormat": "{{reason}}" }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 9,
+      "title": "Privacy and Circle membership actions",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+      "targets": [
+        { "refId": "A", "expr": "sum by (action, outcome) (rate(familytracker_privacy_actions_total[5m]))", "legendFormat": "privacy / {{action}} / {{outcome}}" },
+        { "refId": "B", "expr": "sum by (action, outcome) (rate(familytracker_circle_membership_actions_total[5m]))", "legendFormat": "membership / {{action}} / {{outcome}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 10,
+      "title": "Media upload tickets",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (media_type, outcome) (rate(familytracker_media_tickets_total[5m]))", "legendFormat": "{{media_type}} / {{outcome}}" }],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 11,
+      "title": "Digest job outcomes",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 0, "y": 40, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "expr": "sum by (outcome) (rate(familytracker_job_runs_total{job=\"digest\"}[15m]))", "legendFormat": "{{outcome}}" }],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 12,
+      "title": "Digest p95 runtime and scheduler delay",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "familytracker-prometheus" },
+      "gridPos": { "x": 12, "y": 40, "w": 12, "h": 8 },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(familytracker_job_duration_seconds_bucket{job=\"digest\"}[1h])))", "legendFormat": "runtime p95" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(familytracker_job_schedule_delay_seconds_bucket{job=\"digest\"}[1h])))", "legendFormat": "schedule delay p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    }
+  ]
+}

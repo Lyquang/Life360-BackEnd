@@ -24,7 +24,7 @@ histogram_quantile(0.95, sum by (le) (rate(familytracker_job_duration_seconds_bu
 histogram_quantile(0.95, sum by (le) (rate(familytracker_job_schedule_delay_seconds_bucket{job="digest"}[1h])))
 ```
 
-Các histogram có bucket hữu hạn 0.01, 0.1, 1, 5, 30 giây. Snapshot Compose sau test workflow ghi nhận kích thước/cadence phụ thuộc các lần gọi; trần policy hiện tại là 1.416 series/2.500. Dashboard hiện có chưa được mở rộng trong M2e; Mongo/cache/auth/privacy panels thuộc phần dashboard kế tiếp. Không cần env, migration hay thay đổi hợp đồng mobile.
+Các histogram có bucket hữu hạn 0.01, 0.1, 1, 5, 30 giây. Snapshot Compose sau test workflow ghi nhận kích thước/cadence phụ thuộc các lần gọi; trần policy hiện tại là 1.416 series/2.500. Dashboard riêng cho DB/cache/workflows được thực hiện ở bước tiếp theo; khi Redis tắt thì panel Redis đúng ra không có sample. Không cần env, migration hay thay đổi hợp đồng mobile.
 
 ## M2d Redis/cache and blacklist metrics (2026-10-28)
 
@@ -47,7 +47,11 @@ sum by (command) (rate(familytracker_redis_commands_total{outcome="error"}[5m]))
 sum by (reason) (increase(familytracker_auth_blacklist_fail_open_total[5m]))
 ```
 
-Giới hạn: ioredis command duration là thời gian gọi adapter và chịu ảnh hưởng event loop, không phải server-side Redis execution time. `SCAN`/`DEL` trong pattern delete được tính theo từng lệnh thực tế; lock được tính như SET. Current policy cardinality maximum là 1.342 series, dưới hard cap 2.500; không cần env hoặc migration mới. Local Compose smoke sau rebuild: đăng ký synthetic user trả 201, `/auth/me` trả 200, scrape bearer trả 200 với `Content-Encoding: gzip`. Snapshot có 87 sample và đo được 12.768 byte plain / 2.189 byte gzip. Redis được cố ý tắt trong stack này; vì vậy snapshot xác nhận outcome `disabled` và `auth_blacklist_fail_open_total{reason="disabled"}`, không xác nhận lệnh Redis thật. Fake-client tests bao phủ đường adapter healthy/error mà không kết nối Upstash. Redis panels/dashboard sẽ được provision cùng dashboard DB/cache sau khi hoàn tất M2e.
+Giới hạn: ioredis command duration là thời gian gọi adapter và chịu ảnh hưởng event loop, không phải server-side Redis execution time. `SCAN`/`DEL` trong pattern delete được tính theo từng lệnh thực tế; lock được tính như SET. Tại thời điểm M2d, policy cardinality maximum là 1.342 series; sau M2e là 1.416, dưới hard cap 2.500. Local Compose smoke sau rebuild M2d: đăng ký synthetic user trả 201, `/auth/me` trả 200, scrape bearer trả 200 với `Content-Encoding: gzip`. Snapshot có 87 sample và đo được 12.768 byte plain / 2.189 byte gzip. Redis được cố ý tắt trong stack này; vì vậy snapshot xác nhận outcome `disabled` và `auth_blacklist_fail_open_total{reason="disabled"}`, không xác nhận lệnh Redis thật. Fake-client tests bao phủ đường adapter healthy/error mà không kết nối Upstash. Dashboard DB/cache/workflows được provision riêng.
+
+## M4 local dashboards (2026-10-28)
+
+Thêm dashboard `FamilyTracker / Database, Cache & Workflows` với 12 panel: Mongo pool/repository/transaction, cache outcomes, Redis errors/latency, auth blacklist fail-open, privacy/Circle membership, media tickets và digest runs/runtime/scheduler delay. PromQL chỉ group theo label enum đã allowlist; không có user/group/conversation selectors. Rate windows từ 5 đến 15 phút; digest quantiles dùng 1 giờ vì scheduler chạy mỗi phút. Khi Redis disabled, Redis command panels không có data thay vì giả lập zero. Đây là biểu đồ local; dashboard không bật telemetry cloud, logging hay alerts.
 
 ## M4 local benchmark result (2026-10-28)
 
