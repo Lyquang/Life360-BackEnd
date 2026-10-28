@@ -1,5 +1,33 @@
 # Grafana observability: M0
 
+## M2b Location/Live Trail business metrics (2026-10-28)
+
+Các chỉ số này giải thích những bước bên trong use case; không cộng chúng với số action Socket để suy ra số request. Tất cả dùng prefix `familytracker_`, bật theo `METRICS_ENABLED` hiện có và scrape qua endpoint có bearer riêng.
+
+| Metric | Đơn vị và ý nghĩa |
+| --- | --- |
+| location_history_decisions_total{outcome} | Quyết định persist/throttled của realtime; persist được đếm trước khi ghi, không phải số document ghi thành công |
+| location_timestamp_fallbacks_total{reason} | Timestamp quá cũ/quá tương lai bị thay bằng giờ server |
+| location_batch_points_total{outcome} | Số phần tử accepted/duplicates/rejected trong kết quả batch hoàn tất; retry được đếm lại theo outcome mới |
+| trail_projection_total{outcome} | success/error theo nhóm ngày được project; disabled tính theo lần gọi bị tắt hoặc không có điểm; success không khẳng định có điểm mới |
+| trail_matcher_total{outcome} | matched/unmatched/error/timeout/circuit_open/cache_hit/queue_drop/coalesced/job_error; đây là các sự kiện khác đơn vị, không dùng tổng tất cả outcome làm tỷ lệ thành công |
+| trail_matcher_state{state} | active/queued/pendingTriggers/circuitOpen tại lúc scrape; state theo process, không chứa trailId |
+| trail_publication_errors_total{operation} | Lỗi realtime/batch/flush; flush là callback timer, được bắt lỗi để không gây uncaught exception |
+| realtime_payload_bytes{channel} | Histogram kích thước JSON của mỗi emit thứ 10 theo channel; không phải kích thước trên mạng hoặc toàn bộ traffic |
+
+Sampling chỉ chạy sau emit khi metrics bật, không log/lưu nội dung payload. Payload JSON chỉ được serialize để tính byte, không được đưa vào nhãn; lỗi serialize hoặc lỗi metrics đều bị cô lập. Lấy mỗi mẫu thứ 10 là sampling xác định, có thể bị lệch theo traffic có chu kỳ; không suy diễn băng thông chính xác từ histogram này.
+
+Ví dụ truy vấn:
+
+```promql
+sum by (outcome) (rate(familytracker_location_batch_points_total[5m]))
+sum by (reason) (rate(familytracker_location_timestamp_fallbacks_total[5m]))
+sum by (operation) (rate(familytracker_trail_publication_errors_total[5m]))
+histogram_quantile(0.95, sum by (channel, le) (rate(familytracker_realtime_payload_bytes_bucket[5m])))
+```
+
+Giới hạn sau M2b: 810 application series + 16 runtime = 826. Fixture điền mọi tổ hợp nhãn: 826 dòng mẫu, 71.764 byte chưa nén / 4.717 byte gzip. Đây là số đo local tổng hợp; overhead CPU/RSS/p95 chưa được chứng minh, vẫn cần M4. Không cần env mới, migration hay cập nhật mobile. Tắt metrics bằng METRICS_ENABLED=false; callback flush vẫn giữ cơ chế bắt lỗi.
+
 ## M2a Socket metrics (2026-10-28)
 
 Enable with the existing METRICS_ENABLED and dedicated METRICS_TOKEN settings. GET /metrics remains authenticated and gzip-capable; no Cloud export is enabled by this change.

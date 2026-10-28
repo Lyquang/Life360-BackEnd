@@ -1,5 +1,6 @@
 const { lastLocationKey } = require('../../domain/cacheKeys');
 const { stableSortByRecordedAt, recordedAtRejection } = require('../../domain/locationBatch');
+const { createSafeMetrics } = require('../ports/metrics');
 
 function createSyncLocationBatchUseCase({
   userRepo,
@@ -11,7 +12,9 @@ function createSyncLocationBatchUseCase({
   liveTrailMatchingService,
   locationAccessPolicy,
   policy,
+  metrics,
 }) {
+  const telemetry = createSafeMetrics(metrics);
   return async function syncLocationBatch({ userId, userName, fallbackBatteryLevel, points, rejected = [] }) {
     await locationAccessPolicy.assertCanPublishLocation(userId);
     const now = Date.now();
@@ -79,11 +82,15 @@ function createSyncLocationBatchUseCase({
     liveTrailDeltaPublisher.publishBatchReset({ userId, projection: trailProjection });
     liveTrailMatchingService.schedule({ userId, projection: trailProjection });
 
-    return {
+    const result = {
       accepted: persisted.accepted,
       duplicates: [...persisted.duplicates, ...repeatedInRequest],
       rejected: outcomeRejected.sort((a, b) => a.index - b.index),
     };
+    for (const outcome of ['accepted', 'duplicates', 'rejected']) {
+      telemetry.increment('location_batch_points_total', { outcome }, result[outcome].length);
+    }
+    return result;
   };
 }
 

@@ -1,4 +1,5 @@
 const { assertMapMatcher } = require('../ports/mapMatcher');
+const { createSafeMetrics } = require('../ports/metrics');
 const { buildMatchWindows, segmentIdFor, sourceRevision } = require('../../domain/liveTrailMatching');
 
 function createLiveTrailMatchingService({
@@ -7,7 +8,9 @@ function createLiveTrailMatchingService({
   liveTrailDeltaPublisher,
   policy,
   logger = console,
+  metrics,
 }) {
+  const telemetry = createSafeMetrics(metrics);
   assertMapMatcher(matcher);
   const triggers = new Map();
   const queued = new Map();
@@ -17,6 +20,9 @@ function createLiveTrailMatchingService({
   let closed = false;
   let consecutiveFailures = 0;
   let circuitOpenUntil = 0;
+  telemetry.addCollector(() => {
+    for (const [state, value] of Object.entries(stats())) telemetry.set('trail_matcher_state', { state }, Number(value));
+  });
 
   function clearTrigger(trailId) {
     const trigger = triggers.get(trailId);
@@ -27,10 +33,12 @@ function createLiveTrailMatchingService({
   function pushJob(job) {
     if (closed || !policy.enabled) return;
     if (queued.has(job.trailId)) {
+      telemetry.increment('trail_matcher_total', { outcome: 'coalesced' });
       queued.set(job.trailId, job);
       return;
     }
     if (order.length >= policy.queueMaxTrails) {
+      telemetry.increment('trail_matcher_total', { outcome: 'queue_drop' });
       const droppedTrailId = order.shift();
       queued.delete(droppedTrailId);
     }
@@ -82,13 +90,18 @@ function createLiveTrailMatchingService({
   }
 
   async function callMatcher(window, profile) {
-    if (Date.now() < circuitOpenUntil) return null;
+    if (Date.now() < circuitOpenUntil) {
+      telemetry.increment('trail_matcher_total', { outcome: 'circuit_open' });
+      return null;
+    }
     const controller = new AbortController();
+    let timedOut = false;
     let rejectTimeout;
     const timeout = new Promise((resolve, reject) => {
       rejectTimeout = reject;
     });
     const timer = setTimeout(() => {
+      timedOut = true;
       const error = new Error('Map matcher timed out.');
       controller.abort(error);
       rejectTimeout(error);
@@ -105,8 +118,10 @@ function createLiveTrailMatchingService({
       ]);
       if (!validMatch(result)) throw new Error('Map matcher returned an invalid result.');
       consecutiveFailures = 0;
+      telemetry.increment('trail_matcher_total', { outcome: result.matched ? 'matched' : 'unmatched' });
       return result;
     } catch (error) {
+      telemetry.increment('trail_matcher_total', { outcome: timedOut ? 'timeout' : 'error' });
       consecutiveFailures += 1;
       if (consecutiveFailures >= policy.circuitFailureThreshold) {
         circuitOpenUntil = Date.now() + policy.circuitCooldownMs;
@@ -162,6 +177,7 @@ function createLiveTrailMatchingService({
       const cached = await liveTrailRepo.findMatchBySourceRevision(source);
       let saved;
       if (cached) {
+        telemetry.increment('trail_matcher_total', { outcome: 'cache_hit' });
         saved = window.lifecycle === 'final' && cached.status === 'provisional'
           ? await liveTrailRepo.saveMatch({ ...cached, status: 'final' })
           : cached;
@@ -208,6 +224,7 @@ function createLiveTrailMatchingService({
       active += 1;
       const worker = processJob(job)
         .catch((error) => {
+          telemetry.increment('trail_matcher_total', { outcome: 'job_error' });
           logger.error('LIVE_TRAIL_MATCH_JOB_FAILED');
         })
         .finally(() => {

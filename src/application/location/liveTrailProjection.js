@@ -1,8 +1,13 @@
 const { prepareLiveTrailPoints } = require('../../domain/liveTrail');
+const { createSafeMetrics } = require('../ports/metrics');
 
-function createLiveTrailProjection({ liveTrailRepo, unitOfWork, policy, logger = console }) {
+function createLiveTrailProjection({ liveTrailRepo, unitOfWork, policy, logger = console, metrics }) {
+  const telemetry = createSafeMetrics(metrics);
   async function project({ userId, points }) {
-    if (!policy.enabled || points.length === 0) return { enabled: false, results: [] };
+    if (!policy.enabled || points.length === 0) {
+      telemetry.increment('trail_projection_total', { outcome: 'disabled' });
+      return { enabled: false, results: [] };
+    }
     const groups = prepareLiveTrailPoints(points, policy);
     const results = [];
 
@@ -18,7 +23,9 @@ function createLiveTrailProjection({ liveTrailRepo, unitOfWork, policy, logger =
           })
         );
         if (result) results.push(result);
+        telemetry.increment('trail_projection_total', { outcome: 'success' });
       } catch (error) {
+        telemetry.increment('trail_projection_total', { outcome: 'error' });
         logger.error('LIVE_TRAIL_PROJECTION_FAILED');
       }
     }

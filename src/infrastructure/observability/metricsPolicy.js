@@ -3,6 +3,14 @@ const methods = ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS', 'HEAD', 'ot
 // Callers pass a resolved route group, never a raw URL or request parameter.
 const routes = ['auth', 'groups', 'privacy', 'history', 'locations', 'conversations', 'chat', 'system', 'unmatched', 'other'];
 const definitions = Object.freeze({
+  location_history_decisions_total: { type: 'counter', help: 'Realtime history persistence decisions, not inserted-document counts.', labels: { outcome: ['persist', 'throttled', 'other'] } },
+  location_timestamp_fallbacks_total: { type: 'counter', help: 'Out-of-range measured timestamps replaced with server time.', labels: { reason: ['too_old', 'too_far_in_future', 'other'] } },
+  location_batch_points_total: { type: 'counter', help: 'Point outcomes in completed batch responses, including retries.', labels: { outcome: ['accepted', 'duplicates', 'rejected', 'other'] } },
+  trail_projection_total: { type: 'counter', help: 'Projection results per date group; disabled counts calls.', labels: { outcome: ['disabled', 'success', 'error', 'other'] } },
+  trail_matcher_total: { type: 'counter', help: 'Matcher calls, durable hits and queue events.', labels: { outcome: ['matched', 'unmatched', 'error', 'timeout', 'circuit_open', 'cache_hit', 'queue_drop', 'coalesced', 'job_error', 'other'] } },
+  trail_matcher_state: { type: 'gauge', help: 'Matcher process-local state at scrape time.', labels: { state: ['active', 'queued', 'pendingTriggers', 'circuitOpen', 'other'] } },
+  trail_publication_errors_total: { type: 'counter', help: 'Failed Live Trail publication operations.', labels: { operation: ['realtime', 'batch', 'flush', 'other'] } },
+  realtime_payload_bytes: { type: 'histogram', help: 'JSON byte size of every tenth realtime adapter emit per channel; not wire bytes.', labels: { channel: ['user', 'group', 'conversation', 'trail', 'other'] }, buckets: [1024, 4096, 16384, 65536, 262144] },
   socket_broadcasts_total: { type: 'counter', help: 'Successful emit calls, not recipient or delivered-message counts.', labels: { channel: ['user', 'group', 'conversation', 'trail', 'other'] } },
   socket_connections: { type: 'gauge', help: 'Connected sockets in the default namespace.', labels: { scope: ['default', 'other'] } },
   socket_rooms: { type: 'gauge', help: 'Default namespace rooms including per-socket rooms.', labels: { scope: ['default', 'other'] } },

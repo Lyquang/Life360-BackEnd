@@ -8,8 +8,15 @@ const rooms = {
 
 /** Realtime port implemented with Socket.IO. Use cases only see these methods. */
 function createSocketRealtime(io, metrics) {
-  function record(channel) {
-    try { if (metrics?.enabled) metrics.increment('socket_broadcasts_total', { channel }); } catch { /* Keep delivery independent of telemetry. */ }
+  const samples = new Map();
+  function record(channel, payload) {
+    try {
+      if (!metrics?.enabled) return;
+      metrics.increment('socket_broadcasts_total', { channel });
+      const next = ((samples.get(channel) || 0) + 1) % 10;
+      samples.set(channel, next);
+      if (next === 0) metrics.observe('realtime_payload_bytes', { channel }, Buffer.byteLength(JSON.stringify(payload)));
+    } catch { /* Keep delivery independent of telemetry. */ }
   }
   function to(room, exceptSocketId) {
     const operator = io.to(room);
@@ -21,22 +28,22 @@ function createSocketRealtime(io, metrics) {
 
     emitToUser(userId, event, payload) {
       io.to(rooms.user(userId)).emit(event, payload);
-      record('user');
+      record('user', payload);
     },
 
     emitToGroup(groupId, event, payload, { exceptSocketId } = {}) {
       to(rooms.group(groupId), exceptSocketId).emit(event, payload);
-      record('group');
+      record('group', payload);
     },
 
     emitToConversation(conversationId, event, payload, { exceptSocketId } = {}) {
       to(rooms.conversation(conversationId), exceptSocketId).emit(event, payload);
-      record('conversation');
+      record('conversation', payload);
     },
 
     emitToLiveTrail(trailId, event, payload) {
       io.to(rooms.liveTrail(trailId)).emit(event, payload);
-      record('trail');
+      record('trail', payload);
     },
 
     /** Makes every connected device of the user join the room (e.g. after joining a group). */

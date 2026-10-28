@@ -61,6 +61,7 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     liveTrailRepo,
   };
   const services = {
+    metrics,
     unitOfWork: createUnitOfWork({ supportsTransactions, logger }),
     realtime: createSocketRealtime(io, metrics),
     liveTrailAccessInvalidator: createLiveTrailAccessInvalidator({ logger }),
@@ -94,6 +95,7 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     policy: config.liveTrail,
   });
   services.liveTrailDeltaPublisher = createLiveTrailDeltaPublisher({
+    metrics,
     realtime: services.realtime,
     policy: config.liveTrail,
     logger,
@@ -105,6 +107,7 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     })
     : config.liveTrail.matcher.provider === 'fake' ? createFakeMapMatcher() : createNoopMapMatcher();
   services.liveTrailMatchingService = createLiveTrailMatchingService({
+    metrics,
     liveTrailRepo,
     matcher: services.mapMatcher,
     liveTrailDeltaPublisher: services.liveTrailDeltaPublisher,

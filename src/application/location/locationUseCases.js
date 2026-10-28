@@ -1,6 +1,7 @@
 const { haversineDistance, formatDuration } = require('../../domain/geo');
 const { lastLocationKey } = require('../../domain/cacheKeys');
 const { shouldPersistHistoryPoint } = require('../../domain/historyPersistence');
+const { createSafeMetrics } = require('../ports/metrics');
 
 const THROTTLE_DISTANCE_METERS = 50;
 const THROTTLE_TIME_MS = 30 * 1000;
@@ -26,7 +27,9 @@ function createLocationUseCases({
   locationAccessPolicy,
   locationRuntimeState,
   logger = console,
+  metrics,
 }) {
+  const telemetry = createSafeMetrics(metrics);
   const { lastSavedLocation, durationTracker } = locationRuntimeState;
   let ignoredRecordedAtCount = 0;
 
@@ -40,6 +43,7 @@ function createLocationUseCases({
     if (!reason) return measuredAt;
 
     ignoredRecordedAtCount += 1;
+    telemetry.increment('location_timestamp_fallbacks_total', { reason });
     logger.warn(reason === 'too_old' ? 'LOCATION_TIMESTAMP_TOO_OLD' : 'LOCATION_TIMESTAMP_FUTURE', {
       count: ignoredRecordedAtCount,
     });
@@ -141,6 +145,7 @@ function createLocationUseCases({
     );
 
     const persistence = await historyDecision({ userId, latitude, longitude, at, motionState, now });
+    telemetry.increment('location_history_decisions_total', { outcome: persistence.persist ? 'persist' : 'throttled' });
     if (persistence.persist) {
       if (persistence.reason !== 'lateArrival') {
         await userRepo.updateLastKnownLocation(userId, { latitude, longitude, batteryLevel, durationMinutes, at });

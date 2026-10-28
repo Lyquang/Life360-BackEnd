@@ -1,4 +1,7 @@
-function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
+const { createSafeMetrics } = require('../ports/metrics');
+
+function createLiveTrailDeltaPublisher({ realtime, policy, logger = console, metrics }) {
+  const telemetry = createSafeMetrics(metrics);
   const pending = new Map();
 
   function publicPoint(point) {
@@ -39,7 +42,12 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
   }
 
   function schedule(queue) {
-    queue.timer = setTimeout(() => flush(queue.trailId), policy.deltaFlushMs);
+    queue.timer = setTimeout(() => {
+      try { flush(queue.trailId); } catch {
+        telemetry.increment('trail_publication_errors_total', { operation: 'flush' });
+        logger.error('LIVE_TRAIL_DELTA_PUBLICATION_FAILED');
+      }
+    }, policy.deltaFlushMs);
     queue.timer.unref?.();
   }
 
@@ -109,6 +117,7 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
         else enqueue({ userId, result });
       }
     } catch (error) {
+      telemetry.increment('trail_publication_errors_total', { operation: 'realtime' });
       logger.error('LIVE_TRAIL_DELTA_PUBLICATION_FAILED');
     }
   }
@@ -119,6 +128,7 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
         if (result.inserted.length > 0) reset({ userId, result });
       }
     } catch (error) {
+      telemetry.increment('trail_publication_errors_total', { operation: 'batch' });
       logger.error('LIVE_TRAIL_BATCH_RESET_FAILED');
     }
   }

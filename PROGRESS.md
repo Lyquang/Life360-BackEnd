@@ -1,5 +1,13 @@
 # Progress Log
 
+### Grafana M2b Location/Live Trail metrics (2026-10-28)
+
+- Added business counters for realtime history decisions, timestamp fallback, completed batch point outcomes, projection and matcher/cache/queue failures. Matcher state is collected at scrape time. Added every-tenth-emit JSON byte sampling per realtime channel with no payload logging and no serialization when disabled.
+- Added fail-soft metrics facade for application code. Timer-driven trail flush now catches emit failures and records an error instead of allowing an uncaught exception. Business payloads and batch result contracts are unchanged.
+- Verification: 202/202 tests pass (49 suites); new sampling/failure/real-batch tests 3/3 pass; lint and diff check pass; graph regenerated. Enumerated all labelsets: 810 application + 16 runtime = 826 series, 71,764 plain bytes / 4,717 gzip bytes on local synthetic snapshot. M4 overhead still unmeasured.
+- Updated Study/grafana-observability.md with metric semantics, sampling bias, PromQL and rollback. No new env or schema migration. No stage/commit/push. Suggested commit: `feat(observability): instrument location and live trail workflows`.
+- Next approved phase: M4 local Compose monitoring and benchmark, before M2c-e and separately approved M5 Cloud export.
+
 ### Grafana M2a Socket performance metrics (2026-10-28)
 
 - Final verification: 199/199 tests pass (49 suites), lint and diff check pass, graph regenerated. Enumerated every allowed label combination with runtime enabled: 753 accounted series and 753 exposition samples; synthetic snapshot 65,593 bytes plain / 3,882 gzip. Values include local runtime samples and are not a production overhead benchmark.
