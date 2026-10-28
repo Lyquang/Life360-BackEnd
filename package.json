@@ -16,7 +16,12 @@
     "context:graph": "npm run context:skeleton && node scripts/codebase-graph-html.js",
     "context:trace": "node scripts/trace-flow.js",
     "context:refresh": "npm run context:skeleton",
-    "benchmark:live-trail": "node scripts/benchmark-live-trail.js"
+    "benchmark:live-trail": "node scripts/benchmark-live-trail.js",
+    "monitoring:init": "node scripts/monitoring-local.js init",
+    "monitoring:up": "node scripts/monitoring-local.js up",
+    "monitoring:down": "node scripts/monitoring-local.js down",
+    "monitoring:status": "node scripts/monitoring-local.js status",
+    "benchmark:monitoring": "node scripts/benchmark-monitoring.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1143.0",

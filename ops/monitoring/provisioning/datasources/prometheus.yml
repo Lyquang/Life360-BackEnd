@@ -1,0 +1,11 @@
+apiVersion: 1
+datasources:
+  - name: FamilyTracker Local
+    uid: familytracker-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 60s

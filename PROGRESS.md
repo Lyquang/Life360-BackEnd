@@ -1,5 +1,12 @@
 # Progress Log
 
+### Grafana M4 local monitoring and benchmark (2026-10-28)
+
+- Added an isolated localhost-only Docker Compose stack with synthetic MongoDB replica set, backend capped at 0.1 CPU/512 MiB, Prometheus and Grafana; local-only credentials are generated under ignored `.local/` files. Provisioned HTTP/runtime, Socket and Location/Live Trail dashboards. No production `.env`, Cloud datasource, Redis or Loki.
+- Verified all four containers healthy, Prometheus target `up=1`, Grafana datasource and all three dashboards provisioned, and all 19 dashboard PromQL expressions accepted. `/metrics` returns 401 without bearer and 200 with the local scrape credential.
+- Full paired benchmark completed (30s warmup, 120s per case, 3 repeats; one user/two sockets). Only repeat 2 met the <=5% HTTP/Socket p95 and <=20 MiB RSS gate; repeats 1 and 3 failed on Socket p95 (+26.3%) and HTTP p95 (+35.5%), respectively. RSS stayed within threshold in all pairs. This is noisy, synthetic single-user local evidence, not production capacity proof; do not enable Loki/Cloud from this result.
+- Smoke passed once but is non-acceptance. The full benchmark first hit a transient HTTP timeout, then completed on retry. Updated benchmark errors to identify the failed synthetic endpoint. Final stack restored with metrics enabled and healthy. `node --check scripts/benchmark-monitoring.js` passes. No commit/push.
+
 ### Grafana M2b Location/Live Trail metrics (2026-10-28)
 
 - Added business counters for realtime history decisions, timestamp fallback, completed batch point outcomes, projection and matcher/cache/queue failures. Matcher state is collected at scrape time. Added every-tenth-emit JSON byte sampling per realtime channel with no payload logging and no serialization when disabled.

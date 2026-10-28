@@ -1,0 +1,222 @@
+{
+  "uid": "familytracker-socket",
+  "title": "FamilyTracker / Socket Actions",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "refresh": "1m",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "tags": [
+    "familytracker",
+    "local"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Actions by result",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (event, outcome) (rate(familytracker_socket_actions_total[5m]))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Action p95",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (event, le) (rate(familytracker_socket_action_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Connections",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "familytracker_socket_connections{scope=\"default\"}",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Rooms (including socket rooms)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "familytracker_socket_rooms{scope=\"default\"}",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Watch registrations",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "familytracker_socket_watches{scope=\"default\"}",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Emit calls / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (channel) (rate(familytracker_socket_broadcasts_total[5m]))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
+}

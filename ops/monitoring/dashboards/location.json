@@ -1,0 +1,256 @@
+{
+  "uid": "familytracker-location",
+  "title": "FamilyTracker / Location & Live Trail",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "refresh": "1m",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "tags": [
+    "familytracker",
+    "local"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "History decisions",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(familytracker_location_history_decisions_total[5m]))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Batch point outcomes",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(familytracker_location_batch_points_total[5m]))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Timestamp fallbacks",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (reason) (rate(familytracker_location_timestamp_fallbacks_total[5m]))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Projection results",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(familytracker_trail_projection_total[5m]))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Matcher state",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "familytracker_trail_matcher_state",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Publication errors",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (operation) (rate(familytracker_trail_publication_errors_total[5m]))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Sampled JSON bytes p95 (1/10)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "familytracker-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (channel, le) (rate(familytracker_realtime_payload_bytes_bucket[5m])))",
+          "legendFormat": "{{route}} {{event}} {{outcome}} {{channel}} {{state}} {{reason}} {{operation}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 60s
+  evaluation_interval: 60s
+scrape_configs:
+  - job_name: familytracker-local
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    enable_compression: true
+    sample_limit: 2500
+    authorization:
+      type: Bearer
+      credentials_file: /run/secrets/metrics
+    static_configs:
+      - targets: ['backend:3000']
+        labels:
+          env: local
+          service: familytracker-backend

@@ -1,0 +1,70 @@
+name: familytracker-monitoring
+services:
+  mongo:
+    image: mongo:8.0.12
+    command: [mongod, --replSet, rs0, --bind_ip_all]
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: [CMD-SHELL, "mongosh --quiet --eval 'try { quit(rs.status().myState === 1 ? 0 : 1) } catch (e) { rs.initiate({_id: \"rs0\", members: [{_id: 0, host: \"mongo:27017\"}]}); quit(1) }'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  backend:
+    build:
+      context: ../..
+    cpus: 0.1
+    mem_limit: 512m
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/monitoring?replicaSet=rs0
+      PUBLIC_URL: http://localhost:3100
+      METRICS_ENABLED: ${STACK_METRICS_ENABLED:-true}
+      REDIS_ENABLED: 'false'
+      AUTH_RATE_LIMIT: 10000
+      LIVE_TRAIL_ENABLED: 'true'
+      LIVE_TRAIL_MATCHER_ENABLED: 'false'
+    command: [node, -e, "const fs=require('fs'); process.env.JWT_SECRET=fs.readFileSync('/run/secrets/jwt','utf8').trim(); process.env.METRICS_TOKEN=fs.readFileSync('/run/secrets/metrics','utf8').trim(); require('./server');"]
+    secrets: [jwt, metrics]
+    ports: ['127.0.0.1:3100:3000']
+    depends_on:
+      mongo: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -qO-, 'http://127.0.0.1:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command: [--config.file=/etc/prometheus/prometheus.yml, --storage.tsdb.retention.time=3d, --storage.tsdb.retention.size=512MB]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    secrets: [metrics]
+    ports: ['127.0.0.1:9091:9090']
+    depends_on:
+      backend: {condition: service_healthy}
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
+    secrets: [grafana]
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports: ['127.0.0.1:3101:3000']
+    depends_on: [prometheus]
+secrets:
+  jwt: {file: ./.local/jwt}
+  metrics: {file: ./.local/metrics}
+  grafana: {file: ./.local/grafana}
+volumes:
+  mongo-data:
+  prometheus-data:
+  grafana-data:
