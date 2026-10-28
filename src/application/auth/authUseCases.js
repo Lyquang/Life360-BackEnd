@@ -2,6 +2,7 @@ const { Errors } = require('../../domain/errors');
 const { normalizeSocialProfile } = require('../../domain/oauth');
 const { classifyRefreshSession } = require('../../domain/refreshTokens');
 const { tokenBlacklistKey, userSessionKey, userSessionsPattern } = require('../../domain/cacheKeys');
+const { createSafeMetrics } = require('../ports/metrics');
 
 function ttlFromDate(date, nowMs = Date.now()) {
   return date ? Math.max(0, Math.ceil((new Date(date).getTime() - nowMs) / 1000)) : 0;
@@ -32,7 +33,9 @@ function createAuthUseCases({
   realtime,
   authMaxActiveSessions = 10,
   logger = console,
+  metrics,
 }) {
+  const telemetry = createSafeMetrics(metrics);
   async function cacheRefreshSession(user, pair, deviceInfo) {
     await cacheManager.setWithTTL(
       userSessionKey(user._id.toString(), pair.refreshTokenHash),
@@ -227,7 +230,13 @@ function createAuthUseCases({
         error.name === 'TokenExpiredError' ? 'Token has expired. Please refresh your session.' : 'Invalid token.'
       );
     }
-    if (await cacheManager.get(tokenBlacklistKey(tokenService.hashToken(token)))) {
+    const blacklisted = await cacheManager.get(tokenBlacklistKey(tokenService.hashToken(token)));
+    if (!cacheManager.enabled) {
+      telemetry.increment('auth_blacklist_fail_open_total', { reason: 'disabled' });
+    } else if (typeof cacheManager.isHealthy === 'function' && !cacheManager.isHealthy()) {
+      telemetry.increment('auth_blacklist_fail_open_total', { reason: 'unavailable' });
+    }
+    if (blacklisted) {
       throw Errors.unauthorized('Token has been revoked. Please login again.');
     }
     const user = await userRepo.findById(payload.id);

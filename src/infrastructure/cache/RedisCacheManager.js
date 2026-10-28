@@ -1,4 +1,5 @@
 const Redis = require('ioredis');
+const { createCacheMetrics, classifyCacheKey } = require('./cacheMetrics');
 
 const NULL_SENTINEL = '__NULL__';
 
@@ -7,8 +8,8 @@ function withJitter(ttlSeconds, jitterSeconds = 0) {
   return ttlSeconds + Math.floor(Math.random() * (jitterSeconds + 1));
 }
 
-function createRedisCacheManager({ config, logger = console }) {
-  const client = new Redis(config.url, {
+function createRedisCacheManager({ config, logger = console, metrics, RedisClient = Redis }) {
+  const client = new RedisClient(config.url, {
     lazyConnect: true,
     enableOfflineQueue: false,
     maxRetriesPerRequest: config.maxRetriesPerRequest,
@@ -20,24 +21,44 @@ function createRedisCacheManager({ config, logger = console }) {
   });
 
   let healthy = false;
+  const telemetry = createCacheMetrics(metrics);
 
   client.on('ready', () => {
     healthy = true;
+    telemetry.connection('ready');
     logger.log('REDIS_CONNECTED');
   });
   client.on('end', () => {
     healthy = false;
+    telemetry.connection('end');
   });
   client.on('error', () => {
     healthy = false;
+    telemetry.connection('error');
     logger.warn('REDIS_CONNECTION_ERROR');
   });
 
-  async function safe(operation, fallback) {
+  async function command(name, operation) {
+    if (metrics?.enabled !== true) return operation();
+    const startedAt = process.hrtime.bigint();
     try {
-      return await operation();
+      const result = await operation();
+      telemetry.command(name, 'success', Number(process.hrtime.bigint() - startedAt) / 1e9);
+      return result;
+    } catch (error) {
+      telemetry.command(name, 'error', Number(process.hrtime.bigint() - startedAt) / 1e9);
+      throw error;
+    }
+  }
+
+  async function safe(operation, fallback, { key, cacheOperation, outcome = () => 'success' } = {}) {
+    try {
+      const result = await operation();
+      if (cacheOperation) telemetry.request(key, cacheOperation, outcome(result));
+      return result;
     } catch {
       healthy = false;
+      if (cacheOperation) telemetry.request(key, cacheOperation, 'error');
       logger.warn('REDIS_OPERATION_FAILED');
       return fallback;
     }
@@ -66,14 +87,29 @@ function createRedisCacheManager({ config, logger = console }) {
       return healthy && client.status === 'ready';
     },
     async get(key) {
-      return safe(async () => decode(await client.get(key)), null);
+      const result = await safe(
+        async () => {
+          const raw = await command('GET', () => client.get(key));
+          return {
+            value: decode(raw),
+            outcome: raw === null ? 'miss' : raw === NULL_SENTINEL ? 'negative_hit' : 'hit',
+          };
+        },
+        { value: null },
+        {
+          key,
+          cacheOperation: 'get',
+          outcome: ({ outcome }) => outcome,
+        }
+      );
+      return result.value;
     },
     async setWithTTL(key, value, ttlSeconds, { jitterSeconds = 0 } = {}) {
       const ttl = Math.max(1, withJitter(ttlSeconds, jitterSeconds));
       return safe(async () => {
-        await client.set(key, encode(value), 'EX', ttl);
+        await command('SET', () => client.set(key, encode(value), 'EX', ttl));
         return true;
-      }, false);
+      }, false, { key, cacheOperation: 'set' });
     },
     async setIfNewerTimestamp(key, value, field, ttlSeconds) {
       const script = `
@@ -88,29 +124,34 @@ function createRedisCacheManager({ config, logger = console }) {
         return 1
       `;
       return safe(
-        () => client.eval(script, 1, key, field, value[field], encode(value), Math.max(1, ttlSeconds)),
-        0
+        () => command('EVAL', () => client.eval(script, 1, key, field, value[field], encode(value), Math.max(1, ttlSeconds))),
+        0,
+        { key, cacheOperation: 'set' }
       );
     },
     async del(key) {
-      return safe(() => client.del(key), 0);
+      return safe(() => command('DEL', () => client.del(key)), 0, { key, cacheOperation: 'delete' });
     },
     async delMany(keys) {
       const uniqueKeys = [...new Set(keys.filter(Boolean))];
-      if (uniqueKeys.length === 0) return 0;
-      return safe(() => client.del(...uniqueKeys), 0);
+      if (uniqueKeys.length === 0) {
+        telemetry.request('other', 'delete_many', 'success');
+        return 0;
+      }
+      const keyType = new Set(uniqueKeys.map(classifyCacheKey)).size === 1 ? uniqueKeys[0] : 'other';
+      return safe(() => command('DEL', () => client.del(...uniqueKeys)), 0, { key: keyType, cacheOperation: 'delete_many' });
     },
     async delByPattern(pattern) {
       return safe(async () => {
         let cursor = '0';
         let deleted = 0;
         do {
-          const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+          const [nextCursor, keys] = await command('SCAN', () => client.scan(cursor, 'MATCH', pattern, 'COUNT', 100));
           cursor = nextCursor;
-          if (keys.length > 0) deleted += await client.del(...keys);
+          if (keys.length > 0) deleted += await command('DEL', () => client.del(...keys));
         } while (cursor !== '0');
         return deleted;
-      }, 0);
+      }, 0, { key: pattern, cacheOperation: 'delete_pattern' });
     },
     async getOrSet(key, ttlSeconds, loader, { jitterSeconds = 0, nullTtlSeconds = 30 } = {}) {
       const cached = await this.get(key);
@@ -125,7 +166,11 @@ function createRedisCacheManager({ config, logger = console }) {
       return loaded;
     },
     async withLock(lockKey, ttlSeconds, fn) {
-      const acquired = await safe(() => client.set(lockKey, '1', 'NX', 'EX', ttlSeconds), null);
+      const acquired = await safe(
+        () => command('SET', () => client.set(lockKey, '1', 'NX', 'EX', ttlSeconds)),
+        null,
+        { key: lockKey, cacheOperation: 'lock', outcome: (result) => result === 'OK' ? 'success' : 'not_acquired' }
+      );
       if (acquired !== 'OK') return fn({ locked: false });
       try {
         return await fn({ locked: true });

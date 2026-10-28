@@ -1,5 +1,28 @@
 # Grafana observability: M0
 
+## M2d Redis/cache and blacklist metrics (2026-10-28)
+
+| Metric (prefix `familytracker_`) | Ý nghĩa |
+| --- | --- |
+| `cache_requests_total{key_type,operation,outcome}` | Cache hit/miss/negative-hit/success/error, hoặc disabled; key type chỉ thuộc nhóm user_profile/circle_members/location/session/blacklist/media/other. |
+| `redis_commands_total{command,outcome}` | Lệnh Redis do adapter gọi: GET/SET/EVAL/DEL/SCAN; phân biệt success/error. |
+| `redis_command_duration_seconds{command}` | Thời lượng lệnh adapter, đơn vị giây; lệnh disabled không được tính. |
+| `redis_connection_events_total{event}` | ready/end/error từ client trong process. |
+| `auth_blacklist_fail_open_total{reason}` | Check blacklist tiếp tục xác thực khi cache bị tắt hoặc unhealthy; disabled và unavailable được tách riêng. |
+
+Mọi key được phân loại trước khi metrics ghi nhận; ID, hash, token, pattern, email và payload không đi vào nhãn/log. `NoopCacheManager` ghi cache outcome `disabled`, không tạo Redis command sample. Redis command errors và connection errors được phân biệt; cache lỗi vẫn trả fallback như trước, còn quyết định fail-open của authentication không đổi. Metrics tắt thì command wrapper không đọc đồng hồ độ phân giải cao. `get` vẫn bắt lỗi JSON decode bên trong fail-soft boundary như hành vi cũ.
+
+PromQL gợi ý:
+
+```promql
+sum by (key_type, outcome) (rate(familytracker_cache_requests_total[5m]))
+histogram_quantile(0.95, sum by (command, le) (rate(familytracker_redis_command_duration_seconds_bucket[5m])))
+sum by (command) (rate(familytracker_redis_commands_total{outcome="error"}[5m]))
+sum by (reason) (increase(familytracker_auth_blacklist_fail_open_total[5m]))
+```
+
+Giới hạn: ioredis command duration là thời gian gọi adapter và chịu ảnh hưởng event loop, không phải server-side Redis execution time. `SCAN`/`DEL` trong pattern delete được tính theo từng lệnh thực tế; lock được tính như SET. Current policy cardinality maximum là 1.342 series, dưới hard cap 2.500; không cần env hoặc migration mới. Local Compose smoke sau rebuild: đăng ký synthetic user trả 201, `/auth/me` trả 200, scrape bearer trả 200 với `Content-Encoding: gzip`. Snapshot có 87 sample và đo được 12.768 byte plain / 2.189 byte gzip. Redis được cố ý tắt trong stack này; vì vậy snapshot xác nhận outcome `disabled` và `auth_blacklist_fail_open_total{reason="disabled"}`, không xác nhận lệnh Redis thật. Fake-client tests bao phủ đường adapter healthy/error mà không kết nối Upstash. Redis panels/dashboard sẽ được provision cùng dashboard DB/cache sau khi hoàn tất M2e.
+
 ## M4 local benchmark result (2026-10-28)
 
 Chạy `npm run benchmark:monitoring` trong Docker Compose local: warmup 30 giây, đo 120 giây mỗi case, ba cặp metrics-off/on, một user và hai sockets. Đây là dữ liệu synthetic trên Docker Desktop, không phải benchmark production hay capacity nhiều người dùng.

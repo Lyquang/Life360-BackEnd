@@ -45,8 +45,8 @@ const { createMapboxMapMatcher } = require('./infrastructure/matching/MapboxMapM
 function createContainer({ config, io, supportsTransactions, logger = console, metrics }) {
   const cacheManager =
     config.redis.enabled && config.redis.url
-      ? createRedisCacheManager({ config: config.redis, logger })
-      : createNoopCacheManager({ reason: 'Redis is disabled or REDIS_URL is missing.' });
+      ? createRedisCacheManager({ config: config.redis, logger, metrics })
+      : createNoopCacheManager({ reason: 'Redis is disabled or REDIS_URL is missing.', metrics });
 
   const measuredRepositories = instrumentMongoRepositories({
     userRepo,

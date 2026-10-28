@@ -1,5 +1,10 @@
 # Progress Log
 
+### Grafana M2d Redis/cache and auth blacklist metrics (2026-10-28)
+
+- Added bounded cache hit/miss/negative-hit/error/disabled outcomes by logical key category; Redis command outcome/duration and connection event metrics; explicit auth blacklist fail-open counters separating Redis disabled from unavailable. Existing fallback/auth semantics stay unchanged; no IDs, key material, tokens, command payloads or errors enter labels/logs. No new env or migration.
+- Targeted Redis/cache tests pass; full suite 209/209 across 49 suites, lint, diff check and graph refresh pass. Theoretical policy cardinality max is 1,342/2,500. Fake-client tests cover healthy/error Redis operations without contacting Upstash. Local Compose rebuilt and all four containers are healthy; synthetic register `/me` returned 201/200, authenticated gzip scrape returned 200 and exposed 87 samples (12,768 bytes plain / 2,189 gzip), including cache-disabled and auth blacklist fail-open counters. Redis stayed disabled; no Upstash access. No commit/push. Suggested commit: `feat(observability): instrument Redis cache and auth fallback`.
+
 ### Grafana M2c Mongo pool/transaction metrics (2026-10-28)
 
 - Added bounded Mongo driver pool/connection lifecycle and checkout-failure counters, repository operation outcome/duration metrics grouped into five fixed operation classes, and unit-of-work transaction outcomes. Metrics are fail-soft; no Mongo command monitoring, query/document payload capture, collection scan, or schema/env change. Listener attaches after connect and before model/index init; handshake events may be missed, so pool counters are observed-event counts, not current pool gauges.
