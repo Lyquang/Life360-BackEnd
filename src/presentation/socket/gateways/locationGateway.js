@@ -2,10 +2,10 @@ const { updateLocationPayload, sosPayload } = require('../../dto/location.schema
 const { formatIssues } = require('../../dto/common');
 const { AppError } = require('../../../domain/errors');
 
-function registerLocationGateway(socket, { location, logger = console }) {
+function registerLocationGateway(socket, { location, logger = console, withEventContext = (event, callback) => callback() }) {
   const user = socket.data.user;
 
-  socket.on('update_location', async (payload) => {
+  socket.on('update_location', (payload) => withEventContext('update_location', async () => {
     const parsed = updateLocationPayload.safeParse(payload);
     if (!parsed.success) {
       return socket.emit('error', { message: 'Invalid location payload.', errors: formatIssues(parsed.error) });
@@ -26,9 +26,9 @@ function registerLocationGateway(socket, { location, logger = console }) {
       logger.error('LOCATION_UPDATE_FAILED');
       socket.emit('error', { message: 'Failed to update location' });
     }
-  });
+  }));
 
-  socket.on('sos_alert', async (payload) => {
+  socket.on('sos_alert', (payload) => withEventContext('sos_alert', async () => {
     const parsed = sosPayload.safeParse(payload);
     if (!parsed.success) {
       return socket.emit('error', { message: 'Invalid SOS payload.', errors: formatIssues(parsed.error) });
@@ -41,7 +41,7 @@ function registerLocationGateway(socket, { location, logger = console }) {
       logger.error('SOS_ALERT_FAILED');
       socket.emit('error', { message: 'Failed to send SOS alert' });
     }
-  });
+  }));
 }
 
 module.exports = { registerLocationGateway };

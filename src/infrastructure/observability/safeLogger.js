@@ -11,10 +11,12 @@ const EVENT_CODES = new Set([
   'CHAT_ACTION_FAILED', 'CHAT_TYPING_FAILED', 'GROUP_DIGEST_SENT',
   'CHAT_GROUP_SYNC_COMPLETED', 'HTTP_REQUEST_COMPLETED', 'SERVER_READY',
   'SERVER_SHUTDOWN_STARTED', 'SERVER_SHUTDOWN_COMPLETE',
+  'LIVE_TRAIL_SOCKET_ACTION_FAILED', 'LIVE_TRAIL_LEASE_REVALIDATION_FAILED',
+  'LIVE_TRAIL_LEASE_CYCLE_FAILED', 'DIGEST_SCHEDULER_FAILED',
 ]);
 const ID = /^[0-9a-f]{32}$/;
 const ROUTE = new Set(['auth', 'groups', 'privacy', 'history', 'locations', 'conversations', 'chat', 'system', 'unmatched', 'other']);
-const SOCKET_EVENT = new Set(['connect', 'disconnect', 'update_location', 'sos_alert', 'chat:send_message', 'chat:typing', 'chat:mark_read', 'journey:watch', 'journey:unwatch', 'session:ready']);
+const SOCKET_EVENT = new Set(['connect', 'disconnect', 'update_location', 'sos_alert', 'chat:send_message', 'chat:typing', 'chat:mark_read', 'journey:watch', 'journey:unwatch', 'journey:lease', 'session:ready']);
 const SAFE_KEYS = new Set(['requestId', 'connectionId', 'eventId', 'route', 'statusCode', 'durationMs', 'event', 'errorCode', 'count']);
 
 function safeFields(input) {

@@ -16,7 +16,7 @@ function createSlidingWindowLimiter(max, windowMs) {
   };
 }
 
-function registerChatGateway(socket, { chat, logger = console }) {
+function registerChatGateway(socket, { chat, logger = console, withEventContext = (event, callback) => callback() }) {
   const user = socket.data.user;
   const isRateLimited = createSlidingWindowLimiter(RATE_MAX_MESSAGES, RATE_WINDOW_MS);
 
@@ -36,7 +36,7 @@ function registerChatGateway(socket, { chat, logger = console }) {
 
   /** Validates the payload with Zod, runs the handler and answers through the ack (or chat:error). */
   function on(event, schema, handler) {
-    socket.on(event, async (payload, ack) => {
+    socket.on(event, (payload, ack) => withEventContext(event, async () => {
       try {
         const parsed = schema.safeParse(payload);
         if (!parsed.success) throw Errors.validation(formatIssues(parsed.error));
@@ -45,7 +45,7 @@ function registerChatGateway(socket, { chat, logger = console }) {
       } catch (error) {
         fail(event, ack, error);
       }
-    });
+    }));
   }
 
   on('chat:send_message', sendMessagePayload, (dto) => {
@@ -64,7 +64,7 @@ function registerChatGateway(socket, { chat, logger = console }) {
   );
 
   // Fire-and-forget: invalid or unauthorized typing events are silently dropped.
-  socket.on('chat:typing', async (payload) => {
+  socket.on('chat:typing', (payload) => withEventContext('chat:typing', async () => {
     const parsed = typingPayload.safeParse(payload);
     if (!parsed.success) return;
     try {
@@ -78,7 +78,7 @@ function registerChatGateway(socket, { chat, logger = console }) {
     } catch (error) {
       if (!(error instanceof AppError)) logger.error('CHAT_TYPING_FAILED');
     }
-  });
+  }));
 }
 
 module.exports = { registerChatGateway, RATE_MAX_MESSAGES };

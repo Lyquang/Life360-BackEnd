@@ -4,6 +4,12 @@
 
 Deliver a gated, cursor-safe live journey trail without breaking existing location and offline-sync clients.
 
+### Grafana M3c Socket correlation (2026-10-28)
+
+- Each Socket connection now receives a generated `connectionId`; every event handler receives a fresh `eventId` and a bounded event name in AsyncLocalStorage. The three gateways preserve their existing client payloads and ack behavior. Live Trail and digest scheduler failures use fixed event codes without raw error names/messages.
+- Exactly eight review files: `src/presentation/socket/socketServer.js`, three gateway files, `src/presentation/jobs/digestScheduler.js`, `src/infrastructure/observability/safeLogger.js`, `tests/socketLogContext.test.js`, `PROGRESS.md`. No git add/commit/push; suggested commit: `feat(observability): correlate socket events with safe logs`.
+- Verification: 195/195 tests passed (49 suites), new targeted tests 2/2 passed, lint passed. Remaining dynamic logs in application/infrastructure are M3d; M4 benchmark and any Loki/Cloud shipping are still pending.
+
 ### Grafana M3b HTTP correlation (2026-10-27)
 
 - Added server-generated `X-Request-Id` to Express requests, including health and `/metrics`; inbound IDs are ignored. AsyncLocalStorage carries the ID through async handlers. Completion logs contain only allowlisted route group, status, elapsed time and generated ID; no URL, query, headers or body.

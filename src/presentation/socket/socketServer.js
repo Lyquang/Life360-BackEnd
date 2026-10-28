@@ -1,6 +1,7 @@
 const { registerLocationGateway } = require('./gateways/locationGateway');
 const { registerChatGateway } = require('./gateways/chatGateway');
 const { registerLiveTrailGateway } = require('./gateways/liveTrailGateway');
+const { newConnectionId, newRequestId, withLogContext } = require('../../infrastructure/observability/logContext');
 
 function registerSocketServer(
   io,
@@ -22,29 +23,33 @@ function registerSocketServer(
 
   io.on('connection', (socket) => {
     const user = socket.data.user;
-    logger.log('SOCKET_CONNECTED');
+    const connectionId = newConnectionId();
+    const withEventContext = (event, callback) =>
+      withLogContext({ connectionId, eventId: newRequestId(), event }, callback);
+    withEventContext('connect', () => logger.log('SOCKET_CONNECTED'));
 
     // Handlers are registered synchronously so events sent right after connect are never dropped.
     socket.join(realtime.rooms.user(user.id));
     if (socket.data.familyId) socket.join(realtime.rooms.session(socket.data.familyId));
-    registerLocationGateway(socket, { location, logger });
-    registerChatGateway(socket, { chat, logger });
+    registerLocationGateway(socket, { location, logger, withEventContext });
+    registerChatGateway(socket, { chat, logger, withEventContext });
     registerLiveTrailGateway(socket, {
       liveTrailWatch,
       liveTrailAccessInvalidator,
       realtime,
       policy: liveTrailPolicy,
       logger,
+      withEventContext,
     });
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', () => withEventContext('disconnect', () => {
       logger.log('SOCKET_DISCONNECTED');
       location
         .disconnect({ userId: user.id, userName: user.name })
         .catch(() => logger.error('SOCKET_DISCONNECT_FAILED'));
-    });
+    }));
 
-    (async () => {
+    withEventContext('session:ready', () => (async () => {
       const [{ groupIds }, conversationIds] = await Promise.all([
         location.connect({ userId: user.id, userName: user.name, socketId: socket.id }),
         chat.getConversationIdsForUser(user.id),
@@ -56,7 +61,7 @@ function registerSocketServer(
       }
       socket.join([...groupIds.map(realtime.rooms.group), ...conversationIds.map(realtime.rooms.conversation)]);
       socket.emit('session:ready', { groupIds, conversationIds });
-    })().catch(() => logger.error('SOCKET_SESSION_INIT_FAILED'));
+    })().catch(() => logger.error('SOCKET_SESSION_INIT_FAILED')));
   });
 }
 

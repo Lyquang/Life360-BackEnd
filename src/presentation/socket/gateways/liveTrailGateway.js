@@ -15,7 +15,8 @@ function createSlidingWindowLimiter(max, windowMs) {
 
 function registerLiveTrailGateway(
   socket,
-  { liveTrailWatch, liveTrailAccessInvalidator, realtime, policy, logger = console }
+  { liveTrailWatch, liveTrailAccessInvalidator, realtime, policy, logger = console,
+    withEventContext = (event, callback) => callback() }
 ) {
   const requesterId = socket.data.user.id;
   const watched = new Map();
@@ -28,7 +29,7 @@ function registerLiveTrailGateway(
 
   function failure(error) {
     const known = error instanceof AppError;
-    if (!known) logger.error('Live trail socket action failed.', { errorName: error?.name || 'Error' });
+    if (!known) logger.error('LIVE_TRAIL_SOCKET_ACTION_FAILED');
     return {
       ok: false,
       status: known ? error.status : 500,
@@ -48,7 +49,7 @@ function registerLiveTrailGateway(
     if (isRateLimited()) throw Errors.tooManyRequests('Too many live trail watch actions.');
   }
 
-  socket.on('journey:watch', async (payload, ack) => {
+  socket.on('journey:watch', (payload, ack) => withEventContext('journey:watch', async () => {
     try {
       enforceRateLimit();
       const dto = parse(payload);
@@ -68,9 +69,9 @@ function registerLiveTrailGateway(
     } catch (error) {
       if (typeof ack === 'function') ack(failure(error));
     }
-  });
+  }));
 
-  socket.on('journey:unwatch', async (payload, ack) => {
+  socket.on('journey:unwatch', (payload, ack) => withEventContext('journey:unwatch', async () => {
     try {
       enforceRateLimit();
       const dto = parse(payload);
@@ -85,42 +86,44 @@ function registerLiveTrailGateway(
     } catch (error) {
       if (typeof ack === 'function') ack(failure(error));
     }
-  });
+  }));
 
-  async function revalidateWatches(filter = {}) {
-    for (const [key, watch] of [...watched]) {
-      if (filter.targetUserId && String(watch.userId) !== filter.targetUserId) continue;
-      if (
-        filter.memberUserId &&
-        requesterId !== filter.memberUserId &&
-        String(watch.userId) !== filter.memberUserId
-      ) continue;
-      try {
-        await liveTrailWatch.revalidate({ requesterId, ...watch });
-      } catch (error) {
-        if (!(error instanceof AppError)) {
-          logger.error('Live trail watch lease revalidation failed.', { errorName: error?.name || 'Error' });
-          continue;
+  function revalidateWatches(filter = {}) {
+    return withEventContext('journey:lease', async () => {
+      for (const [key, watch] of [...watched]) {
+        if (filter.targetUserId && String(watch.userId) !== filter.targetUserId) continue;
+        if (
+          filter.memberUserId &&
+          requesterId !== filter.memberUserId &&
+          String(watch.userId) !== filter.memberUserId
+        ) continue;
+        try {
+          await liveTrailWatch.revalidate({ requesterId, ...watch });
+        } catch (error) {
+          if (!(error instanceof AppError)) {
+            logger.error('LIVE_TRAIL_LEASE_REVALIDATION_FAILED');
+            continue;
+          }
+          const reason = error.code === 'LOCATION_SHARING_PAUSED'
+            ? 'sharing_paused'
+            : error.status === 403
+            ? 'permission_revoked'
+            : 'trail_expired';
+          watched.delete(key);
+          await socket.leave(realtime.rooms.liveTrail(watch.trailId));
+          socket.emit('journey:trail_closed', {
+            userId: watch.userId,
+            trailId: watch.trailId,
+            reason,
+          });
         }
-        const reason = error.code === 'LOCATION_SHARING_PAUSED'
-          ? 'sharing_paused'
-          : error.status === 403
-          ? 'permission_revoked'
-          : 'trail_expired';
-        watched.delete(key);
-        await socket.leave(realtime.rooms.liveTrail(watch.trailId));
-        socket.emit('journey:trail_closed', {
-          userId: watch.userId,
-          trailId: watch.trailId,
-          reason,
-        });
       }
-    }
+    });
   }
 
   const leaseTimer = setInterval(() => {
-    revalidateWatches().catch((error) => {
-      logger.error('Live trail lease cycle failed.', { errorName: error?.name || 'Error' });
+    revalidateWatches().catch(() => {
+      withEventContext('journey:lease', () => logger.error('LIVE_TRAIL_LEASE_CYCLE_FAILED'));
     });
   }, policy.watchLeaseMs);
   leaseTimer.unref?.();
