@@ -4,6 +4,13 @@
 
 Deliver a gated, cursor-safe live journey trail without breaking existing location and offline-sync clients.
 
+### Grafana M3b HTTP correlation (2026-10-27)
+
+- Added server-generated `X-Request-Id` to Express requests, including health and `/metrics`; inbound IDs are ignored. AsyncLocalStorage carries the ID through async handlers. Completion logs contain only allowlisted route group, status, elapsed time and generated ID; no URL, query, headers or body.
+- Wired safe JSON logger into default bootstrap and `server.js`; startup/shutdown and conversation-sync logs use fixed event codes. Socket per-event correlation and remaining dynamic logging are M3c, not covered here. No Cloud shipping or production metrics enablement.
+- Seven review files: `server.js`, `src/bootstrap.js`, `src/infrastructure/observability/safeLogger.js`, `src/presentation/http/app.js`, `src/presentation/http/middleware/requestContext.js`, `tests/httpRequestContext.test.js`, `PROGRESS.md`. Suggested commit: `feat(observability): propagate server-generated HTTP request IDs`. No git add/commit/push.
+- Verification: final full suite 193/193 passed (49 suites), targeted HTTP test 2/2 passed, npm run lint, context graph refresh and git diff --check passed. M4 performance acceptance remains pending.
+
 ### Grafana M1a foundation (2026-10-26)
 
 - Added application Metrics/Noop port, isolated Prometheus registry and bounded policy; METRICS_ENABLED defaults false. No bootstrap wiring, runtime collectors or /metrics endpoint yet (M1b). No external shipping.

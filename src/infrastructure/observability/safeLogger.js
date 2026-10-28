@@ -9,6 +9,8 @@ const EVENT_CODES = new Set([
   'SOCKET_DISCONNECT_FAILED', 'SOCKET_SESSION_INIT_FAILED', 'LOCATION_UPDATE_FAILED',
   'LOCATION_STAY_ALERT_SENT', 'SOS_ALERT_REQUESTED', 'SOS_ALERT_FAILED',
   'CHAT_ACTION_FAILED', 'CHAT_TYPING_FAILED', 'GROUP_DIGEST_SENT',
+  'CHAT_GROUP_SYNC_COMPLETED', 'HTTP_REQUEST_COMPLETED', 'SERVER_READY',
+  'SERVER_SHUTDOWN_STARTED', 'SERVER_SHUTDOWN_COMPLETE',
 ]);
 const ID = /^[0-9a-f]{32}$/;
 const ROUTE = new Set(['auth', 'groups', 'privacy', 'history', 'locations', 'conversations', 'chat', 'system', 'unmatched', 'other']);

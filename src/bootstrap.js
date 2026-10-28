@@ -8,12 +8,13 @@ const { configureApp } = require('./presentation/http/app');
 const { registerSocketServer } = require('./presentation/socket/socketServer');
 const { startDigestScheduler } = require('./presentation/jobs/digestScheduler');
 const { createMetrics } = require('./infrastructure/observability/metricsRegistry');
+const { createSafeLogger } = require('./infrastructure/observability/safeLogger');
 
 /**
  * Builds the whole server (DB, HTTP, Socket.IO, jobs) without listening.
  * @param {ReturnType<import('./config/env').loadConfig>} config
  */
-async function createServer(config, { logger = console, digestIntervalMs } = {}) {
+async function createServer(config, { logger = createSafeLogger(), digestIntervalMs } = {}) {
   const db = await connectDatabase({
     uri: config.mongodbUri,
     isProduction: config.isProduction,
@@ -34,7 +35,7 @@ async function createServer(config, { logger = console, digestIntervalMs } = {})
   if (services.cacheManager.connect) await services.cacheManager.connect();
 
   const synced = await useCases.chat.syncGroupConversations();
-  logger.log(`💬 Group conversations in sync (${synced} circles)`);
+  logger.log('CHAT_GROUP_SYNC_COMPLETED', { count: synced });
 
   const metrics = createMetrics({ ...config.metrics, runtime: true });
 
