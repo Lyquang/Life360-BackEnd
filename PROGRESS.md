@@ -1,5 +1,12 @@
 # Progress Log
 
+### SOS assistance S1a: persistence foundation (2026-10-28)
+
+- Added pure SOS state/self-assistance rules, SosIncident/SosResponse models and an aggregate repository. Unique indexes enforce one active incident per owner, per-owner optional request IDs, and one response per incident/responder. No expiry/TTL policy has been enabled.
+- Repository writes require an active MongoDB transaction; revision compare-and-set serializes future response/closure operations. Authorization, replay recovery and touchActive + createResponse composition belong to the upcoming use cases. No API/socket/container wiring yet; existing SOS behavior remains operational.
+- Added nine domain/replica-set tests covering concurrent duplicates, missing transaction/revision, rollback, close/respond contention and bounded pagination. Full suite passes 224/224 tests in 53 suites; lint, explicit syntax checks for all five new files, context graph refresh and diff check pass.
+- Updated `Study/SOS_GROUP_CHAT_ASSISTANCE.md`; next slice is chat SOS metadata/session support and durable outbox. Push provider, withdrawal and retention remain for their respective phases. No stage/commit/push. Suggested commit: `feat(sos): add incident and assistance persistence`.
+
 ### Grafana local logs, traces, Gmail alerts and dashboard descriptions (2026-10-28)
 
 - Added local Loki 3.7.8 + Alloy 1.21.2 log collection and Tempo 3.1.1 traces, Grafana 12.3.0 datasources, and manual request/Socket spans with bounded attributes. Logs stay local; only allowlisted JSON fields and static Loki labels are indexed, with traceId/spanId correlation.
@@ -227,6 +234,8 @@ M3-0 verification: 180/180 tests pass (49 suites), including two new privacy reg
 
 ## Next Update Checklist
 
+- 2026-10-28: Added plan-first `Study/SOS_GROUP_CHAT_ASSISTANCE.md` after inspecting SOS/chat/membership flows. Proposed persistent SOS incidents, per-Circle chat messages, idempotent assistance responses, outbox delivery and mobile contracts. Background push is not implemented in the current repo; scope/provider and lifecycle/privacy decisions await user review. No feature code or commits made.
+- 2026-10-28: Added `Study/GRAFANA_PRODUCTION_ROLLOUT.md` for M5 production planning. Grafana Cloud export remains disabled pending explicit Terms/DPA approval; Render Free + 60s pull scraping would keep the service awake. No production secrets/config changed.
 - 2026-10-28: GitHub Actions Render deploy-hook step now keeps the secret in an environment variable and prints HTTP status/response body for diagnosis; non-2xx still fails the job. No retry is performed because a 5xx can occur after Render has accepted the deploy. Not committed.
 - 2026-10-26 security patch: lockfile upgrades body-parser 1.20.8 -> 1.20.9, fast-uri 3.1.8 -> 3.1.9, ip-address 10.7.2 -> 10.7.5, zod 4.6.5 -> 4.6.7. No force/major upgrade. Audit reports zero vulnerabilities; all 180 tests (49 suites) and lint pass. No commit performed.
 
