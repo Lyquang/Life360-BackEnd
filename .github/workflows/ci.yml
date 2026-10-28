@@ -124,6 +124,25 @@ jobs:
       # Settings > Secrets and variables > Actions > RENDER_DEPLOY_HOOK_URL
       - name: Trigger Render Deploy Hook
         if: success() && github.ref == 'refs/heads/main'
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           echo "Triggering Render deployment..."
-          curl --fail --show-error --silent -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          response_file=$(mktemp)
+          status=$(curl --show-error --silent --output "$response_file" --write-out "%{http_code}" --request POST "$DEPLOY_HOOK_URL")
+          curl_status=$?
+          if [ "$curl_status" -ne 0 ]; then
+            echo "Render deploy hook request failed (curl exit $curl_status, HTTP $status)."
+            cat "$response_file"
+            rm -f "$response_file"
+            exit "$curl_status"
+          fi
+
+          echo "Render deploy hook HTTP status: $status"
+          cat "$response_file"
+          rm -f "$response_file"
+
+          case "$status" in
+            2[0-9][0-9]) ;;
+            *) echo "Render deploy hook returned a non-success status."; exit 1 ;;
+          esac
