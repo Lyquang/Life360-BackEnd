@@ -1,5 +1,12 @@
 # Progress Log
 
+### Grafana M3d-b Location/Live Trail logging (2026-10-28)
+
+- Completed fixed event codes for the remaining location/projection/matching/delta/invalidation log calls. Timestamp fallback preserves its bounded reason via separate event codes and exposes the existing process counter as `count`. Removed provider error-name metadata without changing fallback behavior.
+- Strengthened projection failure regression coverage using private Error name/message canaries. Full npm test: 196/196 pass (49 suites); lint and diff check pass; context graph regenerated.
+- Updated Study/grafana-observability.md with event meanings and the user's revised review rule: complete coherent functional sections, no rigid eight-file cap. No stage/commit/push. Suggested commit: `refactor(observability): normalize location and live trail log events`.
+- Existing src logger call sites now use fixed codes. Next: M2a Socket performance metrics. Worker/backpressure benchmarks and Loki/Cloud shipping remain deferred to the approved M4/M5 gates.
+
 ## Current Goal
 
 Deliver a gated, cursor-safe live journey trail without breaking existing location and offline-sync clients.

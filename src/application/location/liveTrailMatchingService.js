@@ -112,9 +112,7 @@ function createLiveTrailMatchingService({
         circuitOpenUntil = Date.now() + policy.circuitCooldownMs;
         consecutiveFailures = 0;
       }
-      logger.warn('Live trail matcher failed; raw trail remains available.', {
-        errorName: error?.name || 'Error',
-      });
+      logger.warn('LIVE_TRAIL_MATCHER_FAILED');
       return null;
     } finally {
       clearTimeout(timer);
@@ -210,9 +208,7 @@ function createLiveTrailMatchingService({
       active += 1;
       const worker = processJob(job)
         .catch((error) => {
-          logger.error('Live trail match job failed; raw trail remains available.', {
-            errorName: error?.name || 'Error',
-          });
+          logger.error('LIVE_TRAIL_MATCH_JOB_FAILED');
         })
         .finally(() => {
           active -= 1;

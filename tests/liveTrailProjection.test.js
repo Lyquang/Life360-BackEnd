@@ -40,7 +40,11 @@ describe('live trail domain policy', () => {
   it('swallows repository failures without logging coordinates or user identifiers', async () => {
     const errors = [];
     const projection = createLiveTrailProjection({
-      liveTrailRepo: { appendPoints: async () => { throw new Error('write failed'); } },
+      liveTrailRepo: { appendPoints: async () => {
+        const error = new Error('private-repository-message');
+        error.name = 'private-error-name';
+        throw error;
+      } },
       unitOfWork: { run: (work) => work({}) },
       policy: {
         enabled: true,
@@ -56,6 +60,7 @@ describe('live trail domain policy', () => {
       points: [fix(new Date())],
     });
     assert.deepEqual(result, { enabled: true, results: [] });
+    assert.deepEqual(errors, [['LIVE_TRAIL_PROJECTION_FAILED']]);
     const serializedLog = JSON.stringify(errors);
     assert.equal(serializedLog.includes('private-user-id'), false);
     assert.equal(serializedLog.includes('10.762622'), false);

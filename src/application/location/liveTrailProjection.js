@@ -19,9 +19,7 @@ function createLiveTrailProjection({ liveTrailRepo, unitOfWork, policy, logger =
         );
         if (result) results.push(result);
       } catch (error) {
-        logger.error('Live trail projection failed; existing location flow continues.', {
-          errorName: error?.name || 'Error',
-        });
+        logger.error('LIVE_TRAIL_PROJECTION_FAILED');
       }
     }
 

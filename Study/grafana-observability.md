@@ -1,5 +1,22 @@
 # Grafana observability: M0
 
+## Cap nhat 2026-10-28: review theo phan chuc nang
+
+Quyet dinh moi cua chu du an: chia thay doi theo mot phan chuc nang hoan chinh, khong ap tran 8 file cung. Quy tac nay thay the gioi han file trong cac ke hoach ben duoi. Van khong tu stage/commit/push.
+
+M3 da chuan hoa cac diem goi logger hien co trong src thanh event code co dinh. HTTP co requestId; Socket co connectionId/eventId qua AsyncLocalStorage. Context chi phuc vu lien ket log, khong luu payload, token hay toa do. Log JSON ra stdout; chua co Loki transport. Do performance Socket la M2a, benchmark overhead la M4.
+
+| Event code Location/Live Trail | Y nghia va hanh vi hien co |
+| --- | --- |
+| LOCATION_TIMESTAMP_TOO_OLD / LOCATION_TIMESTAMP_FUTURE | Bo timestamp ngoai nguong, dung gio server; count la so lan fallback trong process |
+| LIVE_TRAIL_PROJECTION_FAILED | Loi ghi projection; luong location hien tai tiep tuc |
+| LIVE_TRAIL_MATCHER_FAILED / LIVE_TRAIL_MATCH_JOB_FAILED | Matcher/job loi; vet GPS goc van san co |
+| LIVE_TRAIL_DELTA_PUBLICATION_FAILED / LIVE_TRAIL_BATCH_RESET_FAILED | Loi phat delta/reset; khong thay doi ket qua ghi vi tri |
+| LIVE_TRAIL_MATCH_UPDATE_OVERSIZED | Payload vuot gioi han; phat reset de client tai lai REST |
+| LIVE_TRAIL_INVALIDATION_FAILED | Revalidate ngay that bai; watch van duoc kiem tra theo lease |
+
+Khong dinh kem error.name/error.message cua provider vao log. Rollback phan nay bang cach revert diff chuan hoa log; khong can migration DB hay doi env. Worker, log-storm/backpressure benchmark va Cloud shipping van la cac hang muc chua hoan thanh, theo gate M4/M5.
+
 ## Quyết định đã duyệt 2026-10-26
 
 M0 đã duyệt, chưa cho phép Cloud shipping. Thứ tự mới: M3-0, M1a, M1b, M3a-c, M2a, M2b, M4, M2c-e, M5. Các đề xuất cũ bên dưới được thay thế khi xung đột với mục này.

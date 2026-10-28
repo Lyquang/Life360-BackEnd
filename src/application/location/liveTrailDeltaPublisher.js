@@ -109,9 +109,7 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
         else enqueue({ userId, result });
       }
     } catch (error) {
-      logger.error('Live trail delta publication failed; existing location flow continues.', {
-        errorName: error?.name || 'Error',
-      });
+      logger.error('LIVE_TRAIL_DELTA_PUBLICATION_FAILED');
     }
   }
 
@@ -121,9 +119,7 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
         if (result.inserted.length > 0) reset({ userId, result });
       }
     } catch (error) {
-      logger.error('Live trail batch reset publication failed; batch sync continues.', {
-        errorName: error?.name || 'Error',
-      });
+      logger.error('LIVE_TRAIL_BATCH_RESET_FAILED');
     }
   }
 
@@ -175,7 +171,7 @@ function createLiveTrailDeltaPublisher({ realtime, policy, logger = console }) {
     }
     emitChunk();
     if (needsReset) {
-      logger.warn('Oversized live trail match update omitted from Socket.IO; clients must reload REST.');
+      logger.warn('LIVE_TRAIL_MATCH_UPDATE_OVERSIZED');
       realtime.emitToLiveTrail(trailId, 'journey:trail_reset', {
         userId: String(userId), trailId, revision,
       });

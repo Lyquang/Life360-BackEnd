@@ -11,7 +11,7 @@ function createLiveTrailAccessInvalidator({ logger = console } = {}) {
       [...registrations.values()].map((revalidate) => revalidate(filter))
     );
     if (outcomes.some((outcome) => outcome.status === 'rejected')) {
-      logger.warn('Immediate live trail watch invalidation failed; lease remains active.');
+      logger.warn('LIVE_TRAIL_INVALIDATION_FAILED');
     }
   }
 

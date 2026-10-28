@@ -40,9 +40,8 @@ function createLocationUseCases({
     if (!reason) return measuredAt;
 
     ignoredRecordedAtCount += 1;
-    logger.warn('Ignored out-of-range location recordedAt; using server time.', {
-      reason,
-      ignoredRecordedAtCount,
+    logger.warn(reason === 'too_old' ? 'LOCATION_TIMESTAMP_TOO_OLD' : 'LOCATION_TIMESTAMP_FUTURE', {
+      count: ignoredRecordedAtCount,
     });
     return new Date(serverNow);
   }
