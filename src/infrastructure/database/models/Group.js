@@ -39,6 +39,8 @@ const groupSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Group admin is required'],
     },
+    // SOS transactions write this field to conflict with concurrent membership changes.
+    sosGuardVersion: { type: Number, select: false },
     // ── Yêu cầu mới: tần suất gửi thông báo digest (phút) ────
     // 0 = tắt thông báo
     // Mặc định: 60 phút → gửi 1 tiếng/lần

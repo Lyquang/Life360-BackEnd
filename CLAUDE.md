@@ -182,7 +182,12 @@ Gateways receive `{ chat, location, logger }` and register events with `socket.o
 - `SosOutbox` stores per-recipient event references, not raw payloads. Its repository supports
   atomic claims, expiring leases, retry scheduling and failed-attempt limits. A stale lease cannot
   acknowledge a reclaimed event. `delivered` is not a client delivery/read receipt.
-- SOS use cases, authorization, outbox dispatcher and new API/socket contracts are not wired yet.
+- `application/sos/sosUseCases.js` implements transactional creation with per-Circle audience
+  snapshots, per-person urgent-event deduplication and explicit injected fanout limits.
+  Group's hidden `sosGuardVersion` serializes creation against existing membership writes.
+  Same request ID replays even after closure; a different ID during an active SOS conflicts.
+- Creation is not wired to the container/API/socket yet; response/read/close use cases and
+  outbox dispatcher remain upcoming.
   The existing `sos_alert` flow still only broadcasts. See `Study/SOS_GROUP_CHAT_ASSISTANCE.md`.
 
 ### User

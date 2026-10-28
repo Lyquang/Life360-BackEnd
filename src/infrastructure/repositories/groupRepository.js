@@ -49,6 +49,18 @@ module.exports = {
     return Group.find({ members: userId }).select('_id name').lean();
   },
 
+  listForSos(userId, { session, limit } = {}) {
+    if (!Number.isSafeInteger(limit) || limit < 1) throw new RangeError('SOS group query requires a positive limit.');
+    return Group.find({ members: userId }).select('_id name members')
+      .sort({ _id: 1 }).limit(limit).session(session || null).lean();
+  },
+
+  lockForSos(groupId, userId, { session } = {}) {
+    if (!session?.inTransaction()) throw new Error('SOS membership guard requires an active MongoDB transaction.');
+    return Group.updateOne({ _id: groupId, members: userId },
+      { $inc: { sosGuardVersion: 1 } }, { session });
+  },
+
   async usersShareGroup(userA, userB) {
     return Boolean(await Group.exists({ members: { $all: [userA, userB] } }));
   },

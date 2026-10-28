@@ -1,6 +1,6 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: Hien thuc theo tung phan nho; S1a persistence va S1b chat/outbox hoan thanh de review.
+Trang thai: Hien thuc theo tung phan nho; S1a/S1b/S2a tao SOS hoan thanh de review.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
@@ -27,14 +27,31 @@ Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach t
   LeaseMs/maxAttempts/retryAt do caller truyen; backoff/jitter va worker chua noi o phan nay.
 - `delivered` chi la trang thai worker bao transport da xu ly; KHONG phai nguoi nhan da doc
   hay da nhan ho tro. Dispatcher S2 se quan ly bo qua recipient mat quyen va dedupe client.
-- S2/S3 tiep theo noi use case, authorization/membership race, dispatcher, API/socket;
-  S4 can tich hop iOS/push. Hien chua tao outbox tu luong SOS cu hay gui event moi.
+- S2a (2026-10-29): `src/application/sos/sosUseCases.js` hien co `create`.
+  Mot transaction luu incident, tin text SOS tung Circle, lastMessage/read pointers va outbox.
+  Snapshot `audience: [{groupId, recipientIds}]` bo sung cho kiem tra quyen theo tung nhom;
+  chi recipientIds toan cuc khong du de ngan lo thong tin khi mot nguoi doi nhom.
+- `Group.sosGuardVersion` la field noi bo select:false. SOS tang field trong transaction;
+  join/leave/remove hien co cung ghi document Group, nen write conflict lam transaction retry
+  va doc lai membership. Khong can thay doi nghiep vu leave/remove hien co.
+- Use case yeu cau policy maxGroups/maxRecipients/maxOutboxEvents duoc inject; chua dat env
+  hoac mac dinh production. Qua gioi han thi tu choi toan bo, khong cat bot nhom am tham.
+  Nhom chi co A van luu tin, recipientCount=0 de mobile khong thong bao sai la co nguoi nhan.
+- S2a dieu chinh idempotency: cung requestId tra lai incident ke ca da dong; requestId MOI
+  khi dang co SOS active tra 409. Ly do: tra 200 cho ma moi nhung khong luu alias se tao SOS
+  trung neu mobile retry ma do sau khi su co cu dong. Client cu khong requestId van dung active.
+  Ten nguoi gui lay tu userRepo, khong tin userName/senderId do payload tu khai.
+- S2b tiep theo: read/respond/close va loc quyen tu audience; sau do dispatcher va API/socket.
+  S4 can tich hop iOS/push. Chua noi container hay thay the SOS socket cu, chua co event moi.
 - Kiem chung S1a: 9 tests moi pass tren MongoMemoryReplSet; full suite 224/224 tests,
   53 suites. Lint, syntax tung file moi, diff check va context graph refresh pass.
   Chua co endpoint SOS moi de mobile test. Khong stage/commit/push.
 - Kiem chung S1b: 7 tests moi cho DTO, unique indexes, transaction rollback toan bo,
   enqueue dedup, concurrent claims, stale lease, retry va crash o attempt cuoi. Full suite
   231/231 tests, 54 suites pass; lint, syntax 8 file JS, graph refresh va diff check pass.
+- Kiem chung S2a: 9 tests moi pass tren replica set, full suite 240/240 tests trong 55 suites;
+  lint, syntax 6 file JS, graph refresh va diff check pass. Da test race leave giua snapshot
+  read va guard write, rollback fanout sau khi nhom dau da luu, va retry dong thoi.
 
 ## 1. Viet lai yeu cau de xac nhan
 
@@ -105,6 +122,8 @@ cu tu cache. Thieu toa do van gui SOS, hien "Chua co vi tri".
 
 - `ownerId`, `clientRequestId?`, `status: active|resolved|cancelled|expired`.
 - `groupIds`, `recipientIds` la snapshot audience; query response phai loc quyen hien tai.
+- `audience: [{groupId, recipientIds}]` luu snapshot rieng moi Circle; nguoi nhap nhom sau
+  khong tu co quyen SOS cua nhom do chi vi da nhan SOS tu mot Circle khac.
 - `message`, `location?`, `locationRecordedAt?`, `createdAt`, `closedAt?`, `expiresAt?`, `revision`.
 - Partial unique `(ownerId, clientRequestId)` chi khi co requestId.
 - Partial unique `ownerId` khi `status=active`, neu duyet quy tac mot SOS active/user.
@@ -201,7 +220,7 @@ Tat ca REST dung Bearer va response `{ success, data }` / loi chuan cua repo.
 
 | Method/path | Muc dich |
 | --- | --- |
-| POST `/api/v1/sos` | `{clientRequestId: UUID, message?, latitude?, longitude?, recordedAt?}`. 201 khi tao, 200 khi replay/active da ton tai. |
+| POST `/api/v1/sos` | `{clientRequestId: UUID, message?, latitude?, longitude?, recordedAt?}`. 201 khi tao, 200 khi replay cung requestId; 409 neu requestId moi khi da co SOS active. |
 | GET `/api/v1/sos?status=active&cursor=...&limit=...` | Incident cua minh/duoc nhan, phan trang va loc quyen. |
 | GET `/api/v1/sos/:id` | Snapshot incident, revision, response list phan trang/co gioi han theo quyen. |
 | POST `/api/v1/sos/:id/responses` | `{status:"coming"}`. Responder lay tu JWT; 201 moi, 200 retry. |

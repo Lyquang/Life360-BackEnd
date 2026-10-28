@@ -7,6 +7,11 @@ const locationSchema = new mongoose.Schema({
   recordedAt: { type: Date },
 }, { _id: false });
 
+const audienceSchema = new mongoose.Schema({
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
+  recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+}, { _id: false });
+
 const incidentSchema = new mongoose.Schema({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   clientRequestId: {
@@ -21,6 +26,7 @@ const incidentSchema = new mongoose.Schema({
     validate: { validator: (ids) => ids.length > 0, message: 'SOS requires at least one group.' },
   },
   recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  audience: { type: [audienceSchema], default: [] },
   message: { type: String, default: '', maxlength: 500 },
   location: { type: locationSchema, default: null },
   revision: { type: Number, required: true, default: 1, min: 1, validate: Number.isSafeInteger },

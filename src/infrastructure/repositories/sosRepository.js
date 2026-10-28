@@ -15,12 +15,18 @@ function requireRevision(revision) {
 }
 
 module.exports = {
-  async createIncident({ ownerId, clientRequestId, groupIds, recipientIds, message, location }, { session } = {}) {
+  async createIncident({ ownerId, clientRequestId, groupIds, recipientIds, audience, message, location }, { session } = {}) {
     requireTransaction(session);
     const [incident] = await SosIncident.create([
-      { ownerId, clientRequestId, groupIds, recipientIds, message, location },
+      { ownerId, clientRequestId, groupIds, recipientIds, audience, message, location },
     ], { session });
     return incident.toObject();
+  },
+
+  isIncidentUniquenessConflict(error) {
+    const keys = Object.keys(error?.keyPattern || {});
+    return error?.code === 11000 && keys.includes('ownerId') &&
+      keys.every((key) => key === 'ownerId' || key === 'clientRequestId');
   },
 
   findIncidentById(id, { session } = {}) {

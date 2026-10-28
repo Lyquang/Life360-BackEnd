@@ -1,5 +1,13 @@
 # Progress Log
 
+### SOS assistance S2a: transactional creation (2026-10-29)
+
+- Added application `createSosUseCases().create`: persists incident, one text SOS per Circle, conversation/read-pointer updates and per-recipient outbox events in one transaction. Urgent alerts deduplicate across shared Circles; creation response reports groupCount/recipientCount without exposing recipient IDs.
+- Added per-Circle audience snapshots and hidden Group sosGuardVersion writes, which conflict with existing join/leave/remove writes so transaction retries reload membership. Fanout limits must be injected explicitly; no production defaults/env changes. Missing chat or capacity overflow rolls back the whole creation.
+- Same request ID replays even after closure; a new ID during an active incident returns conflict rather than acknowledging an unpersisted alias. Legacy requests without IDs reuse the active incident. SOS coordinates are explicit-only and not copied into generated chat text/outbox.
+- Nine new replica-set tests cover multi-Circle fanout, concurrent replay, legacy behavior, explicit coordinates, capacity/no groups, multi-group rollback, missing chat, leave race and standalone rejection. Full npm test passes 240/240 tests across 55 suites; lint, explicit syntax checks of six changed JS files, graph refresh and diff check pass.
+- Updated Study and CLAUDE.md. Creation is not wired to container/API/socket; dispatcher, respond/read/close remain next. No stage/commit/push. Suggested commit: `feat(sos): create incidents with atomic group chat fanout`.
+
 ### SOS assistance S1b: chat metadata and durable outbox (2026-10-28)
 
 - Added optional server-owned SOS metadata to text messages and additive message DTOs. Partial unique indexes enforce one alert per incident/conversation and one assistance message per incident/conversation/sender. Ordinary message creation still ignores injected SOS metadata.
