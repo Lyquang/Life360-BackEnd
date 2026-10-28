@@ -7,7 +7,10 @@ const rooms = {
 };
 
 /** Realtime port implemented with Socket.IO. Use cases only see these methods. */
-function createSocketRealtime(io) {
+function createSocketRealtime(io, metrics) {
+  function record(channel) {
+    try { if (metrics?.enabled) metrics.increment('socket_broadcasts_total', { channel }); } catch { /* Keep delivery independent of telemetry. */ }
+  }
   function to(room, exceptSocketId) {
     const operator = io.to(room);
     return exceptSocketId ? operator.except(exceptSocketId) : operator;
@@ -18,18 +21,22 @@ function createSocketRealtime(io) {
 
     emitToUser(userId, event, payload) {
       io.to(rooms.user(userId)).emit(event, payload);
+      record('user');
     },
 
     emitToGroup(groupId, event, payload, { exceptSocketId } = {}) {
       to(rooms.group(groupId), exceptSocketId).emit(event, payload);
+      record('group');
     },
 
     emitToConversation(conversationId, event, payload, { exceptSocketId } = {}) {
       to(rooms.conversation(conversationId), exceptSocketId).emit(event, payload);
+      record('conversation');
     },
 
     emitToLiveTrail(trailId, event, payload) {
       io.to(rooms.liveTrail(trailId)).emit(event, payload);
+      record('trail');
     },
 
     /** Makes every connected device of the user join the room (e.g. after joining a group). */

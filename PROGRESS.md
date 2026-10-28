@@ -1,5 +1,13 @@
 # Progress Log
 
+### Grafana M2a Socket performance metrics (2026-10-28)
+
+- Final verification: 199/199 tests pass (49 suites), lint and diff check pass, graph regenerated. Enumerated every allowed label combination with runtime enabled: 753 accounted series and 753 exposition samples; synthetic snapshot 65,593 bytes plain / 3,882 gzip. Values include local runtime samples and are not a production overhead benchmark.
+
+- Added bounded Socket action counters/duration histograms for handshake, lifecycle, location, chat and watch actions, including explicit rejected/error outcomes when gateways catch exceptions. Gauge collection at scrape time tracks connections, rooms and watches; realtime adapter counts emit calls by channel.
+- Metrics remain optional, use the existing dedicated authenticated /metrics endpoint, and contain no user/room IDs or payloads. Registry supports bounded gauges and synchronous scrape collectors with cleanup. Maximum application series 737 + runtime 16 = 753. M4 overhead remains unmeasured.
+- Added tests for fail-soft measurement, arbitrary label collapse and real Socket rejection/disconnect behavior. Updated observability study with meanings, limitations and PromQL. No git add/commit/push. Suggested commit: `feat(observability): instrument socket action performance`.
+
 ### Grafana M3d-b Location/Live Trail logging (2026-10-28)
 
 - Completed fixed event codes for the remaining location/projection/matching/delta/invalidation log calls. Timestamp fallback preserves its bounded reason via separate event codes and exposes the existing process counter as `count`. Removed provider error-name metadata without changing fallback behavior.

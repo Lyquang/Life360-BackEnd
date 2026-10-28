@@ -4,6 +4,8 @@ function createNoopMetrics() {
     enabled: false,
     increment() {},
     observe() {},
+    set() {},
+    addCollector() {},
     async snapshot() { return { text: '', series: 0 }; },
     close() {},
   });

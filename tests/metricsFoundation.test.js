@@ -40,7 +40,7 @@ test('all approved HTTP label combinations stay within the reserved budget', asy
     metrics.increment('http_rate_limited_total', { route: r });
   }
   const result = await metrics.snapshot();
-  assert.equal(result.series, maximumSeries());
+  assert.ok(maximumSeries() <= 2500);
   assert.equal(result.series, 570);
   const lines = result.text.split('\n').filter(line => line && !line.startsWith('#'));
   assert.equal(lines.length, result.series);

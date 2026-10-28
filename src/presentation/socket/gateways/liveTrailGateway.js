@@ -1,4 +1,5 @@
 const { AppError, Errors } = require('../../../domain/errors');
+const { outcomeForError } = require('../socketMetrics');
 const { formatIssues } = require('../../dto/common');
 const { liveTrailWatchPayload } = require('../../dto/liveTrail.schemas');
 
@@ -49,7 +50,7 @@ function registerLiveTrailGateway(
     if (isRateLimited()) throw Errors.tooManyRequests('Too many live trail watch actions.');
   }
 
-  socket.on('journey:watch', (payload, ack) => withEventContext('journey:watch', async () => {
+  socket.on('journey:watch', (payload, ack) => withEventContext('journey:watch', async (mark = () => {}) => {
     try {
       enforceRateLimit();
       const dto = parse(payload);
@@ -67,11 +68,12 @@ function registerLiveTrailGateway(
       watched.set(key, result);
       if (typeof ack === 'function') ack({ ok: true, ...result });
     } catch (error) {
+      mark(outcomeForError(error));
       if (typeof ack === 'function') ack(failure(error));
     }
   }));
 
-  socket.on('journey:unwatch', (payload, ack) => withEventContext('journey:unwatch', async () => {
+  socket.on('journey:unwatch', (payload, ack) => withEventContext('journey:unwatch', async (mark = () => {}) => {
     try {
       enforceRateLimit();
       const dto = parse(payload);
@@ -84,12 +86,13 @@ function registerLiveTrailGateway(
       }
       if (typeof ack === 'function') ack({ ok: true, removed: Boolean(existing) });
     } catch (error) {
+      mark(outcomeForError(error));
       if (typeof ack === 'function') ack(failure(error));
     }
   }));
 
   function revalidateWatches(filter = {}) {
-    return withEventContext('journey:lease', async () => {
+    return withEventContext('journey:lease', async (mark = () => {}) => {
       for (const [key, watch] of [...watched]) {
         if (filter.targetUserId && String(watch.userId) !== filter.targetUserId) continue;
         if (
@@ -101,6 +104,7 @@ function registerLiveTrailGateway(
           await liveTrailWatch.revalidate({ requesterId, ...watch });
         } catch (error) {
           if (!(error instanceof AppError)) {
+            mark('error');
             logger.error('LIVE_TRAIL_LEASE_REVALIDATION_FAILED');
             continue;
           }

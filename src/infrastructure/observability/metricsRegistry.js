@@ -9,13 +9,14 @@ function createMetrics({ enabled = false, maxSeries = MAX_SERIES, runtime = fals
     const registry = new Registry();
     const instruments = new Map();
     const seen = new Set();
+    const collectors = new Set();
     const limit = Number.isInteger(maxSeries) && maxSeries > 0 ? Math.min(maxSeries, MAX_SERIES) : MAX_SERIES;
     let series = 0;
     let closed = false;
     let stopRuntime = () => {};
     let collectRuntime = () => {};
     for (const [name, definition] of Object.entries(definitions)) {
-      const Constructor = definition.type === 'counter' ? Counter : Histogram;
+      const Constructor = definition.type === 'counter' ? Counter : definition.type === 'gauge' ? Gauge : Histogram;
       instruments.set(name, new Constructor({
         name: `familytracker_${name}`, help: definition.help,
         labelNames: Object.keys(definition.labels), buckets: definition.buckets, registers: [registry],
@@ -73,6 +74,7 @@ function createMetrics({ enabled = false, maxSeries = MAX_SERIES, runtime = fals
         }
         const instrument = instruments.get(name);
         if (type === 'counter') instrument.inc(labels, value);
+        else if (type === 'gauge') instrument.set(labels, value);
         else instrument.observe(labels, value);
       } catch { /* Telemetry must not affect requests, including malformed labels. */ }
     }
@@ -81,9 +83,14 @@ function createMetrics({ enabled = false, maxSeries = MAX_SERIES, runtime = fals
       enabled: true,
       increment(name, labels, value = 1) { record('counter', name, labels, value); },
       observe(name, labels, value) { record('histogram', name, labels, value); },
+      set(name, labels, value) { record('gauge', name, labels, value); },
+      addCollector(collector) { if (!closed && typeof collector === 'function' && collectors.size < 16) collectors.add(collector); },
       async snapshot() {
         try {
           if (closed) return { text: '', series: 0 };
+          for (const collect of collectors) {
+            try { collect(); } catch { /* A failed collector cannot block scraping. */ }
+          }
           collectRuntime();
           return { text: await registry.metrics(), series, contentType: registry.contentType };
         } catch { return { text: '', series: 0, failed: true }; }
@@ -93,6 +100,7 @@ function createMetrics({ enabled = false, maxSeries = MAX_SERIES, runtime = fals
         stopRuntime();
         registry.clear();
         seen.clear();
+        collectors.clear();
         series = 0;
       },
     });

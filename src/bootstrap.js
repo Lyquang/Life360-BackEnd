@@ -30,14 +30,13 @@ async function createServer(config, { logger = createSafeLogger(), digestInterva
     maxHttpBufferSize: 100 * 1024,
   });
 
-  const container = createContainer({ config, io, supportsTransactions: db.supportsTransactions, logger });
+  const metrics = createMetrics({ ...config.metrics, runtime: true });
+  const container = createContainer({ config, io, supportsTransactions: db.supportsTransactions, logger, metrics });
   const { useCases, services } = container;
   if (services.cacheManager.connect) await services.cacheManager.connect();
 
   const synced = await useCases.chat.syncGroupConversations();
   logger.log('CHAT_GROUP_SYNC_COMPLETED', { count: synced });
-
-  const metrics = createMetrics({ ...config.metrics, runtime: true });
 
   configureApp(app, {
     config,
@@ -48,6 +47,7 @@ async function createServer(config, { logger = createSafeLogger(), digestInterva
     logger,
   });
   registerSocketServer(io, {
+    metrics,
     ...useCases,
     realtime: services.realtime,
     liveTrailAccessInvalidator: services.liveTrailAccessInvalidator,

@@ -1,13 +1,15 @@
 const { updateLocationPayload, sosPayload } = require('../../dto/location.schemas');
 const { formatIssues } = require('../../dto/common');
 const { AppError } = require('../../../domain/errors');
+const { outcomeForError } = require('../socketMetrics');
 
 function registerLocationGateway(socket, { location, logger = console, withEventContext = (event, callback) => callback() }) {
   const user = socket.data.user;
 
-  socket.on('update_location', (payload) => withEventContext('update_location', async () => {
+  socket.on('update_location', (payload) => withEventContext('update_location', async (mark = () => {}) => {
     const parsed = updateLocationPayload.safeParse(payload);
     if (!parsed.success) {
+      mark('rejected');
       return socket.emit('error', { message: 'Invalid location payload.', errors: formatIssues(parsed.error) });
     }
     try {
@@ -20,6 +22,7 @@ function registerLocationGateway(socket, { location, logger = console, withEvent
       });
       if (parsed.data.batteryLevel !== undefined) user.batteryLevel = parsed.data.batteryLevel;
     } catch (error) {
+      mark(outcomeForError(error));
       if (error instanceof AppError) {
         return socket.emit('error', { code: error.code, message: error.message });
       }
@@ -28,9 +31,10 @@ function registerLocationGateway(socket, { location, logger = console, withEvent
     }
   }));
 
-  socket.on('sos_alert', (payload) => withEventContext('sos_alert', async () => {
+  socket.on('sos_alert', (payload) => withEventContext('sos_alert', async (mark = () => {}) => {
     const parsed = sosPayload.safeParse(payload);
     if (!parsed.success) {
+      mark('rejected');
       return socket.emit('error', { message: 'Invalid SOS payload.', errors: formatIssues(parsed.error) });
     }
     try {
@@ -38,6 +42,7 @@ function registerLocationGateway(socket, { location, logger = console, withEvent
       const { groupCount } = await location.sendSos({ userId: user.id, userName: user.name, ...parsed.data });
       socket.emit('sos_confirmed', { message: 'SOS alert sent to all your groups.', groupCount });
     } catch (error) {
+      mark(outcomeForError(error));
       logger.error('SOS_ALERT_FAILED');
       socket.emit('error', { message: 'Failed to send SOS alert' });
     }

@@ -1,4 +1,5 @@
 const { AppError, Errors } = require('../../../domain/errors');
+const { outcomeForError } = require('../socketMetrics');
 const { formatIssues } = require('../../dto/common');
 const { sendMessagePayload, markReadPayload, typingPayload } = require('../../dto/chat.schemas');
 
@@ -36,13 +37,14 @@ function registerChatGateway(socket, { chat, logger = console, withEventContext 
 
   /** Validates the payload with Zod, runs the handler and answers through the ack (or chat:error). */
   function on(event, schema, handler) {
-    socket.on(event, (payload, ack) => withEventContext(event, async () => {
+    socket.on(event, (payload, ack) => withEventContext(event, async (mark = () => {}) => {
       try {
         const parsed = schema.safeParse(payload);
         if (!parsed.success) throw Errors.validation(formatIssues(parsed.error));
         const data = await handler(parsed.data);
         if (typeof ack === 'function') ack({ success: true, data });
       } catch (error) {
+        mark(outcomeForError(error));
         fail(event, ack, error);
       }
     }));
@@ -64,9 +66,9 @@ function registerChatGateway(socket, { chat, logger = console, withEventContext 
   );
 
   // Fire-and-forget: invalid or unauthorized typing events are silently dropped.
-  socket.on('chat:typing', (payload) => withEventContext('chat:typing', async () => {
+  socket.on('chat:typing', (payload) => withEventContext('chat:typing', async (mark = () => {}) => {
     const parsed = typingPayload.safeParse(payload);
-    if (!parsed.success) return;
+    if (!parsed.success) { mark('rejected'); return; }
     try {
       await chat.notifyTyping({
         userId: user.id,
@@ -76,6 +78,7 @@ function registerChatGateway(socket, { chat, logger = console, withEventContext 
         exceptSocketId: socket.id,
       });
     } catch (error) {
+      mark(outcomeForError(error));
       if (!(error instanceof AppError)) logger.error('CHAT_TYPING_FAILED');
     }
   }));

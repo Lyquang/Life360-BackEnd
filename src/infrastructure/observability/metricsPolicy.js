@@ -3,6 +3,19 @@ const methods = ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS', 'HEAD', 'ot
 // Callers pass a resolved route group, never a raw URL or request parameter.
 const routes = ['auth', 'groups', 'privacy', 'history', 'locations', 'conversations', 'chat', 'system', 'unmatched', 'other'];
 const definitions = Object.freeze({
+  socket_broadcasts_total: { type: 'counter', help: 'Successful emit calls, not recipient or delivered-message counts.', labels: { channel: ['user', 'group', 'conversation', 'trail', 'other'] } },
+  socket_connections: { type: 'gauge', help: 'Connected sockets in the default namespace.', labels: { scope: ['default', 'other'] } },
+  socket_rooms: { type: 'gauge', help: 'Default namespace rooms including per-socket rooms.', labels: { scope: ['default', 'other'] } },
+  socket_watches: { type: 'gauge', help: 'Active watch registrations across connected sockets.', labels: { scope: ['default', 'other'] } },
+  socket_actions_total: {
+    type: 'counter', help: 'Completed server Socket actions; success does not imply client delivery.',
+    labels: { event: ['handshake', 'connect', 'disconnect', 'session:ready', 'update_location', 'sos_alert', 'chat:send_message', 'chat:mark_read', 'chat:typing', 'journey:watch', 'journey:unwatch', 'journey:lease', 'other'], outcome: ['success', 'rejected', 'error', 'other'] },
+  },
+  socket_action_duration_seconds: {
+    type: 'histogram', help: 'Server Socket action duration, excluding network delivery.',
+    labels: { event: ['handshake', 'connect', 'disconnect', 'session:ready', 'update_location', 'sos_alert', 'chat:send_message', 'chat:mark_read', 'chat:typing', 'journey:watch', 'journey:unwatch', 'journey:lease', 'other'] },
+    buckets: [0.01, 0.05, 0.2, 1, 5],
+  },
   http_requests_total: {
     type: 'counter', help: 'Completed HTTP requests by bounded route group.',
     labels: { method: methods, route: routes, status_class: ['1xx', '2xx', '3xx', '4xx', '5xx', 'other'] },

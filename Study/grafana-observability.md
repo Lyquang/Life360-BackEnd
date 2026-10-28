@@ -1,5 +1,30 @@
 # Grafana observability: M0
 
+## M2a Socket metrics (2026-10-28)
+
+Enable with the existing METRICS_ENABLED and dedicated METRICS_TOKEN settings. GET /metrics remains authenticated and gzip-capable; no Cloud export is enabled by this change.
+
+| Metric (familytracker_ prefix) | Meaning |
+| --- | --- |
+| socket_actions_total{event,outcome} | Completed server actions: success, rejected (validation/permission/rate limit), error (unexpected/server failure). Handshake authentication failures are rejected. |
+| socket_action_duration_seconds{event} | Histogram of server action elapsed time, including awaited work; excludes network delivery. Five finite buckets: 0.01, 0.05, 0.2, 1, 5 seconds. |
+| socket_connections{scope="default"} | Connected sockets in the default namespace at scrape time. |
+| socket_rooms{scope="default"} | Adapter rooms, including the automatic room for each socket. |
+| socket_watches{scope="default"} | Sum of watch registrations over connected sockets at scrape time. |
+| socket_broadcasts_total{channel} | Successful emit calls through the realtime adapter, grouped by user/group/conversation/trail. Not recipient counts or delivery acknowledgements. |
+
+Event labels are allowlisted. Unknown values collapse to other; IDs, room names, payloads, coordinates and token data never become labels. Gauges are collected at scrape time (O(number of sockets)); there is no socket scan on each GPS event. Lease revocation is a successful permission check; a failed revalidation is an error. Internal errors swallowed by a use case remain separate from gateway success and require M2b business instrumentation.
+
+Example PromQL:
+
+```promql
+sum by (event, outcome) (rate(familytracker_socket_actions_total[5m]))
+histogram_quantile(0.95, sum by (event, le) (rate(familytracker_socket_action_duration_seconds_bucket[5m])))
+sum(rate(familytracker_socket_broadcasts_total[5m]))
+```
+
+Application maximum: 737 series; with 16 runtime series: 753. This is a cardinality bound, not an overhead benchmark. M4 must still verify p95/RSS under load. Rollback: disable METRICS_ENABLED or revert M2a; no mobile contract, schema migration or new environment variable is needed.
+
 ## Cap nhat 2026-10-28: review theo phan chuc nang
 
 Quyet dinh moi cua chu du an: chia thay doi theo mot phan chuc nang hoan chinh, khong ap tran 8 file cung. Quy tac nay thay the gioi han file trong cac ke hoach ben duoi. Van khong tu stage/commit/push.

@@ -41,7 +41,7 @@ const { createFakeMapMatcher } = require('./infrastructure/matching/FakeMapMatch
 const { createMapboxMapMatcher } = require('./infrastructure/matching/MapboxMapMatcher');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
-function createContainer({ config, io, supportsTransactions, logger = console }) {
+function createContainer({ config, io, supportsTransactions, logger = console, metrics }) {
   const cacheManager =
     config.redis.enabled && config.redis.url
       ? createRedisCacheManager({ config: config.redis, logger })
@@ -62,7 +62,7 @@ function createContainer({ config, io, supportsTransactions, logger = console })
   };
   const services = {
     unitOfWork: createUnitOfWork({ supportsTransactions, logger }),
-    realtime: createSocketRealtime(io),
+    realtime: createSocketRealtime(io, metrics),
     liveTrailAccessInvalidator: createLiveTrailAccessInvalidator({ logger }),
     tokenService: createTokenService(config.jwt),
     passwordHasher,
