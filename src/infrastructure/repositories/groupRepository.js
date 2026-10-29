@@ -62,7 +62,7 @@ module.exports = {
   },
 
   findSosAudienceGroups(groupIds, { session } = {}) {
-    return Group.find({ _id: { $in: groupIds } }).select('_id members')
+    return Group.find({ _id: { $in: groupIds } }).select('_id name members')
       .sort({ _id: 1 }).session(session || null).lean();
   },
 

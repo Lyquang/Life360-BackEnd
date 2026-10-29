@@ -1,5 +1,13 @@
 # Progress Log
 
+### SOS assistance S3c: legacy Socket integration and mobile contract (2026-10-29)
+
+- Enabled-mode location.sendSos now delegates to the same transactional use case as REST; disabled mode retains legacy broadcast-only behavior. Confirmation keeps message/groupCount and adds sosId/status/revision/created. Socket accepts optional UUID/recordedAt, persists optional battery and normalizes incomplete legacy coordinates to no location.
+- Outbox urgent events retain flat legacy fields, add incident identity/revision, and choose one eligible Circle for group metadata while deduplicating recipients. Added bounded per-user/process Socket quota shared across reconnects; REST and Socket quotas remain independent. Expected AppErrors return structured codes without crash-level logging.
+- Added full mobile contract `api-docs/SOS_ASSISTANCE_API_DOC.md`: all REST endpoints, DTO examples, Socket payloads, idempotency/revisions, permissions, recovery, error handling, Swift DTOs and testing checklist. Updated README/Study/CLAUDE and graph.
+- Verification: full npm test 277/277 passed across 60 suites; lint, changed JS syntax checks and diff check passed. Tests cover paused sharing, compatibility fields, multi-Circle deduplication, cross-transport replay, shared reconnect quota and incomplete legacy coordinates.
+- No deployment flags/secrets changed. No APNs/FCM, withdrawal, auto-expiry/retention policy or production benchmark claim; iOS build/device integration remains to be verified. Commit: `feat(sos): integrate legacy socket flow and document mobile API`.
+
 ### SOS assistance S3b: authorized incident recovery list (2026-10-29)
 
 - Added GET /api/v1/sos with status (default active), limit 1..100 and exclusive descending-ID cursor. Returns items/hasMore/nextCursor; this cursor is separate from responder afterId. List DTOs exclude audience/recipient internals and expose only eligible group IDs.

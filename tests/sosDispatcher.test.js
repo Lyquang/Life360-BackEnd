@@ -4,7 +4,7 @@ const { createSosOutboxDispatcher } = require('../src/application/sos/sosOutboxD
 
 function fixture(kind = 'sos_alert') {
   const sent = [], retries = [];
-  const incident = { _id: 'sos', ownerId: 'owner', status: 'active', revision: 3,
+  const incident = { _id: 'sos', ownerId: 'owner', status: 'active', revision: 3, createdAt: new Date('2026-10-29T00:00:00Z'),
     groupIds: ['one', 'two'], audience: [
       { groupId: 'one', recipientIds: ['viewer'] },
       { groupId: 'two', recipientIds: ['other'] },

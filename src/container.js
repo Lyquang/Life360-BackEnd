@@ -14,6 +14,7 @@ const outboxRepo = require('./infrastructure/repositories/sosOutboxRepository');
 const { createSosOutboxDispatcher } = require('./application/sos/sosOutboxDispatcher');
 const { createSosUseCases } = require('./application/sos/sosUseCases');
 const { Errors } = require('./domain/errors');
+const { createSosSocketLimiter } = require('./infrastructure/security/sosSocketLimiter');
 const { createNoopCacheManager } = require('./infrastructure/cache/NoopCacheManager');
 const { createRedisCacheManager } = require('./infrastructure/cache/RedisCacheManager');
 const { createCachedUserRepository } = require('./infrastructure/cache/cachedUserRepository');
@@ -149,7 +150,12 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     liveTrailMatchingService: services.liveTrailMatchingService,
   };
 
+  const unavailableSos = async () => { throw Errors.serviceUnavailable('SOS assistance is not available on this server.'); };
+  const sos = config.sos?.enabled && supportsTransactions
+    ? createSosUseCases({ ...deps, sosRepo, outboxRepo, policy: config.sos })
+    : { create: unavailableSos, get: unavailableSos, respond: unavailableSos, close: unavailableSos, list: unavailableSos };
   const useCases = {
+    sos,
     auth: createAuthUseCases(deps),
     groups: createGroupUseCases(deps),
     places: createPlaceUseCases(deps),
@@ -157,13 +163,10 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     liveTrailWatch: createLiveTrailWatchUseCases(deps),
     privacy: createPrivacyUseCases(deps),
     digests: createDigestUseCases(deps),
-    location: createLocationUseCases(deps),
+    location: createLocationUseCases({ ...deps, sosAssistance: config.sos?.enabled ? sos : null,
+      sosActionLimiter: createSosSocketLimiter({ limit: config.sos?.rateLimit }) }),
     chat: createChatUseCases(deps),
   };
-  const unavailableSos = async () => { throw Errors.serviceUnavailable('SOS assistance is not available on this server.'); };
-  useCases.sos = config.sos?.enabled && supportsTransactions
-    ? createSosUseCases({ ...deps, sosRepo, outboxRepo, policy: config.sos })
-    : { create: unavailableSos, get: unavailableSos, respond: unavailableSos, close: unavailableSos, list: unavailableSos };
   useCases.location.syncBatch = createSyncLocationBatchUseCase({
     ...deps,
     policy: {

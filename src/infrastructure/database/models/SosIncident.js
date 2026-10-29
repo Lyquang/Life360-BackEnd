@@ -28,6 +28,7 @@ const incidentSchema = new mongoose.Schema({
   recipientIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   audience: { type: [audienceSchema], default: [] },
   message: { type: String, default: '', maxlength: 500 },
+  batteryLevel: { type: Number, min: 0, max: 100 },
   location: { type: locationSchema, default: null },
   revision: { type: Number, required: true, default: 1, min: 1, validate: Number.isSafeInteger },
   closedAt: { type: Date, default: null },

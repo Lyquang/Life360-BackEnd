@@ -2,6 +2,12 @@
 
 Backend for a family safety and location-sharing application. It provides live member locations, offline location recovery, emergency SOS, family circles, realtime chat, image and voice messages, journey history, and multi-device authentication for the iOS application.
 
+SOS assistance now supports persisted alerts in Circle chats, “I will come now” responses,
+owner closure and reconnect recovery through REST/Socket. It is opt-in with
+`SOS_API_ENABLED=true` and `SOS_OUTBOX_ENABLED=true` and requires MongoDB transactions.
+See the [SOS Mobile API contract](api-docs/SOS_ASSISTANCE_API_DOC.md) for integration,
+retry/permission rules and Swift DTOs. OS push notifications (APNs/FCM) are not implemented.
+
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)](https://mongoosejs.com/)

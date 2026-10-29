@@ -20,6 +20,8 @@ const updateLocationPayload = z.object({
 
 const sosPayload = z
   .object({
+    clientRequestId: z.uuid().transform((value) => value.toLowerCase()).optional(),
+    recordedAt: recordedAt.optional(),
     message: z.string().trim().max(500).optional(),
     latitude: latitude.optional(),
     longitude: longitude.optional(),

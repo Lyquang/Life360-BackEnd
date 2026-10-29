@@ -1,10 +1,25 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: S3b danh sach SOS/reconnect da noi; socket legacy migration con lai.
+Trang thai: S3c socket migration va tai lieu Mobile da hien thuc; feature mac dinh tat, chua co OS push.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
 ## Tien do review
+
+- S3c: location.sendSos delegate cung use case create voi REST khi SOS_API_ENABLED=true.
+  Verification: full npm test 277/277 pass (60 suites), lint/syntax/graph/diff check pass.
+  Tat flag giu duong broadcast-only cu. Bat flag nhung khong transaction -> 503, khong fallback
+  thanh cong gia. Giu sos_confirmed message/groupCount, them sosId/status/revision/created.
+  Optional clientRequestId/recordedAt cho socket; batteryLevel duoc luu de giu field alert cu.
+  Incomplete legacy coordinate pair -> location null, khong lay vi tri tu cache.
+  Outbox urgent payload giu type/userId/name/message/latitude/longitude/batteryLevel/timestamp,
+  them identity/revision/location; groupId/groupName dai dien mot Circle hop le, dedupe per-user.
+  Socket quota rieng theo account/process, SOS_RATE_LIMIT moi 60s, toi da 10000 key dang active;
+  day key thi 429, khong evict key chua het han. Shared giua reconnect/socket, khong distributed.
+  REST va Socket quota doc lap. Business AppError socket tra code/message, khong log nhu crash.
+  Tai lieu day du: api-docs/SOS_ASSISTANCE_API_DOC.md (REST, Socket, retry, recovery, Swift DTO).
+  Chua kiem thu iOS build/OS notification. APNs/FCM, withdrawal, auto-expiry/retention va benchmark
+  production van ngoai pham vi; bat co chi sau khi Mobile smoke test, khong coi deploy la da bat.
 
 - S3b: GET /api/v1/sos?status=active&limit=50&cursor=... tra items/hasMore/nextCursor.
   Verification: full npm test 273/273 pass (59 suites), lint/syntax/graph/diff check pass.

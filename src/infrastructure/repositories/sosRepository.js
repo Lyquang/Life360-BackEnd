@@ -52,10 +52,10 @@ module.exports = {
     ]).session(session || null);
   },
 
-  async createIncident({ ownerId, clientRequestId, groupIds, recipientIds, audience, message, location }, { session } = {}) {
+  async createIncident({ ownerId, clientRequestId, groupIds, recipientIds, audience, message, location, batteryLevel }, { session } = {}) {
     requireTransaction(session);
     const [incident] = await SosIncident.create([
-      { ownerId, clientRequestId, groupIds, recipientIds, audience, message, location },
+      { ownerId, clientRequestId, groupIds, recipientIds, audience, message, location, batteryLevel },
     ], { session });
     return incident.toObject();
   },

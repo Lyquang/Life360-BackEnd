@@ -78,7 +78,7 @@ function createSosUseCases({
     }
   }
 
-  async function create({ userId, clientRequestId, message = '', latitude, longitude, recordedAt }) {
+  async function create({ userId, clientRequestId, message = '', latitude, longitude, recordedAt, batteryLevel }) {
     if ((latitude === undefined) !== (longitude === undefined)) {
       throw Errors.badRequest('SOS location requires both latitude and longitude.');
     }
@@ -105,7 +105,7 @@ function createSosUseCases({
         await lockGroups(audience, userId, session);
         const incident = await sosRepo.createIncident({
           ownerId: userId, clientRequestId, groupIds: groups.map((group) => group._id),
-          recipientIds, audience, message,
+          recipientIds, audience, message, batteryLevel,
           location: latitude === undefined ? null : {
             latitude, longitude, recordedAt: recordedAt ? new Date(recordedAt) : requestedAt,
           },

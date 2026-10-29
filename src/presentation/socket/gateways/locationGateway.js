@@ -39,10 +39,11 @@ function registerLocationGateway(socket, { location, logger = console, withEvent
     }
     try {
       logger.log('SOS_ALERT_REQUESTED');
-      const { groupCount } = await location.sendSos({ userId: user.id, userName: user.name, ...parsed.data });
-      socket.emit('sos_confirmed', { message: 'SOS alert sent to all your groups.', groupCount });
+      const result = await location.sendSos({ userId: user.id, userName: user.name, ...parsed.data });
+      socket.emit('sos_confirmed', { message: 'SOS alert sent to all your groups.', ...result });
     } catch (error) {
       mark(outcomeForError(error));
+      if (error instanceof AppError) return socket.emit('error', { code: error.code, message: error.message });
       logger.error('SOS_ALERT_FAILED');
       socket.emit('error', { message: 'Failed to send SOS alert' });
     }

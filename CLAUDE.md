@@ -173,7 +173,7 @@ Gateways receive `{ chat, location, logger }` and register events with `socket.o
 }
 ```
 
-### SOS persistence (implementation in progress)
+### SOS assistance (opt-in REST and Socket)
 
 - `SosIncident` and `SosResponse`: one active incident per owner, optional request-ID deduplication,
   and one response per incident/responder. SOS mutations require an active MongoDB transaction.
@@ -190,8 +190,9 @@ Gateways receive `{ chat, location, logger }` and register events with `socket.o
   Owner sees historical responses; other viewers see only eligible responders from their Circles,
   filtered before pagination. Respond/close write incident revision and group guard transactionally.
   A committed response can replay after closure while the caller remains authorized; new responses cannot.
-- Create/list/get/respond/close are wired to `/api/v1/sos` REST routes behind SOS_API_ENABLED=false by default. Enabling requires SOS_OUTBOX_ENABLED=true; missing transaction support returns 503 before writes. REST create requires a UUID clientRequestId; responder pagination uses afterId/limit. Strict DTOs and per-user rate limits precede use cases. Legacy Socket migration remains upcoming. `sosOutboxDispatcher.js` implements one bounded claim/send/retry with injected transport, current Circle authorization and stable event IDs. The container wires its user-room Socket transport when SOS_OUTBOX_ENABLED=true; bootstrap starts serial bounded polling and drains it before Socket/DB shutdown. Discarded events are distinct from delivered events. Socket emission is not a receipt/read guarantee.
-  `GET /api/v1/sos` now supports visible recovery listings: status defaults active, limit 1..100, descending ID cursor. Repository joins current membership against per-Circle original audience before limit; owner retains history. Response is items/hasMore/nextCursor without audience internals. Page visibility is evaluated anew per request, not a change feed. The existing `sos_alert` flow still only broadcasts; legacy migration and final mobile contract remain next. See `Study/SOS_GROUP_CHAT_ASSISTANCE.md`.
+- Create/list/get/respond/close are wired to `/api/v1/sos` REST routes behind SOS_API_ENABLED=false by default. Enabling requires SOS_OUTBOX_ENABLED=true; missing transaction support returns 503 before writes. REST create requires a UUID clientRequestId; responder pagination uses afterId/limit. Strict DTOs and per-user rate limits precede use cases. `sosOutboxDispatcher.js` implements one bounded claim/send/retry with injected transport, current Circle authorization and stable event IDs. The container wires its user-room Socket transport when SOS_OUTBOX_ENABLED=true; bootstrap starts serial bounded polling and drains it before Socket/DB shutdown. Discarded events are distinct from delivered events. Socket emission is not a receipt/read guarantee.
+  `GET /api/v1/sos` supports visible recovery listings: status defaults active, limit 1..100, descending ID cursor. Repository joins current membership against per-Circle original audience before limit; owner retains history. Response is items/hasMore/nextCursor without audience internals. Page visibility is evaluated anew per request, not a change feed.
+  With SOS_API_ENABLED, location.sendSos delegates to the same create use case, keeping legacy confirmation fields plus identity/revision. Without the flag, legacy broadcast remains unchanged. Outbox alerts preserve flat legacy fields and pick one eligible Circle for groupId/groupName, deduplicating per recipient. Battery is persisted only when supplied; incomplete legacy coordinate pairs persist no location. Socket quota is per user/process, separate from REST. See `api-docs/SOS_ASSISTANCE_API_DOC.md` for the mobile contract and `Study/SOS_GROUP_CHAT_ASSISTANCE.md` for scope/risks. No APNs/FCM guarantee.
 
 ### User
 ```js

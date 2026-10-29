@@ -28,6 +28,8 @@ function createLocationUseCases({
   locationRuntimeState,
   logger = console,
   metrics,
+  sosAssistance,
+  sosActionLimiter,
 }) {
   const telemetry = createSafeMetrics(metrics);
   const { lastSavedLocation, durationTracker } = locationRuntimeState;
@@ -210,7 +212,15 @@ function createLocationUseCases({
     }
   }
 
-  async function sendSos({ userId, userName, message, latitude, longitude, batteryLevel }) {
+  async function sendSos({ userId, userName, message, latitude, longitude, batteryLevel, clientRequestId, recordedAt }) {
+    if (sosAssistance) {
+      sosActionLimiter?.consume(userId);
+      // Legacy clients allowed incomplete coordinates. Persist no location in that case.
+      const coordinates = latitude !== undefined && longitude !== undefined ? { latitude, longitude, recordedAt } : {};
+      const result = await sosAssistance.create({ userId, message, batteryLevel, clientRequestId, ...coordinates });
+      return { groupCount: result.incident.groupCount, sosId: result.incident.id,
+        status: result.incident.status, revision: result.incident.revision, created: result.created };
+    }
     const groups = await groupRepo.listSummariesByMember(userId);
     const payload = {
       type: 'SOS',

@@ -18,6 +18,7 @@ function createSosAccessPolicy({ groupRepo }) {
       if (!isOwner && (!members.has(viewerId) || !original.has(viewerId))) continue;
       groups.push({
         groupId: group._id,
+        groupName: group.name,
         recipientIds: [ownerId, ...[...original].filter((id) => id !== ownerId && members.has(id))],
       });
     }

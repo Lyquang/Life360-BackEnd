@@ -32,8 +32,14 @@ function createSosOutboxDispatcher({
     }
     if (job.kind === 'sos_alert') {
       if (incident.status !== 'active') return null;
+      const [owner] = await userRepo.findManyByIds([incident.ownerId]);
+      const group = access.groups[0];
       return { event: 'sos_alert', payload: { ...common, ownerId: String(incident.ownerId),
-        status: incident.status, message: incident.message, location: incident.location ?? null,
+        type: 'SOS', userId: String(incident.ownerId), name: owner?.name ?? '',
+        groupId: group ? String(group.groupId) : undefined, groupName: group?.groupName,
+        latitude: incident.location?.latitude, longitude: incident.location?.longitude,
+        batteryLevel: incident.batteryLevel, timestamp: new Date(incident.createdAt).toISOString(),
+        status: incident.status, message: incident.message || 'Emergency! I need help!', location: incident.location ?? null,
         createdAt: incident.createdAt } };
     }
     if (job.kind !== 'chat_message') throw new Error('Unsupported SOS outbox kind.');
