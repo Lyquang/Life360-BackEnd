@@ -11,7 +11,7 @@ const outboxSchema = new mongoose.Schema({
     required: function () { return this.kind === 'chat_message'; },
   },
   revision: { type: Number, required: true, min: 1, validate: Number.isSafeInteger },
-  status: { type: String, enum: ['pending', 'processing', 'delivered', 'failed'], default: 'pending', required: true },
+  status: { type: String, enum: ['pending', 'processing', 'delivered', 'failed', 'discarded'], default: 'pending', required: true },
   attempts: { type: Number, default: 0, min: 0 },
   nextAttemptAt: { type: Date, required: true, default: Date.now },
   leaseUntil: { type: Date, default: null },

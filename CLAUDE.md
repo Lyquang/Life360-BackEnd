@@ -190,7 +190,7 @@ Gateways receive `{ chat, location, logger }` and register events with `socket.o
   Owner sees historical responses; other viewers see only eligible responders from their Circles,
   filtered before pagination. Respond/close write incident revision and group guard transactionally.
   A committed response can replay after closure while the caller remains authorized; new responses cannot.
-- These use cases are not wired to the container/API/socket yet; the outbox dispatcher remains upcoming.
+- These use cases are not wired to the container/API/socket yet. `sosOutboxDispatcher.js` now implements one bounded claim/send/retry with injected transport, current Circle authorization and stable event IDs. Scheduler/transport wiring remains upcoming; discarded events are distinct from delivered events. Socket emission is not a receipt/read guarantee.
   The existing `sos_alert` flow still only broadcasts. See `Study/SOS_GROUP_CHAT_ASSISTANCE.md`.
 
 ### User

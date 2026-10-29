@@ -1,10 +1,22 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: Hien thuc theo tung phan nho; S2b read/respond/close da kiem thu, san sang review.
+Trang thai: Hien thuc theo tung phan nho; S2c dispatcher da kiem thu, chua noi runtime.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
 ## Tien do review
+
+- S2c: `sosOutboxDispatcher.js` claim mot job moi lan, single-flight trong mot instance;
+  Verification: full npm test 256/256 pass (56 suites), lint/syntax/graph/diff check pass.
+  lease trong MongoDB bao ve nhieu worker. Recheck audience hien tai va dung Circle cua tin chat,
+  kem conversation membership. Missing data/mat quyen/urgent SOS da dong -> discarded,
+  tach biet delivered. sos:updated chi mang eventId/sosId/revision de client fetch co authorize.
+  Chat cu van co the duoc giao sau close nhu lich su, nhung khong phat urgent alert da dong.
+  Retry exponential voi equal jitter, tran delay/attempts do policy inject; khong log raw error.
+  EventId on dinh khi retry; emit xong crash truoc ack van co the trung, mobile phai dedupe.
+  Kiem tra lease truoc emit; quyen co the thay doi ngay sau read (khong co atomic DB+socket).
+  Khong bao dam thu hoi packet da gui. Transport phai bounded; scheduler/start/drain va
+  REST/socket wiring chua noi, chua co APNs/FCM hay bao dam giao khi app offline.
 
 - S2b verification (2026-10-29): 9 integration tests moi dung MongoDB replica set;
   full npm test 249/249 pass, 56 suites. Lint va syntax checks pass.

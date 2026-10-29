@@ -45,6 +45,16 @@ module.exports = {
     }, { new: true, sort: { nextAttemptAt: 1, _id: 1 } }).lean();
   },
 
+  hasActiveLease({ id, leaseToken, now }) {
+    return SosOutbox.exists(ownedLease(id, leaseToken, now));
+  },
+
+  markDiscarded({ id, leaseToken, now }) {
+    return SosOutbox.findOneAndUpdate(ownedLease(id, leaseToken, now), {
+      $set: { status: 'discarded', leaseToken: null, leaseUntil: null },
+    }, { new: true }).lean();
+  },
+
   markDelivered({ id, leaseToken, now }) {
     return SosOutbox.findOneAndUpdate(ownedLease(id, leaseToken, now), {
       $set: { status: 'delivered', deliveredAt: now, leaseToken: null, leaseUntil: null },

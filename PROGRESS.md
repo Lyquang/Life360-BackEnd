@@ -1,5 +1,13 @@
 # Progress Log
 
+### SOS assistance S2c: authorized outbox dispatch (2026-10-29)
+
+- Added application dispatcher with injected transport and explicit lease/retry policy: one claim per call, local single-flight, current audience authorization, exact chat Circle and conversation membership checks. Closed urgent alerts and inaccessible references become discarded, not delivered.
+- Stable event IDs support mobile deduplication; sos:updated is a minimal invalidation event with current revision. Equal-jitter exponential retry is bounded by delay/attempt policy. Transport failures do not log sensitive exception data. Repository checks current lease before emission and guards discarded state writes.
+- Limits: DB authorization and socket send cannot be atomic; delivery is at-least-once processing, not user receipt. Container/scheduler/transport/REST wiring is still pending, as is final mobile API documentation. No production behavior or secret changes.
+- Verification: full npm test passes 256/256 tests across 56 suites, including six new dispatcher tests and one replica-set lease/discard test. Lint, explicit changed application/repository syntax checks, graph refresh and diff check pass. No stage/commit/push.
+- Suggested commit: `feat(sos): add authorized outbox dispatcher with retry`.
+
 ### SOS assistance S2b: responses, visibility and closure (2026-10-29)
 
 - Added get/respond/close application use cases and shared audience access policy. Owners see historical responders; other members see only responders in their original, still-authorized Circles. Filtering happens before pagination. Later joiners cannot access the incident through these use cases.

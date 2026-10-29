@@ -130,6 +130,18 @@ describe('SOS chat and durable outbox', { timeout: 120000 }, () => {
     assert.equal(await claim(later(5000)), null);
   });
 
+  it('discards only with a current lease and never reclaims discarded events', async () => {
+    await enqueue();
+    const job = await claim();
+    const lease = { id: job._id, leaseToken: job.leaseToken, now: later(100) };
+    assert.ok(await outbox.hasActiveLease(lease));
+    assert.equal(await outbox.hasActiveLease({ ...lease, now: later(1000) }), null);
+    assert.equal(await outbox.markDiscarded({ ...lease, leaseToken: 'stale' }), null);
+    assert.equal((await outbox.markDiscarded(lease)).status, 'discarded');
+    assert.equal(await outbox.hasActiveLease(lease), null);
+    assert.equal(await claim(later(2000)), null);
+  });
+
   it('waits until retryAt, then marks failed after the configured attempt budget', async () => {
     await enqueue();
     const first = await claim();
