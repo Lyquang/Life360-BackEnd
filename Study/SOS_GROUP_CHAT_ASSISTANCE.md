@@ -1,11 +1,14 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: Hien thuc theo tung phan nho; S1a/S1b/S2a tao SOS hoan thanh de review.
+Trang thai: Hien thuc theo tung phan nho; S2b read/respond/close da kiem thu, san sang review.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
 ## Tien do review
 
+- S2b verification (2026-10-29): 9 integration tests moi dung MongoDB replica set;
+  full npm test 249/249 pass, 56 suites. Lint va syntax checks pass.
+  Chua noi container/API/socket; khong stage/commit/push.
 - S1a: `src/domain/sos.js`, models `SosIncident.js`/`SosResponse.js`,
   `sosRepository.js`, `tests/sosPersistence.test.js`. Luat mot incident active/owner,
   unique requestId optional va unique responder/incident; mutation bat buoc transaction,
@@ -41,8 +44,23 @@ Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach t
   khi dang co SOS active tra 409. Ly do: tra 200 cho ma moi nhung khong luu alias se tao SOS
   trung neu mobile retry ma do sau khi su co cu dong. Client cu khong requestId van dung active.
   Ten nguoi gui lay tu userRepo, khong tin userName/senderId do payload tu khai.
-- S2b tiep theo: read/respond/close va loc quyen tu audience; sau do dispatcher va API/socket.
-  S4 can tich hop iOS/push. Chua noi container hay thay the SOS socket cu, chua co event moi.
+- S2b (2026-10-29): them get/respond/close va `sosAccessPolicy.js` dung chung.
+  Read kiem tra snapshot rieng tung Circle + membership hien tai cua ca owner va viewer.
+  Owner van xem duoc lich su response sau khi roi nhom; viewer chi thay responders goc con
+  thuoc nhom minh. Filter responderIds trong repository TRUOC pagination, khong lo ID qua cursor.
+- Respond ghi response, tang revision, tin chat assistance va outbox trong cung transaction.
+  Chi cac Circle ma responder co quyen nhan tin assistance; sos_updated dedup theo user/revision,
+  khong thong bao danh tinh nguoi ho tro sang Circle khac. Member moi tham gia sau SOS khong
+  tu nhan quyen incident; quyen xem lich su text chat cu van theo module chat hien co.
+- Close chi cho owner, status resolved/cancelled; lap lai cung status la idempotent, doi sang
+  status dong khac tra 409. Close/respond cung ghi incident va membership guard de serialize.
+  Response da commit duoc replay sau close neu van co quyen; response moi sau close bi 409.
+  Owner tu nhan ho tro bi 400. Owner roi het nhom van dong duoc, chi enqueue update cho owner.
+- Dispatcher va API/socket se noi o phan tiep theo; S4 can tich hop iOS/push.
+  Chua noi container hay thay the SOS socket cu, chua co event moi.
+- Deliverable cuoi cung theo yeu cau mobile: `api-docs/SOS_ASSISTANCE_API_DOC.md`, sau khi
+  API/socket duoc noi va integration test pass. Phai ghi ro pending/coming/closed, retry,
+  pagination, loc quyen, reconnect va phan push da/chua hoan thanh; khong mo ta API de xuat la da co.
 - Kiem chung S1a: 9 tests moi pass tren MongoMemoryReplSet; full suite 224/224 tests,
   53 suites. Lint, syntax tung file moi, diff check va context graph refresh pass.
   Chua co endpoint SOS moi de mobile test. Khong stage/commit/push.

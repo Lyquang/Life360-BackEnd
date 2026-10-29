@@ -80,11 +80,15 @@ module.exports = {
   },
 
   // The use case must authorize and filter this internal result before returning it.
-  listResponses(sosId, { afterId, limit = 50, session } = {}) {
+  listResponses(sosId, { afterId, limit = 50, responderIds, session } = {}) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       throw new RangeError('SOS response page size must be between 1 and 100.');
     }
-    return SosResponse.find({ sosId, ...(afterId && { _id: { $gt: afterId } }) })
+    return SosResponse.find({
+      sosId,
+      ...(afterId && { _id: { $gt: afterId } }),
+      ...(responderIds !== undefined && { responderId: { $in: responderIds } }),
+    })
       .sort({ _id: 1 }).limit(limit + 1).session(session || null).lean();
   },
 };

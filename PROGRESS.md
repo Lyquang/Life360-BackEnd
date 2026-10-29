@@ -1,5 +1,13 @@
 # Progress Log
 
+### SOS assistance S2b: responses, visibility and closure (2026-10-29)
+
+- Added get/respond/close application use cases and shared audience access policy. Owners see historical responders; other members see only responders in their original, still-authorized Circles. Filtering happens before pagination. Later joiners cannot access the incident through these use cases.
+- Assistance persists response, revision, per-group chat messages and recipient outbox events atomically. Concurrent retries deduplicate; membership changes trigger transaction retries. Only the owner can resolve/cancel; repeated same closure is idempotent. Existing assistance can replay after closure while authorized; new assistance is rejected.
+- Nine new replica-set integration tests cover concurrent response/closure, pagination visibility, join/leave races, self-assistance, authorization and rollback. Full npm test: 249/249 passed across 56 suites; lint and explicit syntax checks passed.
+- Updated Study and CLAUDE.md; refreshed context graph. Container, dispatcher and HTTP/socket wiring remain upcoming. Final mobile contract will be delivered as `api-docs/SOS_ASSISTANCE_API_DOC.md` after integration is implemented and tested. No stage/commit/push.
+- Suggested commit: `feat(sos): add assistance responses and incident lifecycle`.
+
 ### SOS assistance S2a: transactional creation (2026-10-29)
 
 - Added application `createSosUseCases().create`: persists incident, one text SOS per Circle, conversation/read-pointer updates and per-recipient outbox events in one transaction. Urgent alerts deduplicate across shared Circles; creation response reports groupCount/recipientCount without exposing recipient IDs.

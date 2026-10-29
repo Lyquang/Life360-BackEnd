@@ -61,6 +61,11 @@ module.exports = {
       { $inc: { sosGuardVersion: 1 } }, { session });
   },
 
+  findSosAudienceGroups(groupIds, { session } = {}) {
+    return Group.find({ _id: { $in: groupIds } }).select('_id members')
+      .sort({ _id: 1 }).session(session || null).lean();
+  },
+
   async usersShareGroup(userA, userB) {
     return Boolean(await Group.exists({ members: { $all: [userA, userB] } }));
   },

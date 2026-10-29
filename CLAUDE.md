@@ -186,8 +186,11 @@ Gateways receive `{ chat, location, logger }` and register events with `socket.o
   snapshots, per-person urgent-event deduplication and explicit injected fanout limits.
   Group's hidden `sosGuardVersion` serializes creation against existing membership writes.
   Same request ID replays even after closure; a different ID during an active SOS conflicts.
-- Creation is not wired to the container/API/socket yet; response/read/close use cases and
-  outbox dispatcher remain upcoming.
+- SOS `get/respond/close` use cases now enforce per-Circle snapshot/current-membership access.
+  Owner sees historical responses; other viewers see only eligible responders from their Circles,
+  filtered before pagination. Respond/close write incident revision and group guard transactionally.
+  A committed response can replay after closure while the caller remains authorized; new responses cannot.
+- These use cases are not wired to the container/API/socket yet; the outbox dispatcher remains upcoming.
   The existing `sos_alert` flow still only broadcasts. See `Study/SOS_GROUP_CHAT_ASSISTANCE.md`.
 
 ### User
