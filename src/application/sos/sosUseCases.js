@@ -231,7 +231,24 @@ function createSosUseCases({
     });
   }
 
-  return { create, get, respond, close };
+  async function list({ userId, status = 'active', cursor, limit = 50 }) {
+    const rows = await unitOfWork.run((session) => sosRepo.listVisible(userId, { status, cursor, limit, session }));
+    const page = rows.slice(0, limit);
+    return {
+      items: page.map((incident) => ({
+        id: String(incident._id), ownerId: String(incident.ownerId), status: incident.status,
+        revision: incident.revision, message: incident.message,
+        location: incident.location ? { latitude: incident.location.latitude,
+          longitude: incident.location.longitude, recordedAt: incident.location.recordedAt } : null,
+        groupIds: incident.visibleGroups.map((group) => String(group._id)),
+        createdAt: incident.createdAt, closedAt: incident.closedAt,
+      })),
+      hasMore: rows.length > limit,
+      nextCursor: rows.length > limit ? String(page.at(-1)._id) : null,
+    };
+  }
+
+  return { create, get, respond, close, list };
 }
 
 module.exports = { createSosUseCases };

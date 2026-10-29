@@ -163,7 +163,7 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
   const unavailableSos = async () => { throw Errors.serviceUnavailable('SOS assistance is not available on this server.'); };
   useCases.sos = config.sos?.enabled && supportsTransactions
     ? createSosUseCases({ ...deps, sosRepo, outboxRepo, policy: config.sos })
-    : { create: unavailableSos, get: unavailableSos, respond: unavailableSos, close: unavailableSos };
+    : { create: unavailableSos, get: unavailableSos, respond: unavailableSos, close: unavailableSos, list: unavailableSos };
   useCases.location.syncBatch = createSyncLocationBatchUseCase({
     ...deps,
     policy: {

@@ -47,7 +47,7 @@ test('SOS API refuses standalone MongoDB before use case writes', async () => {
     io: {}, supportsTransactions: false,
   });
   try {
-    for (const method of ['create', 'get', 'respond', 'close']) {
+    for (const method of ['create', 'get', 'respond', 'close', 'list']) {
       await assert.rejects(container.useCases.sos[method]({}), { status: 503, code: 'SERVICE_UNAVAILABLE' });
     }
   } finally {

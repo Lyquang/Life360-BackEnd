@@ -18,5 +18,9 @@ const sosParams = z.object({ id: objectId });
 const sosQuery = z.object({ afterId: objectId.optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
 const respondSosBody = z.object({ status: z.literal('coming') }).strict();
 const closeSosBody = z.object({ status: z.enum(['resolved', 'cancelled']) }).strict();
+const listSosQuery = z.object({
+  status: z.enum(['active', 'resolved', 'cancelled', 'expired', 'all']).default('active'),
+  cursor: objectId.optional(), limit: z.coerce.number().int().min(1).max(100).default(50),
+}).strict();
 
-module.exports = { createSosBody, sosParams, sosQuery, respondSosBody, closeSosBody };
+module.exports = { createSosBody, sosParams, sosQuery, respondSosBody, closeSosBody, listSosQuery };

@@ -1,10 +1,28 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: Hien thuc theo tung phan nho; S3a REST API duoc noi sau co mac dinh tat.
+Trang thai: S3b danh sach SOS/reconnect da noi; socket legacy migration con lai.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
 ## Tien do review
+
+- S3b: GET /api/v1/sos?status=active&limit=50&cursor=... tra items/hasMore/nextCursor.
+  Verification: full npm test 273/273 pass (59 suites), lint/syntax/graph/diff check pass.
+  status: active (default), resolved, cancelled, expired, all. Chua co job tu expire.
+  Sort _id giam dan, cursor exclusive ($lt), khong phai cursor timestamp hay responder afterId.
+  Repository aggregate loc owner/original-recipient truoc, lookup current group de kiem tra
+  owner va viewer con cung dung Circle trong audience goc, sau do moi limit+1.
+  Khong dua ID incident bi an vao nextCursor; khong lo recipientIds/audience/group khong co quyen.
+  Owner giu quyen xem lich su khi da roi het Circle, groupIds tra [] neu khong con nhom hop le.
+  Query doc trong snapshot transaction; quyen duoc danh gia lai moi request/page.
+  Giua cac page co the thay doi status/quyen; khi reconnect mobile bat dau lai page dau,
+  upsert theo id/revision, fetch detail SOS da luu, xu ly 403/404 bang bo card/cache.
+  API list khong phai change feed va khong cung cap tombstone. Khong ket luan incident bi xoa
+  chi vi vang mat tren mot page. status=all hoac GET detail de kiem tra da dong.
+  Index ownerId/status/_id va recipientIds/status/_id them vao model. Khong co migration xoa du lieu.
+  Trade-off: loc chinh xac truoc limit co the lookup nhieu incident cu da mat quyen;
+  response bounded nhung query work khong bounded theo page size. Can benchmark du lieu lon,
+  chua ap scan cutoff vi se lam sai hasMore/bo sot ket qua. Rollback API flag, giu index additive.
 
 - S3a: POST /api/v1/sos, GET /api/v1/sos/:id, POST /:id/responses va PATCH /:id
   Verification: npm test 267/267 pass (58 suites), lint/syntax/graph/diff check pass.

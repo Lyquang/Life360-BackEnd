@@ -1,5 +1,6 @@
 const SosIncident = require('../database/models/SosIncident');
 const SosResponse = require('../database/models/SosResponse');
+const { Types } = require('mongoose');
 const { assertSosClosingStatus } = require('../../domain/sos');
 
 function requireTransaction(session) {
@@ -15,6 +16,42 @@ function requireRevision(revision) {
 }
 
 module.exports = {
+  // Visibility precedes the page limit: revoked incidents cannot create empty pages
+  // or leak their IDs through a cursor. All reads use the caller's snapshot transaction.
+  listVisible(userId, { status = 'active', cursor, limit = 50, session } = {}) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new RangeError('Invalid SOS page limit.');
+    const viewer = new Types.ObjectId(String(userId));
+    return SosIncident.aggregate([
+      { $match: {
+        $or: [{ ownerId: viewer }, { recipientIds: viewer }],
+        ...(status !== 'all' && { status }),
+        ...(cursor && { _id: { $lt: new Types.ObjectId(String(cursor)) } }),
+      } },
+      { $sort: { _id: -1 } },
+      { $lookup: {
+        from: 'groups',
+        let: { owner: '$ownerId', audience: { $ifNull: ['$audience', []] }, groupIds: '$groupIds' },
+        pipeline: [
+          { $match: { $expr: { $and: [
+            { $in: ['$_id', '$$groupIds'] },
+            { $in: ['$$owner', '$members'] },
+            { $or: [{ $eq: ['$$owner', viewer] }, { $in: [viewer, '$members'] }] },
+            { $anyElementTrue: [{ $map: { input: '$$audience', as: 'entry', in: { $and: [
+              { $eq: ['$$entry.groupId', '$_id'] },
+              { $or: [{ $eq: ['$$owner', viewer] }, { $in: [viewer, '$$entry.recipientIds'] }] },
+            ] } } }] },
+          ] } } },
+          { $project: { _id: 1 } },
+        ],
+        as: 'visibleGroups',
+      } },
+      { $match: { $or: [{ ownerId: viewer }, { 'visibleGroups.0': { $exists: true } }] } },
+      { $limit: limit + 1 },
+      { $project: { _id: 1, ownerId: 1, status: 1, revision: 1, message: 1, location: 1,
+        createdAt: 1, closedAt: 1, visibleGroups: 1 } },
+    ]).session(session || null);
+  },
+
   async createIncident({ ownerId, clientRequestId, groupIds, recipientIds, audience, message, location }, { session } = {}) {
     requireTransaction(session);
     const [incident] = await SosIncident.create([

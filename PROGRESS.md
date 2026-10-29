@@ -1,5 +1,12 @@
 # Progress Log
 
+### SOS assistance S3b: authorized incident recovery list (2026-10-29)
+
+- Added GET /api/v1/sos with status (default active), limit 1..100 and exclusive descending-ID cursor. Returns items/hasMore/nextCursor; this cursor is separate from responder afterId. List DTOs exclude audience/recipient internals and expose only eligible group IDs.
+- Repository filters original audience and current membership in the same Circle before pagination, inside a snapshot transaction. Owners retain historical access after leaving all groups. Added owner/status/ID and recipient/status/ID indexes. Exact visibility may scan many revoked historical candidates; large-data performance remains to be measured.
+- Six real-server tests cover hidden candidates before pagination, list/detail consistency, later joins, leaving, owner leaving, closed-state recovery, invalid queries and cross-Circle membership confusion. Full npm test: 273/273 passed across 59 suites; lint, syntax checks, graph refresh and diff check passed.
+- Updated Swagger, Study and CLAUDE.md. Still gated by SOS_API_ENABLED; legacy Socket migration and final mobile API documentation remain next. User authorized commit/push per slice. Commit: `feat(sos): add authorized incident recovery listing`.
+
 ### SOS assistance S3a: authenticated REST API (2026-10-29)
 
 - Wired create/get/respond/close into container and four authenticated REST operations under /api/v1/sos. Strict DTOs validate UUID request identity, paired coordinates, status and bounded response cursors. Identity always comes from JWT; creation/respond use 201 versus 200 replay semantics.

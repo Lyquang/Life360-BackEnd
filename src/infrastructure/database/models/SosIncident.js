@@ -42,5 +42,7 @@ incidentSchema.index({ ownerId: 1, clientRequestId: 1 }, {
   partialFilterExpression: { clientRequestId: { $type: 'string' } },
 });
 incidentSchema.index({ ownerId: 1, createdAt: -1, _id: -1 });
+incidentSchema.index({ ownerId: 1, status: 1, _id: -1 });
+incidentSchema.index({ recipientIds: 1, status: 1, _id: -1 });
 
 module.exports = mongoose.model('SosIncident', incidentSchema);

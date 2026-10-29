@@ -1,6 +1,6 @@
 const express = require('express');
 const { validate } = require('../middleware/validate');
-const { createSosBody, sosParams, sosQuery, respondSosBody, closeSosBody } = require('../../dto/sos.schemas');
+const { createSosBody, sosParams, sosQuery, respondSosBody, closeSosBody, listSosQuery } = require('../../dto/sos.schemas');
 
 function createSosRoutes({ controller, authenticate, limiter }) {
   const router = express.Router();
@@ -8,6 +8,20 @@ function createSosRoutes({ controller, authenticate, limiter }) {
   /**
    * @swagger
    * /api/v1/sos:
+   *   get:
+   *     summary: Recover visible SOS incidents after reconnect, newest ID first
+   *     tags: [SOS]
+   *     security: [{ bearerAuth: [] }]
+   *     parameters:
+   *       - { in: query, name: status, schema: { type: string, enum: [active, resolved, cancelled, expired, all], default: active } }
+   *       - { in: query, name: cursor, schema: { type: string }, description: Previous nextCursor; distinct from responder afterId }
+   *       - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+   *     responses:
+   *       200: { description: data contains items, hasMore and nextCursor; current visibility applied before pagination }
+   *       400: { description: Invalid status or cursor }
+   *       401: { description: Unauthorized }
+   *       429: { description: Rate limited; Retry-After in seconds }
+   *       503: { description: SOS unavailable }
    *   post:
    *     summary: Persist an SOS and enqueue alerts to the owner's Circles
    *     tags: [SOS]
@@ -102,6 +116,7 @@ function createSosRoutes({ controller, authenticate, limiter }) {
    *       503: { description: SOS unavailable or capacity exceeded }
    */
   router.post('/', validate({ body: createSosBody }), controller.create);
+  router.get('/', validate({ query: listSosQuery }), controller.list);
   router.get('/:id', validate({ params: sosParams, query: sosQuery }), controller.get);
   router.post('/:id/responses', validate({ params: sosParams, body: respondSosBody }), controller.respond);
   router.patch('/:id', validate({ params: sosParams, body: closeSosBody }), controller.close);

@@ -2,6 +2,10 @@ const { asyncHandler } = require('../middleware/asyncHandler');
 
 function createSosController({ sos }) {
   return {
+    list: asyncHandler(async (req, res) => {
+      const data = await sos.list({ ...req.dto.query, userId: req.user._id });
+      res.json({ success: true, data });
+    }),
     create: asyncHandler(async (req, res) => {
       const data = await sos.create({ ...req.dto.body, userId: req.user._id });
       res.status(data.created ? 201 : 200).json({ success: true, data });
