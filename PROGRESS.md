@@ -1,5 +1,12 @@
 # Progress Log
 
+### SOS assistance S2d: opt-in runtime worker (2026-10-29)
+
+- Wired dispatcher into container with per-user Socket transport. Bootstrap starts serial bounded polling and drains the current job before closing Socket/DB. Worker remains disabled by default; existing SOS creation remains legacy until REST/socket integration.
+- Added validated SOS_OUTBOX_* configuration and experimental defaults to .env.example/Study. No new secrets. Polling recovers from DB errors; allowlisted error codes report cycle failure/exhausted delivery without payload or identity logging.
+- Verification: full npm test 261/261 passed across 56 suites; five scheduler/config/composition tests cover disabled mode, shutdown drain, single in-flight dispatch and failure recovery. Lint, changed JS syntax checks, graph refresh and diff check passed.
+- User now authorizes per-slice commit/push. Commit message: `feat(sos): wire opt-in outbox worker lifecycle`. Use existing Git authentication, never embed credentials in the remote URL. REST/socket compatibility and final mobile API doc remain next.
+
 ### SOS assistance S2c: authorized outbox dispatch (2026-10-29)
 
 - Added application dispatcher with injected transport and explicit lease/retry policy: one claim per call, local single-flight, current audience authorization, exact chat Circle and conversation membership checks. Closed urgent alerts and inaccessible references become discarded, not delivered.

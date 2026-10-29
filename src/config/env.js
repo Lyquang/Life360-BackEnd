@@ -16,6 +16,13 @@ const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().int().min(0).max(65535).default(3000),
   METRICS_ENABLED: z.enum(['true', 'false']).default('false'),
+  SOS_OUTBOX_ENABLED: z.enum(['true', 'false']).default('false'),
+  SOS_OUTBOX_POLL_MS: z.coerce.number().int().min(100).max(60000).default(1000),
+  SOS_OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(20),
+  SOS_OUTBOX_LEASE_MS: z.coerce.number().int().min(1000).max(300000).default(30000),
+  SOS_OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
+  SOS_OUTBOX_RETRY_BASE_MS: z.coerce.number().int().min(100).max(60000).default(1000),
+  SOS_OUTBOX_RETRY_MAX_MS: z.coerce.number().int().min(100).max(3600000).default(60000),
   METRICS_TOKEN: optionalString,
   TZ: z.string().trim().min(1).default('Asia/Ho_Chi_Minh').refine(validTimeZone, 'Invalid IANA time zone.'),
   MONGODB_URI: optionalString,
@@ -110,6 +117,9 @@ function loadConfig(env = process.env) {
     throw new ConfigError(`Invalid environment variables: ${details}`);
   }
   const e = parsed.data;
+  if (e.SOS_OUTBOX_RETRY_MAX_MS < e.SOS_OUTBOX_RETRY_BASE_MS) {
+    throw new ConfigError('SOS_OUTBOX_RETRY_MAX_MS must be at least SOS_OUTBOX_RETRY_BASE_MS.');
+  }
   const isProduction = e.NODE_ENV === 'production';
   if (e.METRICS_ENABLED === 'true' && (!e.METRICS_TOKEN || e.METRICS_TOKEN.length < 32 || e.METRICS_TOKEN.length > 256)) {
     throw new ConfigError('Enabled metrics require a separate METRICS_TOKEN of 32-256 characters.');
@@ -188,6 +198,12 @@ function loadConfig(env = process.env) {
 
   return {
     env: e.NODE_ENV,
+    sosOutbox: {
+      enabled: e.SOS_OUTBOX_ENABLED === 'true', pollMs: e.SOS_OUTBOX_POLL_MS,
+      batchSize: e.SOS_OUTBOX_BATCH_SIZE, leaseMs: e.SOS_OUTBOX_LEASE_MS,
+      maxAttempts: e.SOS_OUTBOX_MAX_ATTEMPTS, retryBaseMs: e.SOS_OUTBOX_RETRY_BASE_MS,
+      retryMaxMs: e.SOS_OUTBOX_RETRY_MAX_MS,
+    },
     isProduction,
     port: e.PORT,
     metrics: { enabled: e.METRICS_ENABLED === 'true', token: e.METRICS_TOKEN },

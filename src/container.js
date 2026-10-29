@@ -9,6 +9,9 @@ const messageRepo = require('./infrastructure/repositories/messageRepository');
 const userSocialAccountRepo = require('./infrastructure/repositories/userSocialAccountRepository');
 const refreshSessionRepo = require('./infrastructure/repositories/refreshSessionRepository');
 const liveTrailRepo = require('./infrastructure/repositories/liveTrailRepository');
+const sosRepo = require('./infrastructure/repositories/sosRepository');
+const outboxRepo = require('./infrastructure/repositories/sosOutboxRepository');
+const { createSosOutboxDispatcher } = require('./application/sos/sosOutboxDispatcher');
 const { createNoopCacheManager } = require('./infrastructure/cache/NoopCacheManager');
 const { createRedisCacheManager } = require('./infrastructure/cache/RedisCacheManager');
 const { createCachedUserRepository } = require('./infrastructure/cache/cachedUserRepository');
@@ -103,6 +106,11 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     logger,
   };
   services.locationAccessPolicy = createLocationAccessPolicy({ ...repos, ...services });
+  services.sosOutboxDispatcher = config.sosOutbox?.enabled
+    ? createSosOutboxDispatcher({
+      ...repos, sosRepo, outboxRepo, policy: config.sosOutbox,
+      deliver: ({ recipientId, event, payload }) => services.realtime.emitToUser(recipientId, event, payload),
+    }) : null;
   const baseDeps = { ...repos, ...services };
   services.liveTrailProjection = createLiveTrailProjection({
     ...baseDeps,

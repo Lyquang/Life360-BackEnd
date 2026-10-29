@@ -1,10 +1,38 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: Hien thuc theo tung phan nho; S2c dispatcher da kiem thu, chua noi runtime.
+Trang thai: Hien thuc theo tung phan nho; S2d worker runtime duoc noi sau co mac dinh tat.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
 ## Tien do review
+
+- S2d: container noi dispatcher voi Socket user room; bootstrap khoi dong scheduler,
+  Verification: full npm test 261/261 pass (56 suites), lint/syntax/graph/diff check pass.
+  stop/drain truoc khi dong Socket/DB. Moi cycle xu ly toi da batchSize, khong overlap;
+  DB loi chi ghi SOS_OUTBOX_CYCLE_FAILED, exhausted ghi SOS_OUTBOX_DELIVERY_EXHAUSTED.
+  Khong log error.message, recipient hay payload. Khong co APNs/FCM: offline phai fetch REST sau.
+  Day chi la worker, use cases create/get/respond/close va legacy SOS chua chuyen sang API moi.
+  Giu SOS_OUTBOX_ENABLED=false cho toi khi hoan thanh REST/socket compatibility.
+
+### Cau hinh worker S2d (mac dinh thu nghiem, chua benchmark production)
+
+| Bien | Mac dinh | Y nghia |
+| --- | --- | --- |
+| SOS_OUTBOX_ENABLED | false | Bat claim va emit cac event SOS da luu |
+| SOS_OUTBOX_POLL_MS | 1000 | Nghi giua hai cycle, ms |
+| SOS_OUTBOX_BATCH_SIZE | 20 | Toi da so job claim moi cycle, xu ly tuan tu |
+| SOS_OUTBOX_LEASE_MS | 30000 | Thoi gian giu quyen xu ly job |
+| SOS_OUTBOX_MAX_ATTEMPTS | 5 | So lan thu toi da |
+| SOS_OUTBOX_RETRY_BASE_MS | 1000 | Co so exponential retry voi equal jitter |
+| SOS_OUTBOX_RETRY_MAX_MS | 60000 | Tran retry, phai >= base |
+
+Khong can secret moi. Worker emit vao user room (moi thiet bi dang ket noi cua user);
+khong emit ca Circle room lan nua. Socket emit la synchronous enqueue, khong cho mobile ack.
+Stop cho job dang xu ly ket thuc; DB driver timeout van chi phoi thoi gian drain neu DB treo.
+Rollback: tat flag va restart; job pending con trong DB de bat lai sau. Job delivered khong
+tu replay, job failed/discarded khong tu reset. Khong bat lai alert da dong.
+
+### Chi tiet cac phan truoc
 
 - S2c: `sosOutboxDispatcher.js` claim mot job moi lan, single-flight trong mot instance;
   Verification: full npm test 256/256 pass (56 suites), lint/syntax/graph/diff check pass.

@@ -7,6 +7,7 @@ const { createSwaggerSpec } = require('./config/swagger');
 const { configureApp } = require('./presentation/http/app');
 const { registerSocketServer } = require('./presentation/socket/socketServer');
 const { startDigestScheduler } = require('./presentation/jobs/digestScheduler');
+const { startSosOutboxScheduler } = require('./presentation/jobs/sosOutboxScheduler');
 const { createMetrics } = require('./infrastructure/observability/metricsRegistry');
 const { createSafeLogger } = require('./infrastructure/observability/safeLogger');
 
@@ -62,6 +63,9 @@ async function createServer(config, { logger = createSafeLogger(), digestInterva
     logger,
   });
   const scheduler = startDigestScheduler({ digests: useCases.digests, intervalMs: digestIntervalMs, logger });
+  const sosScheduler = startSosOutboxScheduler({
+    dispatcher: services.sosOutboxDispatcher, policy: config.sosOutbox, logger,
+  });
 
   return {
     app,
@@ -75,6 +79,7 @@ async function createServer(config, { logger = createSafeLogger(), digestInterva
     async close() {
       metrics.close();
       scheduler.stop();
+      await sosScheduler.stop();
       await services.liveTrailMatchingService.close();
       services.liveTrailDeltaPublisher.close();
       await new Promise((resolve) => io.close(() => resolve()));
