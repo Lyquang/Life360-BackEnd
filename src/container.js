@@ -12,6 +12,8 @@ const liveTrailRepo = require('./infrastructure/repositories/liveTrailRepository
 const sosRepo = require('./infrastructure/repositories/sosRepository');
 const outboxRepo = require('./infrastructure/repositories/sosOutboxRepository');
 const { createSosOutboxDispatcher } = require('./application/sos/sosOutboxDispatcher');
+const { createSosUseCases } = require('./application/sos/sosUseCases');
+const { Errors } = require('./domain/errors');
 const { createNoopCacheManager } = require('./infrastructure/cache/NoopCacheManager');
 const { createRedisCacheManager } = require('./infrastructure/cache/RedisCacheManager');
 const { createCachedUserRepository } = require('./infrastructure/cache/cachedUserRepository');
@@ -158,6 +160,10 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     location: createLocationUseCases(deps),
     chat: createChatUseCases(deps),
   };
+  const unavailableSos = async () => { throw Errors.serviceUnavailable('SOS assistance is not available on this server.'); };
+  useCases.sos = config.sos?.enabled && supportsTransactions
+    ? createSosUseCases({ ...deps, sosRepo, outboxRepo, policy: config.sos })
+    : { create: unavailableSos, get: unavailableSos, respond: unavailableSos, close: unavailableSos };
   useCases.location.syncBatch = createSyncLocationBatchUseCase({
     ...deps,
     policy: {

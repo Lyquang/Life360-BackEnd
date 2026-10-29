@@ -8,6 +8,7 @@ const {
   createRefreshLimiter,
   createLocationBatchLimiter,
   createLiveTrailReadLimiter,
+  createSosLimiter,
 } = require('./middleware/rateLimiter');
 const { createErrorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { createAuthController } = require('./controllers/authController');
@@ -23,6 +24,8 @@ const { createConversationRoutes, createChatRoutes } = require('./routes/chatRou
 const { createSystemRoutes } = require('./routes/systemRoutes');
 const { createLocationRoutes } = require('./routes/locationRoutes');
 const { createPrivacyRoutes } = require('./routes/privacyRoutes');
+const { createSosRoutes } = require('./routes/sosRoutes');
+const { createSosController } = require('./controllers/sosController');
 const { createMetricsMiddleware } = require('./middleware/metrics');
 const { createRequestContext } = require('./middleware/requestContext');
 
@@ -63,6 +66,9 @@ function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected,
   }));
   v1.use('/groups', createGroupRoutes({ controller: createGroupController(useCases), authenticate }));
   v1.use('/privacy', createPrivacyRoutes({ controller: createPrivacyController(useCases), authenticate }));
+  if (useCases.sos) v1.use('/sos', createSosRoutes({
+    controller: createSosController(useCases), authenticate, limiter: createSosLimiter(config.sos?.rateLimit),
+  }));
   v1.use('/history', createHistoryRoutes({
     controller: createHistoryController(useCases),
     authenticate,

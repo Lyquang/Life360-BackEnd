@@ -1,10 +1,23 @@
 # SOS trong chat nhom va xac nhan den ho tro
 
-Trang thai: Hien thuc theo tung phan nho; S2d worker runtime duoc noi sau co mac dinh tat.
+Trang thai: Hien thuc theo tung phan nho; S3a REST API duoc noi sau co mac dinh tat.
 Ngay: 2026-10-28. Pham vi repo da kiem tra: Backend JavaScript/CommonJS.
 Chua kiem tra source iOS; cac hang muc mobile ben duoi la hop dong va ke hoach tich hop de xuat.
 
 ## Tien do review
+
+- S3a: POST /api/v1/sos, GET /api/v1/sos/:id, POST /:id/responses va PATCH /:id
+  Verification: npm test 267/267 pass (58 suites), lint/syntax/graph/diff check pass.
+  da noi controller/DTO/DI/Swagger. Chua co GET danh sach /sos; chua doi socket legacy.
+  REST create bat buoc clientRequestId UUID; retry giu nguyen ID. Body strict, khong nhan userId.
+  Toa do di theo cap, recordedAt ISO optional can toa do. Chua ap tuoi toi da cho timestamp SOS.
+  JWT truoc limiter, limit chung 60 request/account/phut (bao gom read va write); 429 co Retry-After.
+  SOS_API_ENABLED=false mac dinh; true bat buoc SOS_OUTBOX_ENABLED=true.
+  MongoDB khong co transaction hoac API tat -> 503 truoc use case, khong partial write.
+  Fanout defaults thu nghiem: SOS_MAX_GROUPS=10, SOS_MAX_RECIPIENTS=100,
+  SOS_MAX_OUTBOX_EVENTS=300. Vuot gioi han rollback toan bo va 503; khong cat bot nguoi nhan.
+  Chua bat production: legacy socket van broadcast-only, hop dong sos_alert se duoc giu
+  tuong thich trong S3b. API doc mobile day du va list/reconnect recovery con lai.
 
 - S2d: container noi dispatcher voi Socket user room; bootstrap khoi dong scheduler,
   Verification: full npm test 261/261 pass (56 suites), lint/syntax/graph/diff check pass.

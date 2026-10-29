@@ -1,5 +1,13 @@
 # Progress Log
 
+### SOS assistance S3a: authenticated REST API (2026-10-29)
+
+- Wired create/get/respond/close into container and four authenticated REST operations under /api/v1/sos. Strict DTOs validate UUID request identity, paired coordinates, status and bounded response cursors. Identity always comes from JWT; creation/respond use 201 versus 200 replay semantics.
+- API defaults off; enabling requires outbox enabled. Missing Mongo transaction support returns controlled 503 before writes. Per-account shared read/write limiter defaults to 60/minute with Retry-After. Experimental fanout defaults are 10 groups, 100 recipients, 300 events; overflow rolls back without silently dropping recipients.
+- Added Swagger operations and environment/study guidance. Five real-server integration tests cover JWT/validation, persisted chat + actual Socket outbox delivery, idempotency, audience/owner authorization, closure, pagination validation, 429 and disabled 503; additional composition test checks standalone rejection.
+- Verification: full npm test 267/267 passed across 58 suites; lint, explicit changed JS syntax checks, graph and diff check pass. Commit: `feat(sos): expose authenticated incident REST API`.
+- Remaining: incident listing/reconnect recovery, legacy Socket compatibility and final mobile API document. Keep flags off for production until those integration steps are complete. User authorized commit/push per slice; no credentials added.
+
 ### SOS assistance S2d: opt-in runtime worker (2026-10-29)
 
 - Wired dispatcher into container with per-user Socket transport. Bootstrap starts serial bounded polling and drains the current job before closing Socket/DB. Worker remains disabled by default; existing SOS creation remains legacy until REST/socket integration.

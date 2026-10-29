@@ -16,6 +16,8 @@ async function waitFor(predicate) {
 
 test('SOS worker config is opt-in and validates bounds', () => {
   assert.equal(loadConfig({}).sosOutbox.enabled, false);
+  assert.equal(loadConfig({}).sos.enabled, false);
+  assert.throws(() => loadConfig({ SOS_API_ENABLED: 'true' }), /requires SOS_OUTBOX_ENABLED/);
   assert.equal(loadConfig({ SOS_OUTBOX_ENABLED: 'true' }).sosOutbox.batchSize, 20);
   for (const env of [
     { SOS_OUTBOX_BATCH_SIZE: '0' }, { SOS_OUTBOX_POLL_MS: '1' },
@@ -37,6 +39,21 @@ test('disabled scheduler never claims and can stop repeatedly', async () => {
   const worker = startSosOutboxScheduler({ dispatcher: { dispatchNext: () => { calls++; } }, policy: { enabled: false } });
   await worker.stop(); await worker.stop();
   assert.equal(calls, 0);
+});
+
+test('SOS API refuses standalone MongoDB before use case writes', async () => {
+  const container = createContainer({
+    config: loadConfig({ SOS_API_ENABLED: 'true', SOS_OUTBOX_ENABLED: 'true' }),
+    io: {}, supportsTransactions: false,
+  });
+  try {
+    for (const method of ['create', 'get', 'respond', 'close']) {
+      await assert.rejects(container.useCases.sos[method]({}), { status: 503, code: 'SERVICE_UNAVAILABLE' });
+    }
+  } finally {
+    await container.services.liveTrailMatchingService.close();
+    container.services.liveTrailDeltaPublisher.close();
+  }
 });
 
 test('scheduler drains in-flight delivery on stop without claiming another job', async () => {

@@ -17,6 +17,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(0).max(65535).default(3000),
   METRICS_ENABLED: z.enum(['true', 'false']).default('false'),
   SOS_OUTBOX_ENABLED: z.enum(['true', 'false']).default('false'),
+  SOS_API_ENABLED: z.enum(['true', 'false']).default('false'),
+  SOS_MAX_GROUPS: z.coerce.number().int().min(1).max(100).default(10),
+  SOS_MAX_RECIPIENTS: z.coerce.number().int().min(1).max(10000).default(100),
+  SOS_MAX_OUTBOX_EVENTS: z.coerce.number().int().min(1).max(20000).default(300),
+  SOS_RATE_LIMIT: z.coerce.number().int().min(1).max(1000).default(60),
   SOS_OUTBOX_POLL_MS: z.coerce.number().int().min(100).max(60000).default(1000),
   SOS_OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(20),
   SOS_OUTBOX_LEASE_MS: z.coerce.number().int().min(1000).max(300000).default(30000),
@@ -117,6 +122,9 @@ function loadConfig(env = process.env) {
     throw new ConfigError(`Invalid environment variables: ${details}`);
   }
   const e = parsed.data;
+  if (e.SOS_API_ENABLED === 'true' && e.SOS_OUTBOX_ENABLED !== 'true') {
+    throw new ConfigError('SOS_API_ENABLED requires SOS_OUTBOX_ENABLED.');
+  }
   if (e.SOS_OUTBOX_RETRY_MAX_MS < e.SOS_OUTBOX_RETRY_BASE_MS) {
     throw new ConfigError('SOS_OUTBOX_RETRY_MAX_MS must be at least SOS_OUTBOX_RETRY_BASE_MS.');
   }
@@ -198,6 +206,9 @@ function loadConfig(env = process.env) {
 
   return {
     env: e.NODE_ENV,
+    sos: { enabled: e.SOS_API_ENABLED === 'true', maxGroups: e.SOS_MAX_GROUPS,
+      maxRecipients: e.SOS_MAX_RECIPIENTS, maxOutboxEvents: e.SOS_MAX_OUTBOX_EVENTS,
+      rateLimit: e.SOS_RATE_LIMIT },
     sosOutbox: {
       enabled: e.SOS_OUTBOX_ENABLED === 'true', pollMs: e.SOS_OUTBOX_POLL_MS,
       batchSize: e.SOS_OUTBOX_BATCH_SIZE, leaseMs: e.SOS_OUTBOX_LEASE_MS,
