@@ -1,5 +1,12 @@
 # Progress Log
 
+### SOS temporary realtime location: architecture proposal (2026-10-30)
+
+- Read the Mobile proposal and checked normal privacy/publish/batch/trail, SOS audience/transaction/outbox, group membership hooks and auth revocation. Normal updates write shared caches/history and cannot be reused as a temporary SOS bypass. Current watch invalidation/Socket transport is process-local.
+- Added `Study/SOS_TEMPORARY_LOCATION_SHARING_PLAN.md`: isolated lease/point storage, idempotent consent ledger, authoritative time/expiry, scope-first routing, transaction races, multi-instance requirements, proposed contract, L0-L6 execution plan, acceptance and rollback.
+- Pending user decisions: duration/renewal, granting-session logout semantics, post-expiry reads, retention, scope/batch/ack, point time/quota, distributed transport and revision-guarded revoke. App kill/offline cannot be treated as an immediately observable server logout.
+- Documentation only: no source/env/current API contract change and no deployed endpoint claim. Skeleton refreshed, diff check passed; tests not rerun because no executable code changed. Stop before implementation pending plan approval. User-authorized per-slice documentation commit/push: `docs(sos): plan consent-scoped temporary location sharing`.
+
 ### SOS assistance S3c: legacy Socket integration and mobile contract (2026-10-29)
 
 - Enabled-mode location.sendSos now delegates to the same transactional use case as REST; disabled mode retains legacy broadcast-only behavior. Confirmation keeps message/groupCount and adds sosId/status/revision/created. Socket accepts optional UUID/recordedAt, persists optional battery and normalizes incomplete legacy coordinates to no location.
