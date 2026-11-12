@@ -13,6 +13,7 @@ const ignoredDirs = new Set([
   '.github',
   '.codex',
   'codex/context',
+  'graphify-out',
   'node_modules',
   'dist',
   'build',

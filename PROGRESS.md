@@ -303,6 +303,10 @@ M3-0 verification: 180/180 tests pass (49 suites), including two new privacy reg
 
 ## Next Update Checklist
 
+- 2026-11-11: Inventoried all 136 src JavaScript files and generated a Graphify 0.9.30 code-only AST graph (882 nodes, 1597 edges) under `graphify-out/backend/`; preserved imported mobile artifacts. Added backend current-state spec, architecture, model/index inventory, contract indexes and verification notes in `specs/002-family-tracker-backend/`. Graph edges and feature availability still require source/runtime verification.
+- 2026-11-11: Added a backend-specific feature specification workflow and templates; generated the backend static-import graph with `npm run context:graph`. The imported mobile `specs/001-message-notifications` and `graphify-out` were preserved and identified as foreign; Graphify CLI is not installed. Excluded `graphify-out` from skeleton traversal.
+- 2026-11-11: Reviewed MongoDB/Mongoose models and their relationships, indexes, and TTL policies for a database structure overview; no database data inspected.
+
 - 2026-10-28: Added plan-first `Study/SOS_GROUP_CHAT_ASSISTANCE.md` after inspecting SOS/chat/membership flows. Proposed persistent SOS incidents, per-Circle chat messages, idempotent assistance responses, outbox delivery and mobile contracts. Background push is not implemented in the current repo; scope/provider and lifecycle/privacy decisions await user review. No feature code or commits made.
 - 2026-10-28: Added `Study/GRAFANA_PRODUCTION_ROLLOUT.md` for M5 production planning. Grafana Cloud export remains disabled pending explicit Terms/DPA approval; Render Free + 60s pull scraping would keep the service awake. No production secrets/config changed.
 - 2026-10-28: GitHub Actions Render deploy-hook step now keeps the secret in an environment variable and prints HTTP status/response body for diagnosis; non-2xx still fails the job. No retry is performed because a 5xx can occur after Render has accepted the deploy. Not committed.
@@ -310,3 +314,45 @@ M3-0 verification: 180/180 tests pass (49 suites), including two new privacy reg
 
 - Add any architectural decisions discovered during future work.
 - Record important module relationships in MCP memory when the server is available.
+
+
+## Full source/specs baseline survey — 2026-11-11
+
+- Target confirmed as this Backend workspace; user selected the imported mobile specs/graph as the read-only reference. Preserved initial dirty AGENTS.md/PROGRESS.md/scripts/codebase-skeleton.js and untracked specs/graph artifacts. No src/server/test/runtime implementation edits or commits.
+- Read all 218 owned source/config/test files (21,277 lines): 136 src, 45 tests/helper, 9 scripts, 17 monitoring files, 1 CI workflow and 10 root/editor/entry/config files. 213 full /5 redacted /0 inaccessible or pending. Full paths/status/SHA-256 in specs/002-family-tracker-backend/source-inventory.md/json; generated artifacts, dependencies, locks, binaries, actual .env and .local secrets excluded. Relevant integration docs/reference examples reviewed; older doc monoliths consulted selectively, not claimed fully read.
+- Established specs/README.md status/authority workflow; expanded existing backend baseline with typed contracts/models, architecture/business flows/config/dependencies, decisions and discrepancy registers. AGENTS.md now requires relevant specs/graph first and scoped spec updates with later changes. Artifact manifest is in backend tasks.md.
+- User explicitly accepted continued private 1–1 chat after participants leave shared Circles: REQ-CHAT-01, authority/criteria recorded in decisions.md. Existing direct membership remains; open/get-or-create endpoint still checks shared Circle. Historical digest privacy and other Q-02…Q-06 choices remain open; no blanket approval inferred from implementation.
+- Official local Graphify 0.9.30 extract src --code-only and cluster-only --no-label refreshed four backend outputs: 136 files, 882 nodes, 1597 edges, 48 communities, zero LLM tokens. Source commit ddf5c58dbf24b35f503da8a43561e8156fedd38a plus unchanged src content; hashes verify freshness. Parent mobile graph (4608a5e9) and sample specs preserved; no caches/logs copied. Earlier Graphify-unavailable note is historical; CLI was available in /tmp/family-tracker-graphify-venv for this survey.
+- Validation: MONGOMS_RUNTIME_DOWNLOAD=false npm test passed 277 tests/60 suites, 0 failures/skips (~89.8s); npm run lint exit0 plus individual node --check passed all 191 JS files (existing lint command alone is not per-file proof). Isolated replica-set integration verified both directions of send/read after last shared Circle exit, with direct-open still403. 264 local doc links, 218 source hashes/boundary, graph source coverage/node uniqueness/edge endpoints/commit and git diff --check passed.
+- No dependency installation, seeding, migration, Docker stack/build, deployment, email sending, remote database/provider calls or external code upload. Memory MCP unavailable; this file is the durable fallback. Runtime/production/mobile/provider readiness remains unverified and is not implied by documentation setup.
+
+
+## Reference artifact cleanup — 2026-11-11
+
+- User explicitly requested removal of unrelated imported examples after the backend survey, superseding the earlier retention rule for those examples. Removed specs/001-message-notifications/ and the foreign root Graphify graph/report/HTML, dated archive, cache and metadata (197 files; 7,098,842 bytes).
+- Kept specs/002-family-tracker-backend/, specs/_templates/, graphify-out/backend/ and all application/integration/operational files. The four generated backend graph artifacts are byte-for-byte unchanged.
+- Updated AGENTS.md, specs/README.md, backend graph README, quickstart, decisions, discrepancies and research to reflect removal and retain scoped graph commands. Historical survey/progress records remain historical, not active instructions to retain examples. No source/runtime/test changes or Graphify regeneration needed.
+- Cleanup validation passed: 218 source hashes unchanged, 267 local documentation links valid, backend graph 882 nodes/1597 valid edges, skeleton refreshed and git diff --check clean. No runtime test rerun needed for removal of unrelated reference artifacts and documentation edits.
+
+
+## Feature-scoped specifications — 2026-11-11
+
+- User approved replacing the combined backend survey folder with shared specs/system/ and ten feature scopes: authentication, circles, chat, media-upload, location-sharing, location-history, live-trail, sos, group-digests and favorite-places. Removed the migrated combined folder; earlier references to its path in this progress history describe the previous layout.
+- Moved architecture/lifecycle, configuration, dependencies, transport conventions, observability, survey inventory/evidence and governance into system documents. Each feature now has a concrete spec, contracts and model documentation, source/test pointers and cross-feature links; decisions/questions exist only where there are records. No empty feature plan/task scaffolding.
+- Retained 42 HTTP contract rows, 7 client-event rows, 17 server-event rows, 16 typed full schema/index definitions and 19 uniquely owned D/Q records. REQ-CHAT-01 remains explicitly accepted in specs/features/chat/decisions.md; Q-02 belongs to group-digests, Q-03 to authentication, Q-05 to SOS. Q-04/Q-06 stay shared/open.
+- Updated specs/README.md feature routing, AGENTS.md scoped reading/update rules, backend-specific templates and graph README paths. Source-inventory JSON was moved without changing its original ledger/hash data. Full migration design/task/mapping/evidence: specs/system/reorganization.md.
+- Validation: 623 local documentation links resolve; 218 source/config/test hashes unchanged; four generated backend Graphify artifacts byte-identical. Context skeleton refreshed and git diff --check passed. Runtime code/tests/config unchanged; no dependency install, Graphify regeneration, deployment or new runtime test run. Historical 277/277 tests are retained as prior evidence, not re-reported as newly executed.
+
+## Adapted agent operating guide — 2026-11-11
+
+- Read the complete 339-line Listing Moderation Service AGENTS example supplied by the user, then compared it with the existing AGENTS.md, CLAUDE.md, package.json and backend feature registry/shared architecture/validation and accepted chat decision. Applied reusable collaboration, clarification, engineering, concurrency, verification, transparency and completion practices to this backend.
+- Updated AGENTS.md for Node >=20/CommonJS, Express/Socket.IO, MongoDB/Mongoose and the current feature-scoped specs. Retained context skeleton/trace navigation, official scoped Graphify, architecture injection boundaries, MCP-memory fallback and REQ-CHAT-01. Requirements remain owned by specs; this guide links to them rather than approving all observed behavior.
+- Added proportional planning and explicit clarification rules without repeated approval for authorized work; relevant specs guide implementation and acceptance checks. Supporting CLAUDE/integration/Study summaries require verification when they conflict with current specs/source. Clarified that generated navigation artifacts are intentional exceptions to routine generated-output exclusions.
+- Did not import the example's Fastify/ESM/PostgreSQL stack, listing rules, OpenAPI/brief/assumptions files, Make/format commands, delivery deadlines or test thresholds. No new product requirement, runtime change, dependency installation or graph regeneration.
+- Validation: all 8 AGENTS local Markdown links resolve; all 6 referenced npm-run script names exist in package.json; 218 inventoried source/config/test hashes unchanged; backend graph files match the before-change hashes; git diff --check passed. Runtime tests were not rerun for this documentation-only update. Only AGENTS.md and this progress entry were changed for this task; prior working-tree edits were preserved.
+
+## Expanded collaboration workflow — 2026-11-11
+
+- User requested the detailed workflow/clarification/engineering sections supplied in a new attachment after the earlier adaptation condensed them too far. Replaced that abbreviated workflow in AGENTS.md with all seven steps (Understand, Simplify, Plan, Review, Implement, Verify, Report), the full requirement-alignment guidance and a separate Engineering Principles section.
+- Adapted the example's normative OpenAPI/ASSUMPTIONS references to this backend's feature contracts, shared HTTP/Socket conventions and feature/system decision records. Retained proportional document reads, preservation of user work, PROGRESS updates and existing authorization without repeated approval. No product behavior or source/graph changes.
+- Validation: all seven workflow steps present, all 7 local Markdown links resolve, no inherited OpenAPI/ASSUMPTIONS requirement, and git diff --check passed. Runtime tests not run for this documentation-only correction.

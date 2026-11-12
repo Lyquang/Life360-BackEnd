@@ -1,0 +1,1330 @@
+{
+  "survey_date": "2026-11-11",
+  "source_commit": "ddf5c58dbf24b35f503da8a43561e8156fedd38a",
+  "snapshot": "working tree; source files unchanged during this survey",
+  "boundary": "src, tests, scripts, ops/monitoring excluding .local, .github/workflows, server.js and enumerated root/editor config files",
+  "excluded": [
+    "node_modules",
+    "lockfiles",
+    ".git",
+    "generated context/graph output",
+    "build/coverage/cache/logs",
+    "binary/media assets",
+    "actual .env",
+    "ops/monitoring/.local secrets/runtime artifacts"
+  ],
+  "read_status_meaning": {
+    "read-full": "complete source content reviewed in this session; truncated ranges recovered; JSON may be whitespace-normalized",
+    "read-redacted": "complete file reviewed with env values or email literals withheld; not a review of withheld values"
+  },
+  "files": [
+    {
+      "path": ".dockerignore",
+      "sha256": "70fe6b4af0b032d4691b52ec0fc070d52552fe13ad57622c3f5227615cc069ed",
+      "lines": 28,
+      "status": "read-full"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "b1d72a4c332a1f0e2a954b290c0e5a18f8de374b93fab6c2dc475a0936fecee3",
+      "lines": 134,
+      "status": "read-redacted"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "dd0a7cefb8a57e9e0f4a3de98ef3b375b6bf279dedf7f907170a6dadf32986d5",
+      "lines": 148,
+      "status": "read-full"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "e1104e3f78a6f911ad2e4f209e484742eef061c02da252acb3dd53cfb94b9811",
+      "lines": 7,
+      "status": "read-full"
+    },
+    {
+      "path": ".vscode/mcp.json",
+      "sha256": "37e0694a6ca2a4af19c2b7843eecb9db0e90e7e3e4c420bf161314d417bbf822",
+      "lines": 14,
+      "status": "read-full"
+    },
+    {
+      "path": "Dockerfile",
+      "sha256": "d6432058dbcc8443cb6a8e0712843d72270b29726ff1800bbfe8ee5b08ea6831",
+      "lines": 35,
+      "status": "read-full"
+    },
+    {
+      "path": "codex/config.example.toml",
+      "sha256": "2da4d913ca582860ecd6be41fb67fa324cca0b008fc79aeded7acc50acc48eeb",
+      "lines": 10,
+      "status": "read-full"
+    },
+    {
+      "path": "mcp.json",
+      "sha256": "c1463a2e389c08d568d22b854f8805c37e7e73a9a13fa34cb1a742df8c5b0bea",
+      "lines": 14,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/README.md",
+      "sha256": "67c5ad91f04ef695dc4ede97c25308e1d1bd17342d200242985adf5062ee2280",
+      "lines": 70,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/alloy.alloy",
+      "sha256": "ccf70943db9db0cc7a66f509e5b3d7760b68fbf1e3fd1bff9eed49e068754d86",
+      "lines": 19,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/compose.env",
+      "sha256": "b4bd9c7c8e5fae85dbb54178829e11b5acd9a2c4ffa20d27561ecc8586c32a16",
+      "lines": 1,
+      "status": "read-redacted"
+    },
+    {
+      "path": "ops/monitoring/compose.yml",
+      "sha256": "c5e5f310e1432df6acc308069abc0b688489d0b2e8cee244731088ded41f238a",
+      "lines": 117,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/dashboards/data.json",
+      "sha256": "1da365a8ad6e940a05241e979d4d35c8fdb55a7f84bd31bfd212ddbd67c02726",
+      "lines": 448,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/dashboards/location.json",
+      "sha256": "0359631bf22b91431f014225257904fce866d17514db8ae8e35cad54e37355ef",
+      "lines": 263,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/dashboards/logs.json",
+      "sha256": "1dc48f799fe93f1a6a15eb689efbfdcff2404b9291c6046cf1484e2a4856287a",
+      "lines": 40,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/dashboards/overview.json",
+      "sha256": "0ffcc1838ea348661ec1e5c648dedee4c057031e2c58bdd91087447745fcfe72",
+      "lines": 228,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/dashboards/socket.json",
+      "sha256": "e447d721afc242fe27b721353840572866cc3ab36f01b3f6ddfae64536457210",
+      "lines": 228,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/loki.yml",
+      "sha256": "e294eadac756dc2cec8e03e606b05c35284bc75fd1c071bef7de3adc6ccca0df",
+      "lines": 29,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/prometheus.yml",
+      "sha256": "307c91f70671e02cedc6061b00939812fc9f9a77a58307b142f140ad6728f0fc",
+      "lines": 17,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/provisioning/alerting/contacts.yml",
+      "sha256": "6ff8665405ceffb070a4c165ad57136bdf0a02b30900f01e6c13c41427e79d06",
+      "lines": 10,
+      "status": "read-redacted"
+    },
+    {
+      "path": "ops/monitoring/provisioning/alerting/familytracker.yml",
+      "sha256": "645dda18e92b98cd64e982e03085aab8f39a73e029d7c04a173f6856665337af",
+      "lines": 211,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/provisioning/dashboards/local.yml",
+      "sha256": "b08351a666fbbed171b391be8b1d9696bc604e4ff96f55954967beec50229317",
+      "lines": 9,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/provisioning/datasources/prometheus.yml",
+      "sha256": "789944272af0e9514ea99998a9ca42e329e3ed9a038b41852d00a01d50c0769f",
+      "lines": 40,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/provisioning/plugins/README.md",
+      "sha256": "ffb5ebced44b961c77e8d0395d17c6782340ffed5e626a70ae7ebbe14641bfa4",
+      "lines": 1,
+      "status": "read-full"
+    },
+    {
+      "path": "ops/monitoring/tempo.yml",
+      "sha256": "c0fe3829ddd8ba1f47a4ed80b2c469acec7d26ce291bbe9b652e2d847ed5f168",
+      "lines": 21,
+      "status": "read-full"
+    },
+    {
+      "path": "package.json",
+      "sha256": "013c153b53b9c466468d1f3b038c706ff5594f548fffedd4a9e19236abe9f4a4",
+      "lines": 54,
+      "status": "read-full"
+    },
+    {
+      "path": "render.yaml",
+      "sha256": "302cdd3be5d3258a632d27a56aa2bc06bbf483325470f093c59df5cacb4c37fd",
+      "lines": 154,
+      "status": "read-full"
+    },
+    {
+      "path": "scripts/benchmark-live-trail.js",
+      "sha256": "02a5446b26bccfd3d9f1c8166e52295a608238d452b108b95e91b030ad3e7196",
+      "lines": 150,
+      "status": "read-full"
+    },
+    {
+      "path": "scripts/benchmark-monitoring.js",
+      "sha256": "9e6973cf06f6fdf9f09bd2a6ee73deaf03405b2fed2d488bc935c23c56ddae84",
+      "lines": 125,
+      "status": "read-full"
+    },
+    {
+      "path": "scripts/codebase-graph-html.js",
+      "sha256": "8fc10bfbf95c17232139ee8dc75b2386fc0758f181198f379a1ea9e93ea05357",
+      "lines": 553,
+      "status": "read-full"
+    },
+    {
+      "path": "scripts/codebase-skeleton.js",
+      "sha256": "b1d58dbbd5e4cc367f13418d3aa7e62b2f2c62c8e0dada3487df40d96ec60c96",
+      "lines": 245,
+      "status": "read-full"
+    },
+    {
+      "path": "scripts/monitoring-local.js",
+      "sha256": "ddfdfccd1082633b114cc74dd64f2602be631fa4e3fb0a620d55ecbd97e7bed1",
+      "lines": 25,
+      "status": "read-full"
+    },
+    {
+      "path": "scripts/seed-fake-user.js",
+      "sha256": "9c14323253a680b2213df53c453a56bd71840ccd089626796a440b6a5812c966",
+      "lines": 137,
+      "status": "read-redacted"
+    },
+    {
+      "path": "scripts/test-chat.js",
+      "sha256": "c33ec9bcc8afd9a6df030ed56f49b934e292d4e39dc76ca82499ef485b68e16d",
+      "lines": 155,
+      "status": "read-redacted"
+    },
+    {
+      "path": "scripts/trace-flow.js",
+      "sha256": "f4596dc6bb8c7b0d477881bc556150922ce9dbcb8958faa2e8ef57ae28727736",
+      "lines": 112,
+      "status": "read-full"
+    },
+    {
+      "path": "scripts/validate-monitoring-alerts.js",
+      "sha256": "151ffa5d3a3ee6399fc42fe12bb6ad3bce645d1f0224019062f7649d8eff59ef",
+      "lines": 84,
+      "status": "read-full"
+    },
+    {
+      "path": "server.js",
+      "sha256": "77e93a411acc98aee51ce962f12d6055a65161c155b5217d3305f6700f6ba3c9",
+      "lines": 56,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/auth/authUseCases.js",
+      "sha256": "7e032c6ccf4a5d4181b134606a52ace39cb6f1e3aedc7688a78645ea8077a272",
+      "lines": 323,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/chat/chatMappers.js",
+      "sha256": "d4b6fd10ac3802c5c98673153c08e701c7798a132cc6cb6644f1c24ed125ed0a",
+      "lines": 50,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/chat/chatUseCases.js",
+      "sha256": "fda60236ea22ebb63898d230a6d4494d87d516f5ecf44abd564eb95213538993",
+      "lines": 422,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/digests/digestUseCases.js",
+      "sha256": "7fa26955803bc2ea0f04ee0904aabf16f32e43834d6dc79ab59715549bfac857",
+      "lines": 117,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/groups/groupUseCases.js",
+      "sha256": "f9c26544a7a4d028d1ad7ceb30e356cedeec970881ca73d20a217484450566e9",
+      "lines": 191,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/history/historyUseCases.js",
+      "sha256": "609dfde4dce0215a2af88c0a670462693f2076e31dfebdb7d3edbd650bacd1ed",
+      "lines": 228,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/history/liveTrailWatchUseCases.js",
+      "sha256": "3a61a1dda157b247b9ec975194ba368a02df658ee6c9051f9a1f92454f780c93",
+      "lines": 47,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/location/liveTrailDeltaPublisher.js",
+      "sha256": "856329fe385ace6d4e5bbef173d92a5e3eca22ad05447f7b418e93323464677a",
+      "lines": 199,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/location/liveTrailMatchingService.js",
+      "sha256": "020c9a5027ec04b2eb63312a7d074af47cbd2ff21f5384e1a669022ab9815363",
+      "lines": 259,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/location/liveTrailProjection.js",
+      "sha256": "213302ec8efa03900479e0291774144f518495062d5cf7357df67f663a0a5bd8",
+      "lines": 39,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/location/locationRuntimeState.js",
+      "sha256": "97180a7b6d52508d493a83d20770eb9bc3f6b7f25ebc124b504725526acbd4bc",
+      "lines": 14,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/location/locationUseCases.js",
+      "sha256": "84158cde27bde0cb8a30b302f4d42ba1b464fde7cae8b67ba468c5137e0feaf9",
+      "lines": 280,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/location/syncLocationBatchUseCase.js",
+      "sha256": "625402b436de2edbb56e291c93fc2e38f113a3b4f14afdb6e691c4033db00593",
+      "lines": 97,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/places/placeUseCases.js",
+      "sha256": "eb72bc1bd997fec31c26321d73f9ee72fc34e1a420f8265083b945daca29509d",
+      "lines": 17,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/ports/logger.js",
+      "sha256": "638b579b7544fc3f8667468e4ad80a52cd6759ffbbd829e72f2c5875662de166",
+      "lines": 9,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/ports/mapMatcher.js",
+      "sha256": "05bdbf6ff9eb0f01f8771dd01c9b08f44ee0e9f83841afe6897e7489ba2b5380",
+      "lines": 14,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/ports/metrics.js",
+      "sha256": "b5a2337f26702f9d571f1dbd161a234bf69792cf04e64c1ddb668ca8e67d2632",
+      "lines": 26,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/privacy/locationAccessPolicy.js",
+      "sha256": "dbe76d20a2ac500a80a475e74bc7b875ea9733e149eeb814012a8847156885cc",
+      "lines": 27,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/privacy/privacyUseCases.js",
+      "sha256": "2c435526fd49a2bd3d71cecdd2f95ac4cdab19a26dfdfa5130b7f7b571bbc626",
+      "lines": 52,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/shared/policies.js",
+      "sha256": "da2211ce48fd713cd8fd9ca13b7cac985ed29cd9d3514f3d87a876483d0b3c07",
+      "lines": 14,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/sos/sosAccessPolicy.js",
+      "sha256": "4ab342f28e782e86ef6e81bc0a182104d8f2aa9f13e1e28a4a14115b93878999",
+      "lines": 37,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/sos/sosOutboxDispatcher.js",
+      "sha256": "bc401ef9e091a18da4022a48d77af45182752eb8259bf3087313afb64bc79c7f",
+      "lines": 90,
+      "status": "read-full"
+    },
+    {
+      "path": "src/application/sos/sosUseCases.js",
+      "sha256": "3f84a425bf62b9e5c6abc8c028459c6ab89399a7122f1fdd16be35e3c8bb5c6a",
+      "lines": 254,
+      "status": "read-full"
+    },
+    {
+      "path": "src/bootstrap.js",
+      "sha256": "afb383123fb8f27a85120b13afaf8aa120fdc527b756ed317b6636b0b99e8495",
+      "lines": 92,
+      "status": "read-full"
+    },
+    {
+      "path": "src/config/env.js",
+      "sha256": "7e374465f79fdf06ab23d830f323383dc5d96c50a2818fecab6675b822d07ea9",
+      "lines": 308,
+      "status": "read-full"
+    },
+    {
+      "path": "src/config/swagger.js",
+      "sha256": "f1e115f2fb9b5877007602613c6fcfbeec3f2f6ae97e19ad7bf2f8705ddb7655",
+      "lines": 222,
+      "status": "read-full"
+    },
+    {
+      "path": "src/container.js",
+      "sha256": "4f229f3ca209411f78849a353ff481abc63d3155b100aaa19ab1c6a950410f10",
+      "lines": 181,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/cacheKeys.js",
+      "sha256": "101652a9531924b8196716a4f55300ef47340592edea718d2ee33f6f451e4836",
+      "lines": 44,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/dates.js",
+      "sha256": "4075a4a622441915262c7606bd0f3796e232592efe5f47c7ca210bf2a6a01bd8",
+      "lines": 24,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/errors.js",
+      "sha256": "4bae7aedba2f6b278ac86f8a320679dd3355e697b694dba0b0c0815f1a3638c6",
+      "lines": 36,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/geo.js",
+      "sha256": "b5afd1e8d902dbbceb8605f82206b1a9855411962862482f08e52298bb9e4717",
+      "lines": 35,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/historyPersistence.js",
+      "sha256": "5ef10eef59eb8ba5f9938e1f0edbaf98a21038b2eb2a54f36cfcc27c634ad09e",
+      "lines": 74,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/journey.js",
+      "sha256": "f21b7d289c0c1e7984857d9cae77b7f7475a2434dcef901bca33408dedd2166a",
+      "lines": 307,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/liveTrail.js",
+      "sha256": "c6c8c58dea111cabc8645909f0a4c93851fc54a3b3adf9621a9bc7a5c63a669f",
+      "lines": 91,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/liveTrailMatching.js",
+      "sha256": "77e5d5ed7a6f96350aa06182e6583b86a5a99c1ba17f6ccd18c2b659437a16e0",
+      "lines": 96,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/locationBatch.js",
+      "sha256": "dbecb7fd55530804069b05adeff9903d35b552d4509e0b742cd6df26e3b841a3",
+      "lines": 19,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/locationSharing.js",
+      "sha256": "8b7da900e93a60a1f9f0ba81887aae6cb596ade63876ad9b63d39a2b509c5148",
+      "lines": 36,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/media.js",
+      "sha256": "24dc226e11993a5e3959677585e8d48e3d754fa18c1175332408bd16f97c8616",
+      "lines": 72,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/oauth.js",
+      "sha256": "cad32f5c26fc43f5bc3de73c525aca1b7bf132deff20657c106074adb166e642",
+      "lines": 42,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/refreshTokens.js",
+      "sha256": "eb1b5f038c0e0f0c1af1432e1b9ecb2cc29613b4d624cfcd8218f882f2d89b29",
+      "lines": 28,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/routeGeometry.js",
+      "sha256": "a9335a8ad8dc4e385bb64a09380d8927a1e4726d9f1b76fa631c9ed4c88d5269",
+      "lines": 213,
+      "status": "read-full"
+    },
+    {
+      "path": "src/domain/sos.js",
+      "sha256": "0b6d134ec915d5823bd9f582306d3c3bc60b3d40e822d7ccc590d78607208e83",
+      "lines": 31,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/cache/NoopCacheManager.js",
+      "sha256": "aef4e871528f1fbccdfa63c7c4788e80acf3613dce9caf01d7bc8d9e1a5fa8dd",
+      "lines": 47,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/cache/RedisCacheManager.js",
+      "sha256": "8c844092922e6198f1e95f25871e63e907153f56d5c3711ce15385033c7e8b8f",
+      "lines": 187,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/cache/cacheMetrics.js",
+      "sha256": "1461d863d55ce0af62215f898ed669c3ad6cb394abc8b5e129b6aafc234cf05c",
+      "lines": 44,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/cache/cachedGroupRepository.js",
+      "sha256": "339c2a7373b38cfba6327d1d560c3a01f41fa95da742a768bfddbeeade72e0f6",
+      "lines": 46,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/cache/cachedUserRepository.js",
+      "sha256": "7e5f2cba97baf880af7d91ebcd84001b9a52bad4d929b2046f21c840f024c1fc",
+      "lines": 66,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/connection.js",
+      "sha256": "d5eaddd32daaec8a77b06c10d44b830144957c81fa1d281fdde1b078255d0adf",
+      "lines": 61,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/ChatMessage.js",
+      "sha256": "888600cd45473203c5300fee2d9fd5a5663b4a4a01b1a6ef21c96eac14476a14",
+      "lines": 92,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/Conversation.js",
+      "sha256": "c41e5a491318b4e0ef081c698ebb830f11c88d68a0ffb4107a6d96ae5d895cf4",
+      "lines": 65,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/ConversationMember.js",
+      "sha256": "bb5e08793a2dadabc0f61661cbd789f4f1b7647a155e7a944ff63d0f2060a774",
+      "lines": 38,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/FavoritePlace.js",
+      "sha256": "a0a34601619414185e7a1a115097da4d27254d9dcba05174ec57ecacf8ce2675",
+      "lines": 74,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/Group.js",
+      "sha256": "304f6d19a45fb8c41a9e56e336b6d20a2fd958e640476c8e79dc4add3bcafe52",
+      "lines": 83,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/GroupDigest.js",
+      "sha256": "9c61b7f1dc9153fbe6a9d1677b56f0d332a9ba631a6707499ef37dd8163d7c88",
+      "lines": 73,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/LiveTrail.js",
+      "sha256": "7e0cab111333b063e9edd2caba41dfbe07baa60c6e816369116f69efc8a85e3b",
+      "lines": 93,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/LocationHistory.js",
+      "sha256": "1610c3206ec7c60d6d3b8c6f5462d3df13b18432b8b23acd731a21f36116f055",
+      "lines": 94,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/RefreshSession.js",
+      "sha256": "46fe5307d032b4f74facd77bf8e09ad320d41e73a5a1e6adf3e4d3aac893798b",
+      "lines": 36,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/SosIncident.js",
+      "sha256": "1854ebfc43f2b6509c90e266e2a4d6af692964884e322ecb9a196c120f403984",
+      "lines": 49,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/SosOutbox.js",
+      "sha256": "36dcccf9f78eb6130eec9367d9e045f5a89d9dfb378b5f4f33364bf8bf12ceca",
+      "lines": 26,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/SosResponse.js",
+      "sha256": "96f9363cb861c6ad07272915396530228ce6ff3f8916eb1303198d191f980847",
+      "lines": 15,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/User.js",
+      "sha256": "d9301346e869d58db70295d297907d49d895d0cefe651c5386992835db9a54bf",
+      "lines": 98,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/models/UserSocialAccount.js",
+      "sha256": "d2a3a2ba6be704f7f9940ca1ee460732768aba8998f089e2eef8380415b938c1",
+      "lines": 32,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/mongoMetricsObserver.js",
+      "sha256": "01da8c407722daf2014deaea9ca500ff6560e6aa35c102d72a2e0b26151d506e",
+      "lines": 27,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/mongoRepositoryMetrics.js",
+      "sha256": "9c5afef9578c8b1c944f5d7e571ffb64841531c5ebc9f7d9c91d8f0669baee8e",
+      "lines": 59,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/database/unitOfWork.js",
+      "sha256": "0f0b9a225c081bf68a618ec08af842cff71b4e236ad6568d0f143b74d24d1dbf",
+      "lines": 44,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/matching/FakeMapMatcher.js",
+      "sha256": "ea90c4a9ad2e747c45ced17bf3bba517df7502fd2505142306839aa2db786876",
+      "lines": 44,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/matching/MapboxMapMatcher.js",
+      "sha256": "a569f97056c80ef107dc714ec44f4e0185413251398339f6380e410439603f04",
+      "lines": 73,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/matching/NoopMapMatcher.js",
+      "sha256": "5e98be81146232befd1f9278bdb6a6d5d3af576f79441b70ce26f6e959605968",
+      "lines": 11,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/oauth/googleOAuthProvider.js",
+      "sha256": "fc7429d50b9c8b0b08e0744b0cf99576aa2be48570e3d5c89aafd364cf172b87",
+      "lines": 41,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/oauth/oauthProviderFactory.js",
+      "sha256": "9507d83dd02d12a4df5a2d080a260ecf5fa523834603027e363fb936d08cc48c",
+      "lines": 19,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/observability/logContext.js",
+      "sha256": "5754694788c5225004bb7bc0fb99d78858bb65d9c1261602fd6dfad7c4a70e98",
+      "lines": 10,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/observability/metricsPolicy.js",
+      "sha256": "912ab8226ce11cf73b04b131b552dd4e8344642523e5af9dbfc6fd5512f1e0f8",
+      "lines": 74,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/observability/metricsRegistry.js",
+      "sha256": "c9d02ba3b5fd093b12536f3df067647b011251c13c0d2917a754554614fd4fe9",
+      "lines": 110,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/observability/safeLogger.js",
+      "sha256": "1ed35009a2adb978f8f3de6036339d0a3672e4f69b24d7891202219f626452e2",
+      "lines": 89,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/observability/tracing.js",
+      "sha256": "07658482e02f2083692faa8789db8d204712d84b2a9bb35f779dd75597fc5205",
+      "lines": 80,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/realtime/liveTrailAccessInvalidator.js",
+      "sha256": "9426bac372e5a602c349c189054086bd190af024c8922cb429cb2c54cc7351eb",
+      "lines": 29,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/realtime/socketRealtime.js",
+      "sha256": "7d3f05a8d1bd32add07b9b29e541f8e3adb0e3bfe35c358723cca4c99c177c32",
+      "lines": 85,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/conversationMemberRepository.js",
+      "sha256": "9547a0cddfaa3b84168845a4e791747ed68def9373dc91c5c4eeedde299d82d5",
+      "lines": 66,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/conversationRepository.js",
+      "sha256": "cd04cdbe8099e0af5f4ca878f61dfdced9c77c7959eeb10f5b2adeb64fbcf4cb",
+      "lines": 66,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/digestRepository.js",
+      "sha256": "294e3d26c685de011143e7941a7df08ba8c51dea972107ac13b75bfc9457b00a",
+      "lines": 30,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/groupRepository.js",
+      "sha256": "5ad1fdb954a18d487a740b1ca7adeba8797813cc78eec9bf5d9393806749c99e",
+      "lines": 95,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/liveTrailRepository.js",
+      "sha256": "70313a9014273255ff8d8ee278498c51384a62ab8f556124109e6ff0975528ca",
+      "lines": 167,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/locationHistoryRepository.js",
+      "sha256": "a452ce89e2104667cb4b377c445d5716792bc1676ee5a203676b00a28623dc5b",
+      "lines": 112,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/messageRepository.js",
+      "sha256": "2c547c185e89f57d5a539936748cbfffe6d68d23d10cb7c45cd7313754fc16cf",
+      "lines": 56,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/placeRepository.js",
+      "sha256": "19daf7afd0a220e290d4d35fc361e8a2f149dfd3857da98cfd6c43d47235f710",
+      "lines": 20,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/refreshSessionRepository.js",
+      "sha256": "35497c8880310d2f6a2d8c2a8b6733e53e5dbe08749942e662350ee33cf4a12b",
+      "lines": 79,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/sosOutboxRepository.js",
+      "sha256": "06d83a5b6cb086ca248af83037d17021a1a808746d441ed9a12e056142e5d7a7",
+      "lines": 76,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/sosRepository.js",
+      "sha256": "44fd36ac812b266c6779746459d4324598141d172c2134aa8fe4417d6a1723ed",
+      "lines": 131,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/userRepository.js",
+      "sha256": "4ec14b2df90611e80f9b9954306afbce44d8e8e207c58f58ca2f7328ff26c594",
+      "lines": 81,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/repositories/userSocialAccountRepository.js",
+      "sha256": "39e6b5511b6fb71bc7de1d7485eaf65332e8437409681676bed2cfe5940ba103",
+      "lines": 11,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/security/passwordHasher.js",
+      "sha256": "08b95b545e4ebf655c97cd5647598c8ce8fac40f27c0b91e9f8df85155722bb8",
+      "lines": 12,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/security/sosSocketLimiter.js",
+      "sha256": "cfebbb5fa1e6fe18118e09536e020ba8cb0ef9e9aaf9770564c40b5ee861a62a",
+      "lines": 26,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/security/tokenService.js",
+      "sha256": "a3910f07c2ae8a625ba294da68fb47b1cc4cddae6aa872a91d712a3e34794cba",
+      "lines": 52,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/storage/CloudflareR2StorageService.js",
+      "sha256": "98b4139754cb174f085b4c99eedbaec8a8a1124103b16cc8e663881894346322",
+      "lines": 19,
+      "status": "read-full"
+    },
+    {
+      "path": "src/infrastructure/storage/s3Storage.js",
+      "sha256": "673fe436f725cf34f20881ee22c506d3fbb47ed0dbdc59aefb00c5d5d91b4b6c",
+      "lines": 61,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/auth.schemas.js",
+      "sha256": "99f34bacae0d2ff00e419ad5eba5bbde01e4776509564da377ebf1bf653c82df",
+      "lines": 46,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/chat.schemas.js",
+      "sha256": "0236a1d3f88dc8c1c42ced7d3298de9a16095b8ab59bb0baec2c02777b382577",
+      "lines": 106,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/common.js",
+      "sha256": "54f1d03d184728cc79171cbb3d2c1889eb2184134b927412e31be758a32bca99",
+      "lines": 22,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/group.schemas.js",
+      "sha256": "6ebca9f2665f49dbaa0583887145f89aa3b6b57d55c883db9313175d02484ab3",
+      "lines": 42,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/history.schemas.js",
+      "sha256": "43f9bb709729c4c67257bb3b303df4ed6d2bf1521c48b885faf04688da8dc3f0",
+      "lines": 61,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/liveTrail.schemas.js",
+      "sha256": "a0cd513078c1402ca44a50e35c50ea6ffa7978aadff2a19fc7029d84ced92ddd",
+      "lines": 8,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/location.schemas.js",
+      "sha256": "19391ef66f810c016cb934cfcbfe9b3e16ffae0150205e8de9cde1e15ab5b425",
+      "lines": 33,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/locationBatch.schemas.js",
+      "sha256": "e57ec85cf7363991963659ee6926b8a124ef1f92aad109a1d14dde793987e037",
+      "lines": 60,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/privacy.schemas.js",
+      "sha256": "b586d187a2414901997d4626d1818525ec1e30829aa287d0caf414f6c1cfd353",
+      "lines": 18,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/dto/sos.schemas.js",
+      "sha256": "9dced3466b34c6fa4847955e02746432eff92c2b230240473e293007df8343a1",
+      "lines": 26,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/app.js",
+      "sha256": "f700aedc41a7a27b584f58a572e8fe8bd232519282394d9c3eb025b8ecc474ab",
+      "lines": 96,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/controllers/authController.js",
+      "sha256": "7e5d71a827791efc8bcfd8429bc7e8b0436f1a255fed7e26f39c7e4fa9e5bae9",
+      "lines": 56,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/controllers/chatController.js",
+      "sha256": "ec3da2ae18a68dfe9af1a15ba7e80bd740795cc6594f3baa12629e5aeb30b908",
+      "lines": 79,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/controllers/groupController.js",
+      "sha256": "7b8bd50f9adea2b972dc9c3550b63e82c552f7e07ad0c98e84ed7164029761d9",
+      "lines": 92,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/controllers/historyController.js",
+      "sha256": "f22d2d675eae9e27ae5203689343bc2b123b7b22ca6ff26ccf8041471b79c5b0",
+      "lines": 43,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/controllers/locationController.js",
+      "sha256": "aedbd62a223acbd17d6d3f4391e61f227803e6717de164fcc3bca8b012ad644f",
+      "lines": 18,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/controllers/privacyController.js",
+      "sha256": "216df6c9cdf08304c5c0cb958c97b0be45eab0d395de9cda45fad0a141786418",
+      "lines": 17,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/controllers/sosController.js",
+      "sha256": "48e315b616fd41f0fc2cb1a5423d96726806d4191266d6892dcb885d34a0160b",
+      "lines": 28,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/middleware/asyncHandler.js",
+      "sha256": "2f150a168c12c57f6b60d988aa149bff31436165ab2f5ce03d78337ee102af39",
+      "lines": 4,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/middleware/authenticate.js",
+      "sha256": "7efe0ea3fcbaeb6fe05ebca1cbb6473a529159f88df4e69ecfc0de3e17bbc8a4",
+      "lines": 20,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/middleware/errorHandler.js",
+      "sha256": "8a7b252583b30c77024a5b18bcbcf209897f9e0b0e01be9a48b2029fe3ded3b8",
+      "lines": 39,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/middleware/metrics.js",
+      "sha256": "827f247a7e9b6fa05bc13a25f9e5dee57fcfb509866639ba8a9850ca36ab7593",
+      "lines": 69,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/middleware/rateLimiter.js",
+      "sha256": "0018b45b892713c441b2f62c728304d8b1f2763d5a135183336332037d2bbaa4",
+      "lines": 74,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/middleware/requestContext.js",
+      "sha256": "9fa68a2323ccd55fceb4af1429ced58a36b3a2f7768e16726c5afc58d3fc6e53",
+      "lines": 42,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/middleware/validate.js",
+      "sha256": "28c98286f09779094bb556095747e3a698934aeff41ebbb35a5e92c4cafab5fa",
+      "lines": 26,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/authRoutes.js",
+      "sha256": "386a31ac97e5f2f9a6eef49a928c00e8f7a851bc2966111a2cb3afe7af41d5cb",
+      "lines": 193,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/chatRoutes.js",
+      "sha256": "0a3bd24fad4fa870da0377081c69cc88be3b7211baf641906af7add043de7832",
+      "lines": 301,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/groupRoutes.js",
+      "sha256": "ce9d1f2a1a712cb3814b3f8b2358846f817ee3a5dcb74adcbb9e9559e08f6264",
+      "lines": 227,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/historyRoutes.js",
+      "sha256": "654ba1a57a5027cba75e53fe00f278da230bb29cd515e0b5f3302d52e924bd58",
+      "lines": 94,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/locationRoutes.js",
+      "sha256": "6cde38f813bce0261c8f08b6ef6c37fdb8a1b30b9230eb529af720cf882510f3",
+      "lines": 50,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/privacyRoutes.js",
+      "sha256": "4f35ce4fa8c4156601e9e254cda64c883293e1631c6ea6fbe2190ac55d1000f1",
+      "lines": 48,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/sosRoutes.js",
+      "sha256": "5563f6173a9c68771581ad9d60a5a54f62e1729ad961032a5012c293cc2781af",
+      "lines": 126,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/http/routes/systemRoutes.js",
+      "sha256": "152fa5165920c3bfa6e7056e806beafa5c07e395f873f4d672e1aaba0c34ab12",
+      "lines": 51,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/jobs/digestScheduler.js",
+      "sha256": "ffe883cac843867e3bbd889e547b1a63a4462270f7920f542c3add1a9756761a",
+      "lines": 12,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/jobs/sosOutboxScheduler.js",
+      "sha256": "daae2546e4338f14c8954b48560712149030f8b37cf9f64efd078dd38b1275a4",
+      "lines": 41,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/socket/gateways/chatGateway.js",
+      "sha256": "a21c59a714cb0b142c8a29136f010c20d6dd6b913d9dc6dc9bf6437003b4fe7d",
+      "lines": 87,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/socket/gateways/liveTrailGateway.js",
+      "sha256": "c10b02647d5df180153ddb3eadb39190ebf96547952a2aad3c48806eaf1e0438",
+      "lines": 145,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/socket/gateways/locationGateway.js",
+      "sha256": "32f9a72413505011b3aa00b8971d0e39c97c6a92e020705822dbb300cada18ef",
+      "lines": 53,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/socket/socketEventDocs.js",
+      "sha256": "b4ad6ee733923d3734e337d5eb66a6a4a6d372276eebc311dba5b49dc6ce4954",
+      "lines": 66,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/socket/socketMetrics.js",
+      "sha256": "612e986a1b48391adff2deea3624b86700ce20ff159c468dd4847f7a97ccc199",
+      "lines": 29,
+      "status": "read-full"
+    },
+    {
+      "path": "src/presentation/socket/socketServer.js",
+      "sha256": "9a2de062bbc508f50079defd0cf4bf2b346297a9ae30f90c11d9f08277ad4808",
+      "lines": 82,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/api.test.js",
+      "sha256": "0593b5c90481b17f1cf1c0e4f3a870607b5bf7e045da735f63bd4da53ecfc256",
+      "lines": 224,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/chat.test.js",
+      "sha256": "ea3b2673aec03febf7b07a9b60310d04ed4c3ac87ec47de1f547b43fd2706420",
+      "lines": 372,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/circleExitPrivacy.test.js",
+      "sha256": "6b82db5437f0a468e90635a5347e67b0f617011c5a59249378a36b7c0c5a4deb",
+      "lines": 127,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/groupChatLifecycle.test.js",
+      "sha256": "b7db96e8b33a22d5160d0b4fc812a5d4bcb953d06cc09c86a3f32ac1dc915c60",
+      "lines": 261,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/helpers/testServer.js",
+      "sha256": "1c4cce0424e66951ef5a8ec491d778596b15250ce2c686a6d5fe59527284f08c",
+      "lines": 154,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/historyPersistence.test.js",
+      "sha256": "8fb7f63b0b0ea67082df20df206a13a00dc87f558ee9daf494f4d5d2c5d192e4",
+      "lines": 79,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/httpRequestContext.test.js",
+      "sha256": "084fc1d34302c768225b12a517383c98aa5de2269bf489ec86a04b828de36bc3",
+      "lines": 61,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/journeyEnrichment.test.js",
+      "sha256": "e3b5391b006c93e8f6dab2b478b5e1eec7f05bfdebc8803060564f14927e8cb6",
+      "lines": 335,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/liveTrailDeltaPublisher.test.js",
+      "sha256": "5c2c222929ec33339243862f9bb0b8b5da1c507c1822839e96126e1d0346f1ca",
+      "lines": 99,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/liveTrailMatching.test.js",
+      "sha256": "37f5bcefa2743ef4210c6d9a487b920d621e0bdb033f9a684ff6c9bddf311e32",
+      "lines": 247,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/liveTrailMatchingIntegration.test.js",
+      "sha256": "8b6f69647c008a67201e9e87406d257b2342b7eaeeb19b409c650c1588feed7d",
+      "lines": 118,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/liveTrailProjection.test.js",
+      "sha256": "48ec4d7eecbcd88d225acc7a4bd699d647811dc6388932c496117e0032c287ad",
+      "lines": 232,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/liveTrailRead.test.js",
+      "sha256": "ed0c14cc4414ea2bb52b76a7ba67b920ef0168f26c6036076814ff941a3644e3",
+      "lines": 197,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/liveTrailSocket.test.js",
+      "sha256": "f16fd04d8fa56078337127de1e1d0f455f8c36113777766ad2bf074eff779816",
+      "lines": 189,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/locationBatch.test.js",
+      "sha256": "3c1e515d8fab766e9d0d37eb8f5b14ed148d7d1fa486e04211ea2db247013527",
+      "lines": 225,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/locationDensePersistence.test.js",
+      "sha256": "8c14fbac059649316c6590b2ee2bf484d59f8a4aef801f47aaa7b16f508f96ee",
+      "lines": 155,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/locationHistoryRange.test.js",
+      "sha256": "64fca658a1b44cc068883da59c835ee8606cc80f253e0253481d272ed70d0c2e",
+      "lines": 119,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/locationMetrics.test.js",
+      "sha256": "571d49d9d4fb504c693a2709f3ef36e89c71493639070b21b7ed8d2124f6c790",
+      "lines": 62,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/locationRecordedAt.test.js",
+      "sha256": "27775259b56381c6916079d16db0127bec7dada6d0aaa7e25da456ea02aeab05",
+      "lines": 141,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/locationSharing.test.js",
+      "sha256": "a3809bfb10363876a44be64f473b3fd7798d1955607a45fc02994c117f4c5878",
+      "lines": 41,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/locationSharingPrivacy.test.js",
+      "sha256": "f94cd1a65274e9371c79d6ca333a7c0b6bfdfe24ad6302943645c8c336b30544",
+      "lines": 144,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/logPrivacyHotfix.test.js",
+      "sha256": "516adee0bbab0ef02b71d59934afb52cc6b171ab603b2bf8fd7b2fede0aa84a2",
+      "lines": 46,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/mapboxMapMatcher.test.js",
+      "sha256": "ca44ac81197b5b8c10e5261acdd372ab872dee371d943b6faca03338ddcc31d4",
+      "lines": 72,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/metricsFoundation.test.js",
+      "sha256": "3f1827f1f2c030e8dd3f8ab2da16a0d323b88ee5b447aed6ed456c80d545c966",
+      "lines": 67,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/metricsHttp.test.js",
+      "sha256": "8c6448be67b4296db8dc307d81d496cd07063923b1b43c8de9199adec1ff7603",
+      "lines": 93,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/mongoMetrics.test.js",
+      "sha256": "5836948be55cc591211b9410225871aab469a320b70ee9a2e623c83d1032a6b1",
+      "lines": 81,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/monitoringDashboards.test.js",
+      "sha256": "7d74cd6d37f7e24286fa08b6ec553d8de05673aeca3f4a098b83d88032f520bf",
+      "lines": 39,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/observabilityWorkflows.test.js",
+      "sha256": "271e33bab68b13901a558cbd341bacabe8f0f9ef78e49d5788b35abdd1ce3e11",
+      "lines": 127,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/redisMetrics.test.js",
+      "sha256": "1b69e6436771b3afcbff1ccfea22fb97c5c816b5af2d5bedb3e4e773e6b94069",
+      "lines": 111,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/refreshTokenRotation.test.js",
+      "sha256": "c5c831b462d9e1f968883cf1bb920870f3d86600dcaba96ffb181a8bf2935ff8",
+      "lines": 200,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/routeGeometry.test.js",
+      "sha256": "be2764fdb84ded33e96244fa802a61cb361463a4b24f24b984ca2bb3a4041d4c",
+      "lines": 129,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/safeLogger.test.js",
+      "sha256": "5875c18c02977785aafa15136cee9b0424a1342e7c325b52bbea7cd1413229c0",
+      "lines": 96,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/socialLoginUseCase.test.js",
+      "sha256": "9641a754fa73c2e2bf319bb60fcb5f28af61e397ca31260383690133577c0357",
+      "lines": 201,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/socketLogContext.test.js",
+      "sha256": "128e987622f05db945196c393d890851e6dfcf9a35ff33ebee608f59e22db8cd",
+      "lines": 78,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/socketMetrics.test.js",
+      "sha256": "94ad0db0e5721fc4ef75b3408e9800be5dd7da3f3f3444f6b350c01cad14ada5",
+      "lines": 42,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosAssistanceUseCase.test.js",
+      "sha256": "71bac5daf412a6ca35aa4e75ca79327b6a6c351ed709f07b448370a178730551",
+      "lines": 224,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosChatOutbox.test.js",
+      "sha256": "1192e0293655d36ca732f37ad7fec56d65d9dce95acb70e87ec21e04035ecf60",
+      "lines": 164,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosCreateUseCase.test.js",
+      "sha256": "1fc359001b053ecc4b9e5ae85d4f04c2a2cb561c975ae362a0e71f9222dc8587",
+      "lines": 202,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosDispatcher.test.js",
+      "sha256": "3f6bd52364da2fd57aeb108b956a4954220f22d66852166b2500883aacf11868",
+      "lines": 100,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosHttp.test.js",
+      "sha256": "ccf46d4b90d2d518eb71c4f066f37df248c56c85caa725610eeff5f32d184e99",
+      "lines": 99,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosList.test.js",
+      "sha256": "44c72024833002480af68de2e127b793ddbe083f21ecaa35e52fa22360cbd547",
+      "lines": 91,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosPersistence.test.js",
+      "sha256": "e75aa46c90a4dd253af66c82da9a1cdd7fef35c5889cb3cfc7fd749487216b85",
+      "lines": 152,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosScheduler.test.js",
+      "sha256": "8e12cc17146e1da825b1f94e2943a2df0a3d1c2a46a4195a9bd77e4de6fe1337",
+      "lines": 99,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/sosSocket.test.js",
+      "sha256": "ec3305d01c642c569656e8a1ceaf7074932b9ff39419be697f6af3116f1b5851",
+      "lines": 80,
+      "status": "read-full"
+    },
+    {
+      "path": "tests/upload.test.js",
+      "sha256": "5ffc6b2cc3a0e15de876e387d047cef62ff33d0c481cbbddccdec2357ff499cf",
+      "lines": 349,
+      "status": "read-full"
+    }
+  ]
+}
