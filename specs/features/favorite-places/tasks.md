@@ -33,6 +33,6 @@ Dependencies: T001/T002 → T003 → T004 → T005 → T006; one agent runs sequ
 - [x] T008 [US3] Add durable context epochs/projection models and atomic repository methods in src/infrastructure/database and repositories (B-AC2/B-AC3).
 - [x] T009 [US3] Add context-validated projection/snapshot use cases, container wiring and isolated realtime hook in src/application/places/placePresenceUseCases.js, src/application/location/locationUseCases.js, src/container.js (B-AC2/B-AC3).
 - [x] T010 [US3] Add bounded authorized snapshot DTO/controller/route/OpenAPI and tests/placePresence.test.js covering transitions, privacy/restart/invalidation/races (B-AC1..B-AC4).
-- [ ] T011 Synchronize api-docs/PLACES_API_DOC.md, Study/PLACE_PURPOSES.md and owner spec/contracts/model/verification/progress; regress, converge and deliver separate verified commit/push (B-AC4).
+- [x] T011 Synchronize api-docs/PLACES_API_DOC.md, Study/PLACE_PURPOSES.md and owner spec/contracts/model/verification/progress; regress, converge and deliver separate verified commit/push (B-AC4).
 
 Dependencies: T007/T008 → T009 → T010 → T011. Mobile/personal GPS services and weather remain outside this backend function.

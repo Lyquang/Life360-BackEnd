@@ -1,6 +1,6 @@
 # Progress — routing
 
-Stage: **PLANNING** (queued after saved-place management) | Updated: **2026-11-13**.
+Stage: **CLARIFYING** (provider/entitlement only; requirements already accepted) | Updated: **2026-11-13**.
 Owner: [spec](spec.md) · [draft plan](plan.md) · [draft tasks](tasks.md).
 
 ## Requirements confirmation
@@ -49,3 +49,13 @@ after saved-place function. Detailed plan/research, tasks/analysis and actual
 provider feasibility still required before dependent code; no paid billing or
 Mobile/deployment authorization inferred. Prior Pending requirements notes are
 historical, not an outstanding approval question.
+
+
+## Current provider gate
+
+Backend places/presence have been delivered. Before routing-dependent code, resolve
+Q-MOB-27 (trial account/provider information; no credential requested) and verify
+navigation/MapKit display/retention entitlement and actual mode/traffic contract.
+See research.md for current TomTom/VietMap evidence and unresolved documentation
+conflicts. No provider chosen, no billing/accounts/API calls performed. Original
+requirements/start authorization remain valid; do not ask to approve them again.

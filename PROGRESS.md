@@ -454,3 +454,10 @@ M3-0 verification: 180/180 tests pass (49 suites), including two new privacy reg
 - Verification: focused management/presence 27/27 PASS (3 suites); full regression 304/304 PASS (63 suites); lint and 16 individual JS syntax checks PASS. Includes real replica-set/HTTP context invalidation, cross-Circle isolation, concurrent projection order, restart-style factory re-instantiation and real wired GPS failure isolation. No JS edits after successful full run, including interruption/resume.
 - API/Study/contracts/models/spec/tasks synchronized; source graph remains stale and untouched, context skeleton refreshed. No Mobile UI/device/build, production DB/index rollout, personal GPS channel, provider calls/billing or deployment claim. Active backend revision B converged with no outstanding code gap; T011 awaiting commit/push at this entry.
 - Public provider research recorded in routing/research.md and context-alerts/research.md. User explicitly deferred weather until a suitable Vietnam 30-minute source is verified (Q-MOB-26); hourly substitution not allowed. Routing provider/account/entitlement remains unresolved; Q-MOB-27 awaits answer, no secret requested or default provider invented.
+
+
+### Backend place functions pushed, delivery closed (2026-11-13)
+
+- Saved-place management/labels: 3adfee8; shared-GPS presence snapshot: dcf0637. Both feature commits pushed sequentially to origin/feat/circle-place-purposes after their appropriate tests/docs. T001..T011 complete; backend revisions A/B only, not Mobile/device/production or all mobility scope.
+- Final backend evidence remains 304/304 tests PASS across63 suites, focused27/27, lint/16 individual JS syntax checks, local doc references and diff checks. Documentation-only delivery bookkeeping after the code push does not alter runtime behavior. No deployment/main merge, paid account or provider call.
+- Remaining user input: routing trial/provider Q-MOB-27 and associated entitlement. Weather explicitly deferred by user until a suitable Vietnam30-minute source is verified. Preserve current requirements; do not replace with hourly forecasts or silently change the base map.

@@ -61,7 +61,7 @@ phù hợp và các chi tiết kỹ thuật còn cần research/thiết kế.
 Stage/approval của các extension nằm ở
 [routing progress](features/routing/progress.md),
 [alerts progress](features/context-alerts/progress.md) và
-[places progress](features/favorite-places/progress.md). User sau đó đã xác nhận hiện thực/commit/push tuần tự; saved-place function đã push, backend GPS presence đã verify và đang bàn giao riêng; routing chờ provider, weather tạm hoãn theo quyết định user;
+[places progress](features/favorite-places/progress.md). User sau đó đã xác nhận hiện thực/commit/push tuần tự; saved-place function đã push, backend GPS presence cũng đã commit/push riêng; routing chờ provider, weather tạm hoãn theo quyết định user;
 search/history giữ trạng thái triển khai theo hồ sơ, chưa kiểm chứng Mobile lại.
 
 ## Tài liệu hệ thống dùng chung

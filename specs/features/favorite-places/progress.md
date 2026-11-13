@@ -1,9 +1,8 @@
 # Progress — favorite-places
 
-Stage: **CONVERGING** (backend revision B delivery) | Updated: **2026-11-13**.
+Stage: **COMPLETED** (backend revisions A/B only) | Updated: **2026-11-13**.
 Saved-place CRUD + personal labels (revision A) committed/pushed as 3adfee8.
-Active function: backend GPS place-presence snapshot (revision B), verified and
-awaiting its separate commit/push. Mobile integration/device QA remain pending.
+Backend GPS place-presence snapshot (revision B) verified, committed and pushed as dcf0637. Mobile integration/device QA remain pending.
 
 ## Requirements and authorization
 
@@ -44,4 +43,12 @@ Revision B: backend auto-presence plan/tasks prepared under existing implementat
 Revision B T007..T010 completed. Focused management/presence 27/27 PASS, full
 regression 304/304 PASS across63 suites; lint and 16 individual JS syntax checks
 PASS. API/Study/contracts/model synchronized, active-slice convergence no remaining
-code gap. T011 awaits Git delivery. No new JS edits after the successful run.
+code gap. T011 delivered in pushed commit dcf0637. No new JS edits after the successful run.
+
+
+## Delivery completed
+
+- Revision A: `3adfee8`, saved-place CRUD/personal labels, pushed before B implementation.
+- Revision B: `dcf0637`, durable shared-GPS presence/snapshot, pushed after 304/304 full-suite PASS.
+- Branch: `feat/circle-place-purposes`, origin tracking; no main merge or deployment.
+- T001..T011 complete. Mobile/device/production roadmap and routing/weather are not completed by these backend deliveries. No extra code tasks found by active-slice convergence; historical future proposals are not silently approved.

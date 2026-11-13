@@ -60,4 +60,4 @@ context instead of profile/member caches; TTL only cleans storage.
 
 Convergence review of backend revisions A/B finds no remaining active code gap.
 Mobile/production roadmap entries are explicitly deferred; the full app/mobility
-project is not declared converged. T011 delivery closes after commit/push succeeds.
+project is not declared converged. T011 delivered successfully: feature commit dcf0637 pushed to origin/feat/circle-place-purposes after verification. Saved-place function was delivered earlier in 3adfee8.
