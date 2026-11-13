@@ -108,10 +108,67 @@ membership làm bằng chứng ghi. Label riêng được giữ khi rời để 
 nhưng mọi read/write bị từ chối trong thời gian không còn membership. Xóa place
 thì label tham chiếu bị xóa hẳn. Không dùng label cache để suy quyền hiện tại.
 
-## Giới hạn đợt này
+## Giới hạn revision A và phần mở rộng bên dưới
 
-Chưa có auto-presence/geofence, radius, dwell engine, background GPS consent mới,
+Revision A ban đầu chỉ quản lý places/labels; snapshot auto-presence của revision B
+được mô tả bên dưới. Vẫn chưa có radius-setting API, background GPS consent mới,
 arrival/departure notifications hoặc Mobile UI nối API này. Không suy “đang ở Nhà”
 từ việc một user có shortcut home. Pause location hiện có không được thay đổi ở
 đợt này. Không lưu POI provider data mới; user nhập pin/tọa độ theo quyền ứng dụng.
 Device/production/index rollout QA vẫn tách khỏi kiểm thử backend cục bộ.
+
+## Chức năng 2 — snapshot nơi đang ở từ GPS (backend implemented)
+
+`GET /api/v1/groups/:groupId/place-presence?limit=20&cursor=<lastUserId>`.
+Bearer auth, caller phải đang thuộc Circle. limit integer1..100, default20;
+cursor Mongo ObjectId, member IDs sort tăng. Đây là live pagination, không phải
+snapshot token cố định; refresh từ đầu khi membership thay đổi.
+
+```json
+{
+  "success": true,
+  "count": 1,
+  "data": [{
+    "userId": "333333333333333333333333",
+    "status": "at_place",
+    "place": {"id":"222222222222222222222222","name":"Văn phòng A","label":"work","customLabel":null},
+    "sourceFixAt": "2026-11-13T02:00:00.000Z",
+    "expiresAt": "2026-11-13T02:05:00.000Z"
+  }],
+  "pagination": {"hasMore":false,"nextCursor":null}
+}
+```
+
+Nếu không xác định được, row chỉ còn userId, `status:"unknown"`, `place:null`,
+`sourceFixAt:null`, `expiresAt:null`. Không lấy saved shortcut để tự đổi unknown
+thành “Ở Nhà”, không biến ngoài vùng thành “Đi chơi”. Không trả raw GPS, toàn bộ
+nhãn riêng của thành viên hoặc lý do riêng tư để đoán người đó đã pause.
+
+Điều kiện backend hiện tại: original recordedAt đủ mới, accuracy<=50m, fixes liên
+tục không gián đoạn quá90s, ở trong bán kính100m khoảng120s. Có hysteresis ra vùng
+150m; uncertainty radius được tính, overlap không rõ → unknown. Đây là policy
+thử nghiệm, không cam kết GPS chính xác100m. Không có radius-setting API đợt này.
+
+Mobile vẫn gửi `update_location` như cũ; để trở thành bằng chứng presence, **cần
+recordedAt gốc và accuracy**. Thiếu thông tin/recordedAt fallback/batch offline
+không tạo xác nhận live mới. Projection chạy sau xử lý GPS bình thường khi point
+được persist; không có socket event presence mới hoặc ack riêng. `location_update`
+không chứng minh projection đã commit. Đề xuất UI poll snapshot mỗi20–30s khi xem
+Circle, xử lý offline/loading và unknown; vòng poll/device/battery cần mobile QA.
+
+Presence hết hiệu lực sau5 phút không có evidence mới; read luôn kiểm tra lại
+privacy/membership/label/place, không chờ TTL dọn dữ liệu. Pause Circle ẩn label
+ngay khi snapshot revalidate; resume cần evidence mới. Join/leave bất kỳ thành viên
+đổi membership epoch của Circle nên các label cũ trong Circle tạm unknown cho tới
+khi có dwell mới. Sửa place, gán lại/xóa label hoặc xóa place cũng làm context cũ
+không hợp lệ. Một HTTP response đã gửi hợp lệ không thể bị server thu hồi; client
+phải bỏ cache khi nhận membership/privacy update và khi expiresAt đã qua.
+
+403 khi caller mất membership,404 khi group không tồn tại lúc bắt đầu,400 khi
+query sai,401 khi chưa auth. Nếu member rời trong lúc phân trang, page có thể ít
+rows hơn limit; tiếp tục theo nextCursor hoặc refresh. Self-only GPS trong lúc
+pause không được dùng cho endpoint Circle này; backend chưa thêm kênh personal
+GPS/consent mới. No device/production rollout claim; đây là client integration
+contract cho backend đã kiểm chứng.
+
+Pause Circle ẩn vị trí/nhãn hiện tại; không tự xóa các địa điểm chung đã lưu trong Circle. Những địa điểm đó vẫn theo quyền membership của API quản lý places.

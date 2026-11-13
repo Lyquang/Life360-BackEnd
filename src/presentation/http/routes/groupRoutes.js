@@ -13,6 +13,7 @@ const {
   updatePlaceBody,
   deletePlaceQuery,
   setPlaceLabelBody,
+  placePresenceQuery,
 } = require('../../dto/group.schemas');
 
 function createGroupRoutes({ controller, authenticate }) {
@@ -225,6 +226,56 @@ function createGroupRoutes({ controller, authenticate }) {
    */
   router.post('/:groupId/places', validate({ params: groupIdParams, body: addPlaceBody }), controller.addPlace);
   router.get('/:groupId/places', validate({ params: groupIdParams }), controller.listPlaces);
+
+  /**
+   * @swagger
+   * /api/v1/groups/{groupId}/place-presence:
+   *   get:
+   *     summary: Current saved-place labels from reliable shared GPS (never raw GPS)
+   *     tags: [Places]
+   *     security: [{ bearerAuth: [] }]
+   *     parameters:
+   *       - $ref: '#/components/parameters/GroupId'
+   *       - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+   *       - { in: query, name: cursor, schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' } }
+   *     responses:
+   *       200:
+   *         description: Paginated members; unknown has null place/times, at_place is revalidated against current context
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success: { type: boolean }
+   *                 count: { type: integer }
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       userId: { type: string }
+   *                       status: { type: string, enum: [unknown, at_place] }
+   *                       place:
+   *                         type: object
+   *                         nullable: true
+   *                         properties:
+   *                           id: { type: string }
+   *                           name: { type: string }
+   *                           label: { type: string, enum: [home, work, leisure, custom] }
+   *                           customLabel: { type: string, nullable: true }
+   *                       sourceFixAt: { type: string, format: date-time, nullable: true }
+   *                       expiresAt: { type: string, format: date-time, nullable: true }
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     hasMore: { type: boolean }
+   *                     nextCursor: { type: string, nullable: true }
+   *       400: { $ref: '#/components/responses/ValidationError' }
+   *       401: { description: Authentication required }
+   *       403: { description: Current Circle membership required }
+   *       404: { description: Circle not found }
+   */
+  router.get('/:groupId/place-presence', validate({ params: groupIdParams, query: placePresenceQuery }), controller.placePresence);
 
   /**
    * @swagger

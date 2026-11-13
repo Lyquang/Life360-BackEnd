@@ -29,3 +29,21 @@ Group.placeGuardVersion is a hidden optional Number incremented on new place/lab
 mutations inside a real transaction. Group removal/membership writes conflict on
 the same Group document. Not a client revision, membership cache or distributed GPS
 lock. Layer wiring uses existing placeRepo/unitOfWork, no new container dependency.
+
+
+## PlacePresence — placepresences (revision B)
+
+Unique `(groupId,userId)` current projection, not a visit history. Required
+sourceFixAt/expiresAt, privacyVersion/membershipVersion; privacyUpdatedAt nullable;
+placeId/placeRevision/labelId/labelUpdatedAt/candidateSince nullable; confirmed false
+default; timestamps. No raw coordinates. TTL on expiresAt with expireAfterSeconds0
+cleans storage; authorization/freshness always checked on read, without relying on
+TTL timing. History/notification retention rules are separate.
+
+Hidden User.placePrivacyVersion increments atomically with every locationSharing
+update; Group.placeMembershipVersion and placeMembershipUpdatedAt increment/set
+on join/remove. Legacy missing versions normalize to0. Group.placeGuardVersion
+writes no longer change Group.updatedAt; it remains a hidden transaction guard.
+MemberPlaceLabel adds `(userId,groupId)` index for finding projection groups.
+Snapshot binds current label identity/place ID/revision/timestamps to projection;
+state resets on epoch changes and ignores old/equal source timestamps.

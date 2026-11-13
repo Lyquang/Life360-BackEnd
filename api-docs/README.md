@@ -9,7 +9,7 @@ mới hoặc chứng minh API đã được deploy. Nếu các nguồn khác nha
 
 | Nhu cầu | Hướng dẫn |
 |---|---|
-| Quản lý địa điểm Circle và nhãn Nhà/Công ty cá nhân | [Saved places](PLACES_API_DOC.md) |
+| Địa điểm Circle, nhãn cá nhân và snapshot nơi đang ở | [Saved places](PLACES_API_DOC.md) |
 | Toàn chuỗi Location | [Mobile location index](MOBILE_LOCATION_INTEGRATION_INDEX.md) |
 | Gửi GPS realtime và batch offline | [Location update](LOCATION_UPDATE_API_DOC.md) |
 | History/journey/geometry | [Journey routes](JOURNEY_ROUTE_API_DOC.md) |

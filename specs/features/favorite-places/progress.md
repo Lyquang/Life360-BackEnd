@@ -1,8 +1,9 @@
 # Progress — favorite-places
 
-Stage: **CONVERGING** | Updated: **2026-11-13**.
-Active function: backend saved-place CRUD + personal labels, plan revision A.
-GPS auto-presence and Mobile integration remain following functions, not completed.
+Stage: **CONVERGING** (backend revision B delivery) | Updated: **2026-11-13**.
+Saved-place CRUD + personal labels (revision A) committed/pushed as 3adfee8.
+Active function: backend GPS place-presence snapshot (revision B), verified and
+awaiting its separate commit/push. Mobile integration/device QA remain pending.
 
 ## Requirements and authorization
 
@@ -16,7 +17,7 @@ T001..T005 implemented/verified. Final full suite 289/289 PASS (61 suites), focu
 12/12 PASS, lint and individual changed-JS syntax checks PASS. No provider/device/
 production verification. [Verification](verification.md),
 [API handoff](../../../api-docs/PLACES_API_DOC.md),
-[Study](../../../Study/PLACE_PURPOSES.md). T006 delivery awaiting commit/push.
+[Study](../../../Study/PLACE_PURPOSES.md). T006 delivered in pushed commit 3adfee8.
 Source graph is stale after runtime changes; skeleton refreshed, Graphify untouched.
 
 ## Explicit authorization update — 2026-11-13
@@ -35,3 +36,12 @@ Implementation baseline (recorded after explicit user authorization):
 - plan.md: `6667a948e295cf919b72ec2cc4882271bc73305b712e6a48156ea0a38865834b`
 - tasks.md: `2affb18aba11ef127a60a5f10cac6ec96ba17792c23807d2a405e9570fec0328`
 
+
+Saved-place function converged within active revision A; no unbuilt current-slice code requirements. Commit 3adfee8 pushed successfully to origin/feat/circle-place-purposes. T006 complete. Future GPS/native roadmap is still open; this is not convergence of the whole mobility project.
+
+Revision B: backend auto-presence plan/tasks prepared under existing implementation authorization. Read-only analysis covers B-AC1→T007/T010, B-AC2→T008/T009/T010, B-AC3→T008/T009/T010, B-AC4→T010/T011. No current-slice critical/high uncovered requirement. Key risks addressed: original timestamp, privacy/membership epochs, stale/context invalidation and isolation from GPS failures. No full app/device claim.
+
+Revision B T007..T010 completed. Focused management/presence 27/27 PASS, full
+regression 304/304 PASS across63 suites; lint and 16 individual JS syntax checks
+PASS. API/Study/contracts/model synchronized, active-slice convergence no remaining
+code gap. T011 awaits Git delivery. No new JS edits after the successful run.

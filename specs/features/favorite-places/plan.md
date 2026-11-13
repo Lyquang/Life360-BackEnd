@@ -69,6 +69,49 @@ because pushes to main/develop trigger existing publish/deploy workflow. User ha
 explicitly authorized commit/push, not deployment. Keep reviewed interview/spec
 changes from preceding discussion; preserve any unrelated work. Do not force push.
 
+## Revision B — backend Circle place presence (next function, 2026-11-13)
+
+User authorization remains sequential implementation/commit/push, no repeated start
+question. Consumes only fresh original-timestamp shared realtime fixes that are
+persisted by the existing location flow; offline batch and timestamp fallback do
+not establish live presence. No changes to existing pause/self-only behavior.
+
+Pure domain transition: radius 100m, exit hysteresis 150m, required accuracy <=50m,
+dwell >=120s across distinct fixes, maximum continuity gap 90s, source freshness
+<=300s; no future (>5s) or old source fixes. These are conservative engineering
+policy defaults for a trial, not a guarantee of GPS precision. Ambiguous overlapping
+labels return unknown, never infer leisure from being outside saved places.
+
+Durable PlacePresence projection per group/user stores only candidate/place/label
+IDs/revisions, consent/membership epochs and times, not new GPS history. Per-group
+transaction Group guard serializes projection with label/place/member writes.
+Group membership version/time increments on join/leave; place/label changes reset
+dwell; snapshot revalidates raw DB privacy, membership, current label and place
+revision and expires stale evidence. Pause/resume epoch or leave/rejoin must not
+resurrect prior presence. Missing/uncertain fixes reset or remain unknown; old fixes
+cannot overwrite newer projection. Projection failure must not fail GPS/chat/SOS.
+
+GET /groups/:groupId/place-presence requires caller membership, pages sorted member
+IDs (limit default20,max100,cursor ObjectId). Each row is unknown or at_place with
+only current name/personal label, sourceFixAt/expiresAt. Never return raw GPS or
+other members' saved label collections. No new socket broadcast, notifications,
+provider calls or Mobile writes. Clients poll this snapshot; native UI is separate.
+
+Files: src/domain/placePresence.js; application/places/placePresenceUseCases.js;
+models/PlacePresence.js and connection registration; existing place/group/user
+repositories; Group/MemberPlaceLabel schema guards/index; container + realtime
+location hook; group DTO/controller/routes. Tests/placePresence.test.js covers pure
+fake-clock transitions and real Mongo/HTTP privacy/invalidation/restart/races.
+
+B-AC1: reliable distinct fixes dwell 2min -> at_place; stale/bad accuracy/outside/
+overlap/missing timestamps -> unknown; hysteresis avoids boundary churn.
+B-AC2: pause/resume and leave/rejoin plus label replace/delete/place edit immediately
+invalidate old snapshot context; source/epoch checks, no cross-Circle leakage.
+B-AC3: no batch/fallback/stale replay or process-local duration reuse; durable state
+survives new use-case instance; projection errors do not fail the realtime update.
+B-AC4: authenticated bounded HTTP snapshot + OpenAPI/client guide/Study/verification;
+meaningful regression suite passes before separate commit/push.
+
 ## Remaining feature roadmap (not revision A implementation)
 
 GPS dwell/presence/invalidation and Mobile UI follow as separate functions. Original

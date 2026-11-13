@@ -31,6 +31,7 @@ const { instrumentMongoRepositories } = require('./infrastructure/database/mongo
 const { createAuthUseCases } = require('./application/auth/authUseCases');
 const { createGroupUseCases } = require('./application/groups/groupUseCases');
 const { createPlaceUseCases } = require('./application/places/placeUseCases');
+const { createPlacePresenceUseCases } = require('./application/places/placePresenceUseCases');
 const { createHistoryUseCases } = require('./application/history/historyUseCases');
 const { createLiveTrailWatchUseCases } = require('./application/history/liveTrailWatchUseCases');
 const { createLocationAccessPolicy } = require('./application/privacy/locationAccessPolicy');
@@ -154,7 +155,9 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
   const sos = config.sos?.enabled && supportsTransactions
     ? createSosUseCases({ ...deps, sosRepo, outboxRepo, policy: config.sos })
     : { create: unavailableSos, get: unavailableSos, respond: unavailableSos, close: unavailableSos, list: unavailableSos };
+  const placePresence = createPlacePresenceUseCases(deps);
   const useCases = {
+    placePresence,
     sos,
     auth: createAuthUseCases(deps),
     groups: createGroupUseCases(deps),
@@ -163,7 +166,7 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     liveTrailWatch: createLiveTrailWatchUseCases(deps),
     privacy: createPrivacyUseCases(deps),
     digests: createDigestUseCases(deps),
-    location: createLocationUseCases({ ...deps, sosAssistance: config.sos?.enabled ? sos : null,
+    location: createLocationUseCases({ ...deps, placePresence, sosAssistance: config.sos?.enabled ? sos : null,
       sosActionLimiter: createSosSocketLimiter({ limit: config.sos?.rateLimit }) }),
     chat: createChatUseCases(deps),
   };

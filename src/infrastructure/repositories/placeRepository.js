@@ -1,9 +1,26 @@
 const FavoritePlace = require('../database/models/FavoritePlace');
 const MemberPlaceLabel = require('../database/models/MemberPlaceLabel');
+const PlacePresence = require('../database/models/PlacePresence');
 
 const ADDED_BY_FIELDS = 'name email avatar';
 
 module.exports = {
+  labelGroupIds(userId) {
+    return MemberPlaceLabel.distinct('groupId', { userId });
+  },
+  findPresence(groupId, userId, { session }) {
+    return PlacePresence.findOne({ groupId, userId }).session(session).lean();
+  },
+  savePresence(groupId, userId, state, { session }) {
+    return PlacePresence.updateOne({ groupId, userId }, { $set: state }, { upsert: true, session });
+  },
+  listPresence(groupId, userIds) {
+    return PlacePresence.find({ groupId, userId: { $in: userIds } }).lean();
+  },
+  listSubjectLabels(groupId, userIds) {
+    return MemberPlaceLabel.find({ groupId, userId: { $in: userIds } })
+      .populate({ path: 'placeId', match: { groupId } }).lean();
+  },
   findInGroup(groupId, placeId, { session } = {}) {
     return FavoritePlace.findOne({ _id: placeId, groupId })
       .session(session || null).populate('addedBy', ADDED_BY_FIELDS);
@@ -31,8 +48,9 @@ module.exports = {
     return MemberPlaceLabel.deleteMany({ groupId, placeId }, { session });
   },
 
-  async listLabels(groupId, userId) {
+  async listLabels(groupId, userId, { session } = {}) {
     const labels = await MemberPlaceLabel.find({ groupId, userId })
+      .session(session || null)
       .sort({ label: 1 }).populate({ path: 'placeId', match: { groupId },
         populate: { path: 'addedBy', select: ADDED_BY_FIELDS } });
     return labels.filter((entry) => entry.placeId);

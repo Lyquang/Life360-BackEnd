@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    placePrivacyVersion: { type: Number, select: false },
     locationSharing: {
       enabled: {
         type: Boolean,

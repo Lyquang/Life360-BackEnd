@@ -11,6 +11,7 @@ const schema = new mongoose.Schema({
 
 schema.index({ groupId: 1, userId: 1, label: 1 }, { unique: true });
 schema.index({ groupId: 1, placeId: 1 });
+schema.index({ userId: 1, groupId: 1 });
 schema.set('toJSON', { transform(doc, ret) {
   ret.id = ret._id;
   delete ret._id;

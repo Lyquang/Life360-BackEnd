@@ -1,8 +1,8 @@
 # Địa điểm yêu thích
 
-Status: **Backend saved-place management implemented; GPS presence pending** | Updated: 2026-11-13. Legacy survey CB-02 retained below where relevant.
+Status: **Backend saved-place management and GPS presence snapshot implemented; Mobile integration pending** | Updated: 2026-11-13. Legacy survey CB-02 retained below where relevant.
 
-Circle place create/list/get/update/delete và nhãn mục đích cá nhân đã hiện thực ở backend. Chưa triển khai auto-presence/GPS hoặc Mobile UI.
+Circle place create/list/get/update/delete và nhãn mục đích cá nhân đã hiện thực ở backend. Backend GPS presence snapshot đã triển khai; Mobile UI/device QA chưa thực hiện.
 
 [Contracts](contracts.md) · [Data model](data-model.md). Shared [architecture](../../system/architecture.md), [API conventions](../../system/api-conventions.md), [configuration](../../system/configuration.md). Read this feature first; follow only dependencies affected by the task. Observed behavior is not blanket product approval.
 
@@ -29,11 +29,11 @@ Existing tests (survey evidence; not a new test run):
 
 No additional product approval is inferred from this split. When behavior changes, record the confirming instruction and observable acceptance criteria here; add a concrete plan/tasks only for actual work.
 
-## Requested extension — design pending, 2026-11-12
+## Extension history — requested 2026-11-12, backend A/B implemented 2026-11-13
 
 Người dùng yêu cầu lưu mục đích Nhà/Công ty/Đi chơi, chia sẻ trong Circle và tự
 hiển thị nơi đang ở (REQ-MOB-04/06). Xem [extension plan](plan.md), [tasks](tasks.md)
-và [roadmap/authority](../../system/mobility-roadmap.md). Saved-place CRUD và nhãn cá nhân theo revision A đã hiện thực; geofence/presence còn là chức năng tiếp theo. Các contracts/model ở trên vẫn
+và [roadmap/authority](../../system/mobility-roadmap.md). Saved-place CRUD và nhãn cá nhân theo revision A đã hiện thực; backend presence snapshot đã hiện thực ở revision B, Mobile chưa nối. Các contracts/model ở trên vẫn
 mô tả API hiện tại; chỉ implementation được user cho phép mới thay đổi runtime.
 
 ## Clarifications
@@ -46,8 +46,7 @@ mô tả API hiện tại; chỉ implementation được user cho phép mới th
 - Q: Q-MOB-05d, nhận diện khi vừa vào vùng? → A: Chờ khoảng 2 phút trong vùng với GPS đủ tin cậy (REQ-MOB-24); [record](../../system/mobility-interview.md#q-mob-05d).
 
 Nhãn mô tả nơi đang ở, không chứng minh hoạt động thực. Ngoài nơi đã lưu không tự
-suy thành Đi chơi. Dwell khoảng 2 phút đã được xác nhận; radius/freshness/overlap và xử lý sau khi người tạo rời
-Circle còn cần thiết kế; các con số và API/model trong plan vẫn Proposed.
+suy thành Đi chơi. Dwell khoảng 2 phút đã được xác nhận; radius/freshness/overlap dùng policy thử nghiệm đã ghi trong revision B; quyền luôn theo membership hiện tại, kể cả creator. Các extension Mobile/personal GPS còn riêng biệt.
 [Progress](progress.md) giữ stage và approval cho extension.
 
 
@@ -74,3 +73,16 @@ US2/P1: Member gán nhãn cá nhân vào nơi chung, không sửa nhãn tài kho
 
 Evidence: tests/placeManagement.test.js; [verification](verification.md),
 [API guide](../../../api-docs/PLACES_API_DOC.md), [Study](../../../Study/PLACE_PURPOSES.md).
+
+
+## Active backend presence acceptance (revision B)
+
+User story US3/P1: Circle sees a member's current saved-place label from reliable
+shared GPS after approximately two minutes, without access to private services or
+stale data. B-AC1..B-AC4 in plan revision B define the independently verifiable
+backend function: dwell/quality/freshness/overlap, privacy and context invalidation,
+original-time realtime-only evidence and failure isolation, bounded authorized API
+and documentation. No auto-presence claim for a Mobile screen until client wiring
+and device QA. Personal GPS during pause is a separate future service; never feed
+that into this shared projection. Default radii/quality limits are implementation
+policy documented in the plan, not provider accuracy promises.

@@ -54,6 +54,10 @@ const setPlaceLabelBody = z.object({
   placeId: objectId,
   customLabel: z.string().trim().min(1).max(50).optional(),
 }).strict();
+const placePresenceQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  cursor: objectId.optional(),
+}).strict();
 
 module.exports = {
   groupIdParams,
@@ -68,4 +72,5 @@ module.exports = {
   updatePlaceBody,
   deletePlaceQuery,
   setPlaceLabelBody,
+  placePresenceQuery,
 };

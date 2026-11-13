@@ -9,6 +9,12 @@ Thiết kế preview/active-trip bên dưới chưa đủ yêu cầu navigation 
 duyệt triển khai và chưa chọn SDK/provider. Không dùng bản plan cũ làm approval.
 Chờ giải quyết blockers và human requirements confirmation trước lập plan mới.
 
+**Provider feasibility update:** [research](research.md) shortlists TomTom/VietMap
+without selecting either. Their navigation entitlement, MapKit display/retention,
+mode/traffic semantics and account trial must be verified before dependent code.
+Google remains historical candidate; billing requirement conflicts with current
+no-billing constraint. No routing API or live navigation is implemented by research.
+
 ## Cập nhật nền bản đồ đã xác minh
 
 Mobile dùng native Swift/SwiftUI + Apple MapKit, iOS 16; không phải Google Maps.

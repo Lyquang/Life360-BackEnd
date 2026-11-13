@@ -49,3 +49,6 @@ after saved-place function. Detailed plan/research, tasks/analysis and actual
 provider feasibility still required before dependent code; no paid billing or
 Mobile/deployment authorization inferred. Prior Pending requirements notes are
 historical, not an outstanding approval question.
+
+
+User decision, 2026-11-13: “Giữ yêu cầu 30 phút; chưa triển khai weather khi chưa có nguồn phù hợp”. Weather implementation is explicitly deferred until a suitable source is verified. Do not replace it with hourly advisories. Other independent functions may continue.

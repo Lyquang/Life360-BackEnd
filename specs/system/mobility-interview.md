@@ -175,3 +175,16 @@ Chỉ đọc hướng dẫn/specs/decisions/plan liên quan và graph report. Gr
 `src/**/*.js` khớp hash inventory, không thêm/xóa JS trong phạm vi graph.
 Không lặp full source survey, không đọc/sửa Mobile, không gọi provider hay chọn
 vendor theo tài liệu cũ. Không chạy model workflow, tạo branch hoặc cấp approval.
+
+
+## Provider feasibility follow-up — 2026-11-13
+
+Q-MOB-26: Keep mandatory Vietnam rain within 30 minutes, or accept hourly-model advisories for the free prototype? Public Open-Meteo documentation does not establish a suitable 30-minute Vietnam nowcast.
+
+Answer (actual user): **“Giữ yêu cầu 30 phút; chưa triển khai weather khi chưa có nguồn phù hợp”**. Status: Answered. This explicitly defers weather implementation and preserves REQ-MOB-20; not an approval of hourly substitution or paid billing. Saved-place/GPS functions continue independently.
+
+
+Q-MOB-27 (provider follow-up): Asked whether user already has a TomTom/VietMap trial
+account/key, or neither; no keys/credentials requested in chat. **Pending answer**.
+Research identifies candidates, not a selected/entitled provider. “Tiếp tục”
+continues independent work and is not a provider selection or account/billing action.

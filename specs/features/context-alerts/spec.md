@@ -81,3 +81,11 @@ freshness/monitoring cadence, lifecycle consent riêng còn mở. DB alert/deliv
 retention 7 ngày, loại hiện tượng, cửa sổ 30 phút, delay 5 phút và quiet hours đã xác nhận; không hỏi lại.
 Xem [interview](../../system/mobility-interview.md) và [progress](progress.md). Native permissions/push certificates và deployment
 worker là dependency bắt buộc. Không cam kết lấy GPS mới khi user force-stop app.
+
+
+## Implementation constraint — 2026-11-13
+
+User explicitly retained REQ-MOB-20: “Giữ yêu cầu 30 phút; chưa triển khai weather
+khi chưa có nguồn phù hợp”. Weather is deferred pending a verified suitable source;
+no hourly-only substitute. [Research](research.md), [progress](progress.md). This
+does not cancel accepted weather intent or authorize billing/provider accounts.

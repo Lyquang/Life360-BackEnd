@@ -29,3 +29,17 @@ Group membership write guard and transactions; place delete cascades labels.
 Label PUT last-write-wins/retry-safe state; DELETE label repeated returns false.
 After leave, no label access; retained private labels may be restored on rejoin.
 No geofence/presence, GPS, external POI provider data or Mobile integration here.
+
+
+## Backend GPS presence snapshot (revision B)
+
+GET `/groups/:groupId/place-presence`, current member only. Query limit1..100
+(default20), cursor optional ObjectId. 200 `{success,count,data,pagination}`;
+data rows `{userId,status,place,sourceFixAt,expiresAt}`. status unknown -> all three
+context fields null; at_place -> place `{id,name,label,customLabel}` and ISO times.
+Pagination hasMore/nextCursor over sorted member IDs. Unknown does not reveal whether
+privacy, quality, missing evidence or context caused suppression. Raw GPS and full
+personal label collections are never returned. 400 query,401 auth,403 membership,
+404 missing group. No new socket event. API guide documents exact policy/freshness,
+original-time requirements and polling semantics. No personal GPS channel while
+pause, device UI or arrival/weather push is implied.

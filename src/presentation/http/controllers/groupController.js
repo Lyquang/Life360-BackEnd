@@ -2,7 +2,7 @@ const { asyncHandler } = require('../middleware/asyncHandler');
 
 const withConversation = ({ group, conversationId }) => ({ ...group.toJSON(), conversationId });
 
-function createGroupController({ groups, digests, places }) {
+function createGroupController({ groups, digests, places, placePresence }) {
   return {
     create: asyncHandler(async (req, res) => {
       const result = await groups.createGroup({ userId: req.user._id, name: req.dto.body.name });
@@ -90,6 +90,11 @@ function createGroupController({ groups, digests, places }) {
     getPlace: asyncHandler(async (req, res) => {
       const data = await places.getPlace({ userId: req.user._id, ...req.dto.params });
       res.json({ success: true, data });
+    }),
+    placePresence: asyncHandler(async (req, res) => {
+      const { data, pagination } = await placePresence.snapshot({ userId: req.user._id,
+        ...req.dto.params, ...req.dto.query });
+      res.json({ success: true, count: data.length, data, pagination });
     }),
     updatePlace: asyncHandler(async (req, res) => {
       const data = await places.updatePlace({ userId: req.user._id, ...req.dto.params, ...req.dto.body });

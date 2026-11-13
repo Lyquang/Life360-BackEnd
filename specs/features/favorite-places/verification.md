@@ -31,3 +31,33 @@ expected revision atomically, and label deletion cascades in that transaction.
 No transport/DB library imported into use cases. No new container dependency: label
 persistence stays behind existing placeRepo port. Private label retention across
 leave is documented; membership gates deny access until rejoin.
+
+
+## Revision B — durable GPS place presence
+
+Checked 2026-11-13, after code stabilized. No JS file changed after the successful
+full-suite run before interruption/resume; resumption verifies docs and delivery.
+
+| Acceptance | Executed evidence | Outcome |
+|---|---|---|
+| B-AC1 | Pure deterministic source-time tests: dwell120s, distinct fixes, accuracy, gap, freshness/future/old points, hysteresis and overlap | PASS |
+| B-AC2 | Real HTTP/replica set: same-timestamp pause/resume counter, leave/rejoin, label/place invalidation, cross-Circle isolation | PASS |
+| B-AC3 | Re-instantiated use case reads durable projection; concurrent projections preserve newer fix; real wired realtime path isolates injected projection failure; fallback and offline batch do not project | PASS |
+| B-AC4 | Bounded auth/cursor/limit HTTP, served OpenAPI path; updated client guide/Study/contracts/model | PASS |
+
+- `MONGOMS_RUNTIME_DOWNLOAD=false node --test --test-concurrency=1 tests/placePresence.test.js tests/placeManagement.test.js`: **27/27 PASS**, 3 suites (15 presence tests + 12 management tests).
+- `MONGOMS_RUNTIME_DOWNLOAD=false npm test`: **304/304 PASS**, 63 suites, no skips/failures; final code run completed in ~102s.
+- `npm run lint` and individual `node --check` on **16** changed/new JS files: PASS.
+- Local Markdown path/whitespace checks and `git diff --check`: checked at delivery.
+
+No production DB/index validation, Mobile UI/device/background QA, personal GPS
+channel during pause, routing/weather adapter, APNs/FCM, provider account/key or
+runtime deployment claim. Backend projection consumes persisted shared realtime
+points only; ordinary GPS transport/legacy time fallback remains compatible.
+Timestamp fields alone were insufficient to bind epochs; hidden privacy/membership
+counters and current label/place identity are checked. Snapshot reads current DB
+context instead of profile/member caches; TTL only cleans storage.
+
+Convergence review of backend revisions A/B finds no remaining active code gap.
+Mobile/production roadmap entries are explicitly deferred; the full app/mobility
+project is not declared converged. T011 delivery closes after commit/push succeeds.

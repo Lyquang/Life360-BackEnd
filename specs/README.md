@@ -44,7 +44,7 @@ proxy mới; routing/weather/purpose/geofence vẫn là thiết kế chưa hiệ
 | [place-search](features/place-search/spec.md) | Native iOS MapKit search/history đã triển khai; 21 tests + Simulator build; device/coverage QA còn lại ở plan |
 | [routing](features/routing/spec.md) | Chọn phương tiện/tuyến thay thế/traffic/active trip — Draft spec/plan/tasks |
 | [context-alerts](features/context-alerts/spec.md) | Chỉ cảnh báo đáng chú ý, inbox/device/worker/push nền — alert DB/retention đã duyệt, chi tiết thiết kế còn Draft |
-| [favorite-places extension](features/favorite-places/plan.md) | Backend CRUD + nhãn cá nhân đã hiện thực, 289 tests full-suite PASS; Circle GPS presence/Mobile UI là chức năng kế tiếp. [API handoff](../api-docs/PLACES_API_DOC.md) |
+| [favorite-places extension](features/favorite-places/plan.md) | Backend CRUD/nhãn cá nhân + GPS presence snapshot đã hiện thực, 304 tests full-suite PASS; Mobile UI/device QA chưa thực hiện. [API handoff](../api-docs/PLACES_API_DOC.md) |
 
 Không coi endpoint/file/model dự kiến trong plan là đã tồn tại. Chỉ triển khai sau
 khi người dùng duyệt thiết kế/phạm vi liên quan.
@@ -61,7 +61,7 @@ phù hợp và các chi tiết kỹ thuật còn cần research/thiết kế.
 Stage/approval của các extension nằm ở
 [routing progress](features/routing/progress.md),
 [alerts progress](features/context-alerts/progress.md) và
-[places progress](features/favorite-places/progress.md). User sau đó đã xác nhận hiện thực/commit/push tuần tự; saved-place function đã verify, đang bàn giao commit/push, routing/alerts chờ đến lượt và kiểm chứng provider;
+[places progress](features/favorite-places/progress.md). User sau đó đã xác nhận hiện thực/commit/push tuần tự; saved-place function đã push, backend GPS presence đã verify và đang bàn giao riêng; routing chờ provider, weather tạm hoãn theo quyết định user;
 search/history giữ trạng thái triển khai theo hồ sơ, chưa kiểm chứng Mobile lại.
 
 ## Tài liệu hệ thống dùng chung
