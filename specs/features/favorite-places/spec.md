@@ -28,3 +28,11 @@ Existing tests (survey evidence; not a new test run):
 [Circle và thành viên](../circles/spec.md).
 
 No additional product approval is inferred from this split. When behavior changes, record the confirming instruction and observable acceptance criteria here; add a concrete plan/tasks only for actual work.
+
+## Requested extension — design pending, 2026-11-12
+
+Người dùng yêu cầu lưu mục đích Nhà/Công ty/Đi chơi, chia sẻ trong Circle và tự
+hiển thị nơi đang ở (REQ-MOB-04/06). Xem [extension plan](plan.md), [tasks](tasks.md)
+và [roadmap/authority](../../system/mobility-roadmap.md). Purpose/CRUD/geofence,
+quyền chi tiết và API/model mới là **Proposed**, chưa hiện thực. Các contracts/model
+ở trên vẫn mô tả create/list hiện có; yêu cầu lập plan không cho phép sửa runtime.

@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "preset": {
+    "id": "backend-policy",
+    "name": "Family Tracker Backend Policy",
+    "version": "1.0.0",
+    "description": "Composes project review gates and documentation requirements with native Spec Kit commands"
+  },
+  "requires": {
+    "speckit_version": "==1.4.0"
+  },
+  "provides": {
+    "templates": [
+      {
+        "type": "command",
+        "name": "speckit.specify",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.clarify",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.plan",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.tasks",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.analyze",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.implement",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.converge",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.checklist",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "command",
+        "name": "speckit.constitution",
+        "file": "commands/project-policy.md",
+        "strategy": "prepend"
+      },
+      {
+        "type": "template",
+        "name": "spec-template",
+        "file": "templates/spec-addendum.md",
+        "strategy": "append"
+      },
+      {
+        "type": "template",
+        "name": "plan-template",
+        "file": "templates/plan-addendum.md",
+        "strategy": "append"
+      },
+      {
+        "type": "template",
+        "name": "tasks-template",
+        "file": "templates/tasks-addendum.md",
+        "strategy": "append"
+      }
+    ]
+  }
+}

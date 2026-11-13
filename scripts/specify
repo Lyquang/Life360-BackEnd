@@ -1,0 +1,13 @@
+#!/bin/sh
+# Local launcher; all arguments are handled by the official Specify CLI.
+set -eu
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if [ ! -x "$repo_root/.specify/.venv/bin/specify" ]; then
+  echo 'Specify CLI is missing. Follow codex/spec-kit/README.md to install it.' >&2
+  exit 1
+fi
+PATH="$repo_root/.specify/.venv/bin:$PATH"
+export PATH
+SPECKIT_PYTHON_EXECUTABLE="$repo_root/.specify/.venv/bin/python"
+export SPECKIT_PYTHON_EXECUTABLE
+exec "$repo_root/.specify/.venv/bin/specify" "$@"

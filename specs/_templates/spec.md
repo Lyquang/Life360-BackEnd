@@ -1,38 +1,71 @@
 # Feature: <name>
 
-Status: Draft | Date: <YYYY-MM-DD> | Owner: <name or team>
+Status: Draft / Clarifying / Ready for review / Approved / Implementing / Implemented
+Date: <YYYY-MM-DD> | Revision: <id> | Owner: <feature owner>
+Authority: <specific user instruction or linked scoped approval; never infer approval>
 
-Location: `specs/features/<feature>/spec.md`. Reuse the existing feature folder for bugs/enhancements; read its decisions/discrepancies before editing. Shared architecture/config/transport conventions live in `specs/system/` and must be linked rather than duplicated.
+Use `specs/features/<feature>/spec.md`. Reuse the existing owner for changes; register
+a new feature in specs/README.md. Read AGENTS.md first. Delete unused template
+instructions when writing real content; no empty artifacts or invented decisions.
 
-## Problem and outcome
+## Problem and expected outcome
 
-<Who needs what, and why?>
+<Who needs what? What is the concrete before/after behavior? What did the user request?>
 
 ## Scope and non-goals
 
-- In scope: <...>
-- Out of scope: <...>
+- In scope: <testable boundaries, roles/consumers/platforms>.
+- Out of scope: <explicit exclusions, not assumptions about future approval>.
+- Related features/shared conventions: <links and dependency impact>.
 
-## Current behavior and dependencies
+## Current behavior and evidence
 
-<Link source files and existing contracts; identify assumptions and external dependencies.>
+<Relevant source/test/contract evidence and revision. Separate CB from accepted intent.
+Record discrepancies at the existing owner; do not silently rewrite either side.>
+
+## Requirement questions and confirmed answers
+
+Populate only real questions; record a reference if another owner already owns one.
+Ask focused rounds and follow up until blockers are answered. User answers are not
+the same as approval of a whole plan. Routine technical details do not need user decisions.
+
+| Question ID | Question / impact | Blocking for which work? | User answer / authority / date | Status / decision reference |
+|---|---|---|---|---|
+| <Q-ID> | <specific ambiguity and why it matters> | <scope or none> | <actual answer, or Pending> | <Open/Resolved/Proposed> |
+
+## Accepted requirements and proposals
+
+| ID | Requirement | Status | Authority / decision |
+|---|---|---|---|
+| <REQ-ID> | <observable behavior> | <Accepted/Proposed> | <confirmation or pending> |
+
+<Include lifecycle/permissions/privacy/failure/concurrency/retention/provider or budget
+constraints where relevant. Do not invent a numerical SLA, API field or entitlement.>
 
 ## Scenarios and acceptance criteria
 
-- Given <context>, when <action>, then <observable result>.
-- Include authorization, invalid inputs, failure, retries, privacy and concurrency when relevant.
+| Acceptance ID | Requirement | Given / When / Then | Planned verification |
+|---|---|---|---|
+| <AC-ID> | <REQ-ID> | <concrete observable scenario> | <test/manual check> |
 
-## Requirements
+Include important invalid input, denied access, empty/offline/failure/retry and race
+cases as applicable. Label proposed checks separately from executed evidence.
 
-<Record authority/date for accepted requirements; keep proposals and source-observed behavior distinct. Preserve existing stable IDs.>
+## Review and approval status
 
-- FR-001: <testable behavior>
-- NFR-001: <security, reliability or performance requirement with measurable conditions>
+- Requirements revision: <id>.
+- Plan revision: <id/path>.
+- Canonical approval/decision record: <link or exact user instruction/date/scope>.
+- Unresolved blockers: <IDs, or None with evidence; non-blocking rollout gaps remain explicit>.
 
-## Open decisions
+Do not mark Approved from file creation, silence or passing tests. Reuse a valid
+scoped approval rather than asking the same question again.
 
-- <Question, impact and owner; do not state proposed behavior as implemented.>
+## Delivery and ownership
 
-## Ownership and verification
-
-<List exact affected source/test files, owning model/contract, linked feature impacts and verification evidence. Add contracts/model documents only when needed; plan/tasks only for concrete substantial work.>
+- Feature contracts/model: <owner paths; add only when this feature needs them>.
+- Client integration handoff: `api-docs/<chosen-file>.md`, or specific N/A reason.
+- Human learning note: `Study/<chosen-file>.md`; update an existing note if it owns the topic.
+- Source/tests: <exact affected paths>.
+- Verification outcome/limits: <actual commands/results/date; implemented != deployed>.
+- Related plan/tasks and PROGRESS: <paths>.

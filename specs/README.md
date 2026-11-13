@@ -21,6 +21,33 @@
 
 **Đã chấp thuận:** [REQ-CHAT-01](features/chat/decisions.md) giữ cuộc trò chuyện riêng 1–1 đã tạo sau khi hai người rời Circle. Giữ nguyên confirmation, acceptance criteria và phân biệt với điều kiện mở/get-or-create conversation. Các hành vi khác chỉ có nhãn Current behavior chưa được phê duyệt toàn bộ.
 
+## Tính năng mở rộng — trạng thái theo từng phần
+
+[Roadmap bản đồ/cảnh báo](system/mobility-roadmap.md) ghi yêu cầu người dùng ngày
+2026-11-12 và các quyết định còn mở; [research](system/mobility-research.md) ghi
+nguồn provider/OS. User xác nhận **push khi app đóng**, **Circle chia sẻ và tự nhận
+diện nơi ở**, **xe máy ưu tiên kiểm chứng**, sau đó bổ sung **chọn xe máy/ô tô/đi bộ,
+các tuyến thay thế**, **lịch sử tìm kiếm cache-only** và **không báo thời tiết bình thường**.
+User đã duyệt cache mobile 20 mục/30 ngày và DB alert/delivery 7 ngày trong
+[search decisions](features/place-search/decisions.md) và
+[alert decisions](features/context-alerts/decisions.md). Provider/maps/region/budget,
+API/model và các ngưỡng của những feature còn ở thiết kế chưa được chốt.
+Không hỏi duyệt lại các policy đã xác nhận. User đã xác nhận
+và lượt đọc Mobile có mục tiêu xác minh **Swift/SwiftUI + Apple MapKit/iOS16**;
+search/history đã được triển khai native Apple + local cache theo DEC-SEARCH-03
+(user yêu cầu “Hãy hiện thực full chức năng đầu tiên đi”). Backend không có search
+proxy mới; routing/weather/purpose/geofence vẫn là thiết kế chưa hiện thực.
+
+| Feature / thiết kế | Phạm vi và trạng thái |
+|---|---|
+| [place-search](features/place-search/spec.md) | Native iOS MapKit search/history đã triển khai; 21 tests + Simulator build; device/coverage QA còn lại ở plan |
+| [routing](features/routing/spec.md) | Chọn phương tiện/tuyến thay thế/traffic/active trip — Draft spec/plan/tasks |
+| [context-alerts](features/context-alerts/spec.md) | Chỉ cảnh báo đáng chú ý, inbox/device/worker/push nền — alert DB/retention đã duyệt, chi tiết thiết kế còn Draft |
+| [favorite-places extension](features/favorite-places/plan.md) | Purpose, CRUD, nhãn cá nhân trên nơi chung và Circle presence — Draft extension plan/tasks; API cũ giữ Current behavior |
+
+Không coi endpoint/file/model dự kiến trong plan là đã tồn tại. Chỉ triển khai sau
+khi người dùng duyệt thiết kế/phạm vi liên quan.
+
 ## Tài liệu hệ thống dùng chung
 
 | Tài liệu | Khi đọc |
@@ -52,12 +79,55 @@ CB-01…CB-08 là ID phạm vi của lượt khảo sát cũ; một số bao ph�
 
 ## Workflow cho bug và tính năng mới
 
-1. Chọn feature ở bảng trên; đọc spec/contracts/model và record liên quan. Đọc graph report backend, kiểm tra commit/hash trước khi truy vấn sâu. Chỉ theo dependency bị ảnh hưởng.
-2. Đối chiếu yêu cầu với source/tests. Ghi discrepancy tại feature sở hữu; quy tắc chung hoặc rollout nhiều feature đi qua system owner index. Không sửa code hay requirement âm thầm để che mâu thuẫn.
-3. Với feature hiện có, cập nhật trong folder đó. Feature mới có folder rõ nghĩa dưới `features/`. Dùng [_templates/spec.md](_templates/spec.md) khi cần; không tạo folder rỗng hoặc nhân bản quy tắc/model chung.
-4. Ghi intent/acceptance và authority; thay đổi đáng kể mới thêm plan/tasks cụ thể, dùng [_templates/plan.md](_templates/plan.md) và [_templates/tasks.md](_templates/tasks.md). Bug nhỏ chỉ cần note đúng phạm vi.
-5. Với thay đổi chạm nhiều chức năng, cập nhật tài liệu từng owner và liên kết dependency. Circle exit liên quan group chat, location/trail và SOS; pause liên quan ingestion/history/trail và digest.
-6. Kiểm chứng acceptance bằng test phù hợp, cập nhật kết quả/giới hạn và `PROGRESS.md`. Không biến test pass thành phê duyệt mọi hành vi. Không ghi secrets hoặc dữ liệu production vào docs.
+[AGENTS.md](../AGENTS.md#ai-collaboration-workflow--requirements-before-implementation)
+là quy trình bắt buộc; mục này chỉ định tuyến tài liệu, không duy trì bộ quy tắc thứ hai.
+
+**Đọc specs → hỏi/làm rõ theo vòng → chốt requirements → viết plan/tasks → user duyệt
+→ implement → verify → api-docs + Study → cập nhật specs/progress.**
+
+Repo đã tích hợp **Spec Kit chính thức 1.4.0**. Quy trình chi tiết và lệnh thực tế:
+[hướng dẫn Spec Kit](../codex/spec-kit/README.md); bằng chứng setup:
+[discovery/validation](system/spec-kit-setup.md). Chốt requirements với user trước
+native plan; native tasks/analyze phải có trước khi xin duyệt implementation.
+Giữ AWAITING_APPROVAL khi chưa có quyết định thật. Native convergence chạy sau
+implementation/verification, chỉ append unmet tasks. Nhãn Current behavior của tài
+liệu cũ không tự thay đổi vì cài công cụ.
+
+1. Tìm owner hiện có. Feature mới dùng native `specs/NNN-name/`, đăng ký ở mục Native bên dưới; tạo spec rồi plan/tasks đúng giai đoạn. Owner `features/<tên>/` hiện có giữ nguyên, có thể chọn bằng `SPECIFY_FEATURE_DIRECTORY`. Không tạo folder mới cho mọi bug, không nhân đôi contract hay đọc toàn bộ specs mỗi lần.
+2. Ghi câu hỏi/câu trả lời thật, acceptance IDs và nguồn xác nhận. Những lựa chọn chưa có câu trả lời là Open/Proposed; mâu thuẫn đi qua feature discrepancy/system owner index. Không biến code thành yêu cầu đã duyệt.
+3. Plan phải cụ thể để user review: revision, phạm vi, file changes, lý do/đánh đổi, data/API/privacy/failure/compatibility, slices và verification. Chốt nơi bàn giao api-docs/Study hoặc N/A có lý do.
+4. Chỉ bắt đầu code feature mới/thay đổi hành vi đáng kể sau khi requirements/plan của phạm vi đó được duyệt và blockers sản phẩm được giải quyết. Ghi approval/authority/date ở owner; dùng lại approval hợp lệ, không hỏi bắt đầu lần nữa. Bug nhỏ giữ accepted behavior/doc edits đã được yêu cầu dùng quy trình nhẹ.
+5. Sau implementation, cập nhật owner docs, api-docs client-facing, Study giải thích, tasks/indexes/PROGRESS và evidence thật. Không để required docs thành công việc “sẽ viết nếu user muốn”. Không đổi status feature khác hoặc suy ra deployed từ test pass.
+
+Trạng thái cho **thay đổi đang làm** theo [bảng lifecycle](../codex/spec-kit/README.md#lifecycle-và-recovery);
+`progress.md` sở hữu stage và approval, `verification.md` sở hữu evidence. Đây không
+phải lệnh đổi toàn bộ nhãn Current behavior/legacy task trong các feature đã có.
+Giữ approval record một owner; plan/spec link tới record thay vì lặp lại câu trả lời.
+
+## Templates và đầu ra
+
+Feature mới dùng native `.specify/templates/*` được compose với preset
+`backend-policy`; không chép template thủ công thay cho native specify/plan/tasks.
+Các template spec/plan/tasks trong bảng dưới giữ cho legacy/small changes. Interview,
+verification và progress là bổ sung của repo, không phải tên command native.
+
+| Artifact | Template / điểm đọc | Output |
+|---|---|---|
+| Requirements, câu hỏi, acceptance | [spec](_templates/spec.md) | `features/<feature>/spec.md` |
+| Thiết kế để user duyệt | [plan](_templates/plan.md) | `features/<feature>/plan.md` |
+| Công việc và evidence | [tasks](_templates/tasks.md) | `features/<feature>/tasks.md` |
+| Frontend/mobile integration | [API template](_templates/api-doc.md), [index](../api-docs/README.md) | `api-docs/<file>.md` khi có backend interface |
+| Giải thích cho con người | [Study template](_templates/study.md), [index](../Study/README.md) | `Study/<file>.md` cho feature đáng kể |
+| Gửi một ý tưởng mới | [prompt tùy chọn](_templates/feature-request.md) | Chat; không bắt user điền form kỹ thuật |
+| Câu hỏi qua nhiều vòng | [interview](_templates/interview.md) | Feature `interview.md`, chỉ câu hỏi thực |
+| Kết quả kiểm chứng | [verification](_templates/verification.md) | Feature `verification.md`, commands/results/limits |
+| Stage và human approvals | [progress](_templates/progress.md) | Feature `progress.md`, một owner |
+
+## Native Spec Kit features
+
+Chưa tạo feature ứng dụng mới trong lượt setup công cụ. Đăng ký từng feature
+`NNN-name` tại đây khi có yêu cầu thật; ghi rõ trạng thái, owner và links. Không
+chuyển hàng loạt các feature ở `features/` hoặc lấy fixture dry-run làm feature thật.
 
 ## Graph và điều hướng source
 

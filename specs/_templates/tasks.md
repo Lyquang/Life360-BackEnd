@@ -2,11 +2,18 @@
 
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md)
 
-- [ ] T001 Resolve blocking product and contract decisions.
-- [ ] T002 Implement the smallest independently verifiable vertical slice, respecting layer boundaries.
-- [ ] T003 Add meaningful verification for requirements and failure cases.
-- [ ] T004 Update API documentation, spec status and PROGRESS.md with results.
+- [ ] T001 Read owner specs/source evidence; record focused question rounds and actual answers.
+- [ ] T002 Resolve blocking requirements, write acceptance IDs and concrete plan/files/verification/deliverables.
+- [ ] T003 Present requirements/plan revision and record scoped user approval before dependent coding. Reuse valid existing approval.
+- [ ] T004 Implement the smallest independently verifiable slice within the approved scope; replace this task with real file/AC-specific tasks.
+- [ ] T005 Run meaningful tests mapped to acceptance IDs; record actual results, failures and remaining manual/provider/device/deployment checks.
+- [ ] T006 Write/update the chosen `api-docs/` integration document and owner contracts/Swagger/socket docs; if no client-facing API, record precise N/A reason.
+- [ ] T007 Write/update the chosen `Study/` note with real mechanisms/decisions/pitfalls/evidence; no copied spec or fabricated lesson.
+- [ ] T008 Update affected specs/model/decisions/tasks, indexes and PROGRESS; report links and remaining limits.
 
 Replace these examples with specific tasks, dependencies, affected files and acceptance evidence for the feature.
 
-Keep this file beside the owning feature spec for concrete work. Map tasks to REQ/acceptance IDs and affected owners; record validation outcomes and unresolved questions without turning Current behavior into approval.
+Keep tasks beside the owner spec. Each implementation/check task needs AC/REQ IDs,
+file scope, dependencies and observable evidence. A checked planning task does not
+mean implementation is done. Distinguish superseded/N/A from completed; never fake
+an artifact just to tick a box. A docs-only change uses a scaled checklist.

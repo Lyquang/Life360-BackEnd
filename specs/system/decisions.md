@@ -11,6 +11,27 @@ Date: 2026-11-11. This register distinguishes accepted repository policy from ob
 | DEC-DOC-01 | Accepted process | For a behavior change, record requirements/design/tasks before or with implementation; verify acceptance and update docs/progress after. | User setup request; existing `AGENTS.md` |
 | DEC-GRAPH-01 | Accepted scope | Official Graphify, local AST extraction, output scoped to `graphify-out/backend/`; no source/secrets uploaded and no manual graph editing. | User request and existing `AGENTS.md` |
 
+## Feature intake and delivery workflow — accepted 2026-11-12
+
+**REQ-DOC-04 — Accepted process.** User explicitly requested: read existing specs
+as accepted-intent source of truth; update the owner for changes or create a new
+feature folder; ask multiple focused questions to align requirements; deliver a
+concrete plan for review; agree requirements/plan before implementation; complete
+client integration docs in `api-docs/` and useful human learning notes in `Study/`.
+
+Authority: the user's current agent-system restructuring request, 2026-11-12.
+This refines DEC-DOC-01: substantial/new behavior needs requirements/plan approval
+**before** dependent coding; an existing scoped approval already authorizes that
+work. Routine accepted-behavior fixes/documentation remain proportional. No
+retrospective product approval or runtime change is implied.
+
+Operational details live in [AGENTS.md](../../AGENTS.md); templates/index in
+[specs/README.md](../README.md). CLAUDE is a thin entry point, specs owns accepted
+intent, api-docs owns implemented consumer instructions, Study owns explanation.
+Record legitimate API/learning N/A instead of fabricating artifacts. Question
+rounds resolve real gaps, not an arbitrary question quota; do not re-ask answered
+questions or request a second start approval for the same accepted plan.
+
 
 ## Product authority
 

@@ -5,3 +5,7 @@ node_modules/
 codex/context/
 codex/memory.jsonl
 ops/monitoring/.local/
+.specify/.venv/
+.specify/feature.json
+.specify/workflows/runs/
+.specify/presets/*/.composed/
