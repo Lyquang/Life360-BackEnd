@@ -16,6 +16,7 @@ hoặc [hướng dẫn tích hợp API](../api-docs/README.md).
 
 | Chủ đề | Tài liệu |
 |---|---|
+| Nhãn mục đích, revision và race về membership | [Place purposes](PLACE_PURPOSES.md) |
 | Làm việc với agent từ ý tưởng đến bàn giao | [Spec-driven workflow](SPEC_DRIVEN_WORKFLOW.md) |
 | Các lớp và data flow backend | [Core backend flows](CORE_FLOWS_BACKEND.md) |
 | Offline batch và retry/idempotency | [Offline location batch sync](OFFLINE_LOCATION_BATCH_SYNC.md) |

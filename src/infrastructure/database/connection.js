@@ -5,6 +5,8 @@ const { attachMongoMetricsObserver } = require('./mongoMetricsObserver');
 require('./models/User');
 require('./models/Group');
 require('./models/FavoritePlace');
+require('./models/MemberPlaceLabel');
+require('./models/PlacePresence');
 require('./models/LocationHistory');
 require('./models/GroupDigest');
 require('./models/Conversation');

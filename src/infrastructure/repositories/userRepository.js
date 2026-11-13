@@ -3,6 +3,9 @@ const User = require('../database/models/User');
 const PUBLIC_PROFILE_FIELDS = 'name avatar isOnline lastSeenAt';
 
 module.exports = {
+  findPresenceSubjects(ids, { session } = {}) {
+    return User.find({ _id: { $in: ids } }).select('_id locationSharing +placePrivacyVersion').session(session || null).lean();
+  },
   create({ name, email, passwordHash, avatar }) {
     return User.create({ name, email, password: passwordHash, avatar });
   },
@@ -49,7 +52,7 @@ module.exports = {
   setLocationSharing(id, locationSharing) {
     return User.findByIdAndUpdate(
       id,
-      { $set: { locationSharing } },
+      { $set: { locationSharing }, $inc: { placePrivacyVersion: 1 } },
       { new: true, runValidators: true }
     );
   },

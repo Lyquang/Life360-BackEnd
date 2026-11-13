@@ -41,6 +41,10 @@ const groupSchema = new mongoose.Schema(
     },
     // SOS transactions write this field to conflict with concurrent membership changes.
     sosGuardVersion: { type: Number, select: false },
+    // Serializes saved-place writes with concurrent Circle membership changes.
+    placeGuardVersion: { type: Number, select: false },
+    placeMembershipVersion: { type: Number, select: false },
+    placeMembershipUpdatedAt: { type: Date, select: false },
     // ── Yêu cầu mới: tần suất gửi thông báo digest (phút) ────
     // 0 = tắt thông báo
     // Mặc định: 60 phút → gửi 1 tiếng/lần

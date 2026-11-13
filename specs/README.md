@@ -30,8 +30,9 @@ diện nơi ở**, **xe máy ưu tiên kiểm chứng**, sau đó bổ sung **ch
 các tuyến thay thế**, **lịch sử tìm kiếm cache-only** và **không báo thời tiết bình thường**.
 User đã duyệt cache mobile 20 mục/30 ngày và DB alert/delivery 7 ngày trong
 [search decisions](features/place-search/decisions.md) và
-[alert decisions](features/context-alerts/decisions.md). Provider/maps/region/budget,
-API/model và các ngưỡng của những feature còn ở thiết kế chưa được chốt.
+[alert decisions](features/context-alerts/decisions.md). Lựa chọn provider, coverage và
+API/model và các ngưỡng của những feature còn ở thiết kế chưa được chốt tại lượt
+2026-11-12; cập nhật xác nhận mới 2026-11-13 được ghi ngay bên dưới.
 Không hỏi duyệt lại các policy đã xác nhận. User đã xác nhận
 và lượt đọc Mobile có mục tiêu xác minh **Swift/SwiftUI + Apple MapKit/iOS16**;
 search/history đã được triển khai native Apple + local cache theo DEC-SEARCH-03
@@ -43,10 +44,25 @@ proxy mới; routing/weather/purpose/geofence vẫn là thiết kế chưa hiệ
 | [place-search](features/place-search/spec.md) | Native iOS MapKit search/history đã triển khai; 21 tests + Simulator build; device/coverage QA còn lại ở plan |
 | [routing](features/routing/spec.md) | Chọn phương tiện/tuyến thay thế/traffic/active trip — Draft spec/plan/tasks |
 | [context-alerts](features/context-alerts/spec.md) | Chỉ cảnh báo đáng chú ý, inbox/device/worker/push nền — alert DB/retention đã duyệt, chi tiết thiết kế còn Draft |
-| [favorite-places extension](features/favorite-places/plan.md) | Purpose, CRUD, nhãn cá nhân trên nơi chung và Circle presence — Draft extension plan/tasks; API cũ giữ Current behavior |
+| [favorite-places extension](features/favorite-places/plan.md) | Backend CRUD/nhãn cá nhân + GPS presence snapshot đã hiện thực, 304 tests full-suite PASS; Mobile UI/device QA chưa thực hiện. [API handoff](../api-docs/PLACES_API_DOC.md) |
 
 Không coi endpoint/file/model dự kiến trong plan là đã tồn tại. Chỉ triển khai sau
 khi người dùng duyệt thiết kế/phạm vi liên quan.
+
+**Tiếp tục làm rõ — 2026-11-13:** user yêu cầu lại cùng nhóm chức năng. Giữ owner
+và các xác nhận cũ; không tạo spec tổng hợp hoặc coi đây là duyệt code toàn bộ.
+[Interview nhiều vòng](system/mobility-interview.md) ghi câu hỏi thật,
+13 đáp án của 3 vòng và Q-IDs gốc. Đã chốt Việt Nam trước, free-only/chưa bật
+billing, dẫn đường từng ngã rẽ có giọng nói trong app, self-only khi bật riêng
+lúc pause, nơi chung/nhãn cá nhân, creator/admin sửa/xóa, thêm dông/gió mạnh/nóng
+bất thường, mưa 30 phút, delay 5 phút, quiet hours 22–07 trừ nguy hiểm, dwell
+khoảng 2 phút, mất mạng tiếp tục tuyến đã tải và trial cá nhân/nội bộ. Provider
+phù hợp và các chi tiết kỹ thuật còn cần research/thiết kế.
+Stage/approval của các extension nằm ở
+[routing progress](features/routing/progress.md),
+[alerts progress](features/context-alerts/progress.md) và
+[places progress](features/favorite-places/progress.md). User sau đó đã xác nhận hiện thực/commit/push tuần tự; saved-place function đã push, backend GPS presence cũng đã commit/push riêng; routing chờ provider, weather tạm hoãn theo quyết định user;
+search/history giữ trạng thái triển khai theo hồ sơ, chưa kiểm chứng Mobile lại.
 
 ## Tài liệu hệ thống dùng chung
 

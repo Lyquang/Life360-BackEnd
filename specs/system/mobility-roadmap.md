@@ -47,6 +47,34 @@ coi là đã hoàn thành từ search. Không cần xin lại scope Mobile cho c
 REQ-MOB-05 là yêu cầu sản phẩm; không phải cam kết OS cho phép định vị/push liên tục.
 Acceptance định lượng và các ngoại lệ vận hành bên dưới cần duyệt trước thực hiện.
 
+## Clarifications — 2026-11-13
+
+User yêu cầu lại nhóm chức năng và trả lời 13 câu trong
+[interview](mobility-interview.md). Các requirements bổ sung sau có authority trực
+tiếp từ đáp án cùng ngày; không phải approval để code hoặc chọn provider:
+
+| ID | Intent/constraint đã xác nhận | Answer source |
+|---|---|---|
+| REQ-MOB-13 | Dẫn đường từng ngã rẽ và giọng nói ngay trong app; preview hoặc chuyển app khác chưa đủ | Q-MOB-06 |
+| REQ-MOB-14 | Việt Nam trước | Q-MOB-01; coverage thực chưa kiểm chứng |
+| REQ-MOB-15 | Thử nghiệm gói miễn phí, chưa bật tính phí; không tự bật billing khi hết quota | Q-MOB-02 |
+| REQ-MOB-16 | Khi pause Circle, dịch vụ riêng dùng vị trí chỉ nếu bật riêng; vẫn ẩn GPS/nhãn với Circle | Q-MOB-03 |
+| REQ-MOB-17 | Địa điểm chung trong Circle; từng người gán nhãn Nhà/Công ty riêng | Q-MOB-04a |
+| REQ-MOB-18 | Người tạo và admin Circle sửa/xóa nơi chung; từng người chỉ tự thay nhãn của mình | Q-MOB-04b |
+| REQ-MOB-19 | Cảnh báo mưa mở rộng thêm dông, gió mạnh, nắng nóng bất thường | Q-MOB-08; ngưỡng/nguồn chưa chốt |
+| REQ-MOB-20 | Cửa sổ cảnh báo sắp mưa: trong 30 phút tới, với dữ liệu đủ chi tiết/đạt rule | Q-MOB-05a |
+| REQ-MOB-21 | Mất mạng: tiếp tục tuyến đã tải còn hợp lệ, báo giới hạn dữ liệu mới; chưa yêu cầu offline reroute | Q-MOB-06a |
+| REQ-MOB-22 | Traffic cảnh báo từ 5 phút chậm thêm, chỉ khi dữ liệu hợp lệ cùng mode/tuyến/context | Q-MOB-05b |
+| REQ-MOB-23 | Quiet hours 22:00–07:00, trừ cảnh báo nguy hiểm có nguồn/rule xác định | Q-MOB-05c |
+| REQ-MOB-24 | Nhận diện ở Nhà/Công ty sau khoảng 2 phút trong vùng với GPS đủ tin cậy | Q-MOB-05d; chưa duyệt radius/overlap/fix count |
+| REQ-MOB-25 | Giai đoạn dùng API miễn phí là thử nghiệm cá nhân/nội bộ, chưa thương mại | Q-MOB-02a; chưa duyệt public rollout |
+
+Các đoạn preview-only/provider/budget chưa chọn ngày 2026-11-12 là lịch sử đề xuất;
+phạm vi mới theo bảng này và owner specs. Plan/tasks cũ cần review lại trước
+implementation, chưa chạy lập plan mới khi requirements còn blockers. Không
+chuyển trạng thái search/history đã thực hiện thành chưa triển khai. Trạng thái
+và approval theo progress ở từng owner, đáp án thật chỉ lưu tại interview.
+
 ## Hiện trạng đã đối chiếu
 
 - [Favorite places](../features/favorite-places/spec.md): Circle-only create/list; category hiện có restaurant/entertainment/cafe/shopping/other; chưa CRUD đầy đủ, purpose hoặc geofence.
@@ -92,7 +120,7 @@ flowchart LR
 - **Đã yêu cầu:** lịch sử tìm kiếm có ở cache, không DB; thời tiết bình thường không tạo notification. Nearby/text search vẫn trong scope.
 - **Đã duyệt DEC-SEARCH-01:** history cache trên mobile theo tài khoản, tối đa 20 mục/30 ngày, có xóa, không sync nhiều thiết bị bản đầu. Redis sync là scope mở rộng, chưa chọn ngầm. User query khác với nội dung POI provider; không cache raw detail tự do.
 - **Đã duyệt DEC-ALERT-01:** DB chỉ giữ logical alert đạt điều kiện và delivery state tối thiểu, retention 7 ngày; không lưu mọi lần weather poll hay báo trời đẹp. Provider snapshot dùng cache ngắn hạn được phép; durable context/worker phục vụ scheduling không phải kho thời tiết lịch sử.
-- “Hiện tượng lạ” cần vocabulary/ngưỡng: mưa sắp tới đã nằm trong scope, mưa lớn/dông/gió mạnh/nóng bất thường là đề xuất mở rộng cần nguồn/threshold được duyệt. Giao thông chỉ báo bất lợi cho mode/tuyến đang chọn; không báo “hết kẹt” hoặc “thời tiết đẹp lại” mặc định.
+- “Hiện tượng lạ” đã được user mở rộng gồm dông/gió mạnh/nóng bất thường (REQ-MOB-19); nguồn/threshold từng hiện tượng còn cần duyệt. Giao thông chỉ báo bất lợi cho mode/tuyến đang chọn; không báo “hết kẹt” hoặc “thời tiết đẹp lại” mặc định.
 - Chống spam theo đợt hiện tượng + cooldown; chỉ gửi thêm khi mức độ tăng đáng kể và rule cho phép. Loại cảnh báo mới không tự bật chỉ vì provider có trường tương ứng.
 
 ## Thứ tự triển khai và cổng nghiệm thu
@@ -126,14 +154,14 @@ phát triển độc lập search/place sau P0; các phần nền phụ thuộc 
 
 | ID | Cần duyệt | Đề xuất để thảo luận |
 |---|---|---|
-| Q-MOB-01 | Partially resolved: Maps SDK; open: thị trường/coverage từng mode | Mobile Apple MapKit/SwiftUI/iOS16 đã xác minh, không hỏi chọn lại maps SDK. Quốc gia chưa trả lời; xe máy không có mode riêng trong MKDirectionsTransportType công bố, cần đánh giá provider/capability riêng. |
-| Q-MOB-02 | Provider và ngân sách/tháng, requests/day cap | Chọn sau spike; dùng công thức chi phí ở research, không mặc định dịch vụ miễn phí. |
-| Q-MOB-03 | Pause ảnh hưởng dịch vụ riêng như thế nào | Mặc định không dùng GPS cũ để nhận diện/cảnh báo nền; xem tuyến bằng điểm nhập tay vẫn được. Nếu muốn self-only GPS khi pause, phải có mục đích/quyền riêng, không lách pause hiện hữu. |
-| Q-MOB-04 | Ai sửa/xóa nơi chung; Nhà/Công ty của ai | Creator hoặc admin sửa địa điểm chung; từng người gán shortcut cá nhân trên nơi chung. Không mặc định tất cả thành viên có chung công ty. |
-| Q-MOB-05 | Freshness, geofence, cooldown, quiet hours và retention | Giá trị đề xuất có trong feature plans; cần duyệt/tune thực địa. |
-| Q-MOB-06 | Dẫn đường trong app tới mức nào | Bản đầu preview + theo dõi chuyến/cảnh báo; giọng nói/turn-by-turn đầy đủ cần navigation SDK và scope riêng. |
+| Q-MOB-01 | Partially resolved: Maps SDK; open: thị trường/coverage từng mode | Mobile Apple MapKit/SwiftUI/iOS16 đã xác minh, không hỏi chọn lại maps SDK. User xác nhận Việt Nam trước ngày 2026-11-13; coverage xe máy còn phải kiểm chứng vì không có mode riêng trong MKDirectionsTransportType công bố, cần đánh giá provider/capability riêng. |
+| Q-MOB-02 | Budget resolved: free-only, chưa bật billing; provider/quota còn mở | REQ-MOB-15, interview 2026-11-13. Không tự bật billing dù SDK có free allowance. |
+| Q-MOB-03 | Policy resolved, consent lifecycle cần thiết kế | REQ-MOB-16: tiếp tục dịch vụ riêng nếu bật riêng; Circle vẫn không thấy GPS/nhãn. Không lách pause hoặc dùng GPS stale như hiện tại. |
+| Q-MOB-04 | Basic labels/permissions resolved qua Q-MOB-04a/04b | REQ-MOB-17/18: nơi chung, nhãn cá nhân; người tạo và admin sửa/xóa; lifecycle membership vẫn cần thiết kế. |
+| Q-MOB-05 | Window/delay/quiet hours/dwell resolved; chi tiết kỹ thuật còn mở | REQ-MOB-20/22/23/24: mưa 30 phút, delay 5 phút, 22–07 trừ nguy hiểm, dwell 2 phút. Radius/freshness/overlap/severity/cooldown chưa duyệt; retention alert 7 ngày đã có DEC-ALERT-01. |
+| Q-MOB-06 | Scope resolved; feasibility/provider còn mở | REQ-MOB-13: turn-by-turn và giọng nói trong app; không coi preview-only là hoàn thành. |
 | Q-MOB-07 | Resolved: history cache placement/TTL/limit | DEC-SEARCH-01: mobile theo account, 20 mục/30 ngày, xóa, không multi-device sync. Thư viện/native lifecycle cần khảo sát mobile. |
-| Q-MOB-08 | Partially resolved: DB alert; open: loại “thời tiết lạ” | DEC-ALERT-01 đã duyệt DB alert/delivery 7 ngày, không normal-weather record. Chưa chốt danh sách hiện tượng/ngưỡng; không cần duyệt lại persistence. |
+| Q-MOB-08 | DB/type resolved; nguồn/ngưỡng từng loại còn mở | DEC-ALERT-01 và REQ-MOB-19. Không hỏi lại persistence hoặc danh sách hiện tượng; không coi missing data là trời đẹp. |
 
 Người dùng đã yêu cầu background push và Circle/autopresence; hai mục này **không** còn là lựa chọn tùy ý bỏ khỏi scope. Chỉ chi tiết thực hiện và các ngoại lệ cần duyệt.
 

@@ -5,6 +5,13 @@ Giữ layering và [API conventions](../../system/api-conventions.md) hiện t�
 Lưu alert/delivery tối thiểu và retention 7 ngày đã được [DEC-ALERT-01](decisions.md)
 chấp thuận; những ngưỡng/provider chi tiết còn là Proposed.
 
+**Requirements update — 2026-11-13:** Việt Nam/free-only/chưa billing; bổ sung
+dông/gió mạnh/nóng bất thường, cửa sổ mưa 30 phút và personal-location opt-in riêng
+khi pause Circle theo [spec](spec.md). Rules/providers/push context bên dưới cần
+review lại theo các ràng buộc này; không được coi proposal cũ là approved plan.
+Đã chốt thêm traffic delay từ 5 phút và quiet hours 22–07 trừ nguy hiểm; severity/
+probability, provider và các tham số còn lại chưa chọn; xem [progress](progress.md).
+
 ## Flow
 
 ```text

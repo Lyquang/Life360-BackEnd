@@ -4,6 +4,17 @@ const MEMBER_FIELDS = 'name email avatar isOnline batteryLevel locationSharing';
 const ADMIN_FIELDS = 'name email avatar';
 
 module.exports = {
+  lockForPlaceWrite(groupId, userId, { session } = {}) {
+    if (!session?.inTransaction()) throw new Error('Place membership guard requires an active transaction.');
+    return Group.findOneAndUpdate(
+      { _id: groupId, members: userId },
+      { $inc: { placeGuardVersion: 1 } },
+      { new: true, session, timestamps: false }
+    ).select('+placeMembershipVersion +placeMembershipUpdatedAt');
+  },
+  findPresenceGroup(id) {
+    return Group.findById(id).select('members createdAt +placeMembershipVersion +placeMembershipUpdatedAt').lean();
+  },
   async create({ name, adminId }, { session } = {}) {
     const [group] = await Group.create([{ name, admin: adminId, members: [adminId] }], { session });
     return group;
@@ -28,13 +39,15 @@ module.exports = {
   },
 
   addMember(groupId, userId, { session } = {}) {
-    return Group.updateOne({ _id: groupId }, { $addToSet: { members: userId } }, { session });
+    return Group.updateOne({ _id: groupId }, { $addToSet: { members: userId },
+      $inc: { placeMembershipVersion: 1 }, $set: { placeMembershipUpdatedAt: new Date() } }, { session });
   },
 
   removeMember(groupId, userId, { session } = {}) {
     return Group.updateOne(
       { _id: groupId, members: userId },
-      { $pull: { members: userId } },
+      { $pull: { members: userId }, $inc: { placeMembershipVersion: 1 },
+        $set: { placeMembershipUpdatedAt: new Date() } },
       { session }
     );
   },

@@ -48,6 +48,7 @@ const favoritePlaceSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    revision: { type: Number, default: 0, min: 0 },
   },
   {
     timestamps: true,
@@ -61,6 +62,7 @@ favoritePlaceSchema.index({ location: '2dsphere' });
 favoritePlaceSchema.set('toJSON', {
   transform: (doc, ret) => {
     ret.id = ret._id;
+    ret.revision = ret.revision ?? 0;
     delete ret._id;
     delete ret.__v;
     if (ret.location && ret.location.coordinates) {

@@ -4,6 +4,36 @@ Date: 2026-11-12 | **Research, không phải lựa chọn provider đã duyệt*
 [Roadmap](mobility-roadmap.md). Chỉ đọc tài liệu công khai; không gửi source/GPS/token
 của repo ra ngoài, không gọi API dự báo hay tính tuyến, không kiểm chứng account/billing.
 
+## Kiểm chứng thêm ngày 2026-11-13 — navigation và free-only
+
+User xác nhận Việt Nam trước, chưa bật tính phí và dẫn đường từng ngã rẽ/giọng
+nói trong app. Đây là requirements; chưa có provider được chọn để đáp ứng tất cả.
+
+- Google Navigation SDK for iOS yêu cầu billing được bật. Vì vậy ứng viên này hiện
+  không thỏa ràng buộc chưa bật billing, dù quota/allowance có thể giới hạn mức dùng.
+  Không bật tài khoản/billing hoặc gọi endpoint để thử.
+  [Official usage/billing](https://developers.google.com/maps/documentation/navigation/ios-sdk/pricing).
+- Apple công bố MKRoute.Step cho chỉ dẫn theo bước và transport types; danh sách
+  hiện hành không có mode motorcycle riêng. Suy luận thiết kế: có step/polyline
+  chưa chứng minh đã có hệ thống in-app voice/navigation đúng cho xe máy tại Việt
+  Nam. Không dùng automobile như motorcycle. Availability đúng iOS16, coverage,
+  audio/background/reroute và điều kiện dùng dữ liệu vẫn cần kiểm chứng.
+  [Route steps](https://developer.apple.com/documentation/mapkit/mkroute/step),
+  [Transport types](https://developer.apple.com/documentation/mapkit/mkdirectionstransporttype).
+
+- Open-Meteo public free API dành cho non-commercial use; user đã xác nhận thử nghiệm cá nhân/nội bộ chưa thương mại (REQ-MOB-25).
+  Điều này chưa tự chứng minh ứng viên đáp ứng nowcast/coverage hoặc mọi điều kiện dùng.
+  [Official pricing](https://open-meteo.com/en/pricing).
+- Open-Meteo nêu dữ liệu 15 phút ngoài Central Europe/North America là nội suy từ
+  hourly models. Suy luận cho Việt Nam: không coi chuỗi nội suy này là bằng chứng
+  nowcast mưa 30 phút đã đủ chính xác. Cần đánh giá nguồn/model và giới hạn cụ thể.
+  [Official docs](https://open-meteo.com/en/docs), [overview](https://open-meteo.com/).
+
+Không kết luận mọi giải pháp miễn phí đều bất khả thi; chưa hoàn tất so sánh SDK/
+provider. Các đề xuất Google Routes phía dưới là research lịch sử, chưa được duyệt
+và không tự đáp ứng in-app voice/free-only. Ngưỡng weather/traffic và nguồn nowcast
+30 phút cho Việt Nam cũng chưa được lựa chọn hoặc kiểm thử live.
+
 ## Search và bản đồ
 
 **Cập nhật platform đã xác minh, 2026-11-12:** user cung cấp Mobile path và xác

@@ -30,6 +30,7 @@ function createLocationUseCases({
   metrics,
   sosAssistance,
   sosActionLimiter,
+  placePresence,
 }) {
   const telemetry = createSafeMetrics(metrics);
   const { lastSavedLocation, durationTracker } = locationRuntimeState;
@@ -208,6 +209,14 @@ function createLocationUseCases({
           timestamp: serverAt.toISOString(),
         });
         logger.log('LOCATION_STAY_ALERT_SENT');
+      }
+    }
+    if (placePresence && persistence.persist && persistence.reason !== 'lateArrival') {
+      try {
+        // Pass the original measurement time, never the legacy server-time fallback.
+        await placePresence.project({ userId, latitude, longitude, recordedAt, accuracy });
+      } catch {
+        logger.warn('PLACE_PRESENCE_UPDATE_FAILED');
       }
     }
   }
