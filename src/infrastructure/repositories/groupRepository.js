@@ -4,6 +4,14 @@ const MEMBER_FIELDS = 'name email avatar isOnline batteryLevel locationSharing';
 const ADMIN_FIELDS = 'name email avatar';
 
 module.exports = {
+  lockForPlaceWrite(groupId, userId, { session } = {}) {
+    if (!session?.inTransaction()) throw new Error('Place membership guard requires an active transaction.');
+    return Group.findOneAndUpdate(
+      { _id: groupId, members: userId },
+      { $inc: { placeGuardVersion: 1 } },
+      { new: true, session }
+    );
+  },
   async create({ name, adminId }, { session } = {}) {
     const [group] = await Group.create([{ name, admin: adminId, members: [adminId] }], { session });
     return group;

@@ -1,3 +1,85 @@
+# Implementation plan — Circle places, revision A (2026-11-13)
+
+User explicitly authorized implementation, then commit/push one function at a time.
+This completes the backend saved-place management function first; GPS presence is
+an independent next function, not claimed complete here. No Mobile writes or paid
+providers. Existing search/history stays unchanged.
+
+## Technical context and constitution
+
+CommonJS Node >=20, Express/Zod, Mongoose/MongoDB replica-set transactions, existing
+unitOfWork and DI in src/container.js. No package/config/key/billing changes.
+Presentation → use cases → repositories/models; domain constants pure. Native plan
+helper resolved this existing owner and retained its file. Use existing model and
+contract owners; no duplicate contracts directory. Research decisions below resolve
+this slice's implementation choices; full native navigation/weather remain separate.
+
+## Stories and acceptance mapping
+
+- US1 (P1): Current members view/create places; creator or Circle admin edits/deletes.
+  AC-P1: old create/list/category/coordinates/populated addedBy remain compatible.
+  AC-P2: new get/update/delete require membership and group-scoped place; edits use
+  revision CAS and reject stale revisions with 409; legacy missing revision is zero.
+- US2 (P1): Member assigns own home/work/leisure/custom shortcut to shared place.
+  AC-P3: per (Circle,user,label) uniqueness, custom label text required for custom;
+  replacement is last-write-wins, PUT/DELETE retry-safe. No shared home/work purpose
+  on FavoritePlace: confirmed per-person labels supersede that older draft idea.
+- AC-P4: outsider/left member cannot read/write; creator still needs membership;
+  foreign place, owner spoofing, bad coordinates/payloads rejected. New writes lock
+  membership in same transaction; delete cascades personal labels atomically.
+- AC-P5: concurrent updates cannot overwrite stale revision; assignment/delete and
+  leave/write are serialized through a Group guard. New mutations fail 503 without
+  transactions; existing create/list keep standalone dev compatibility.
+- AC-P6: client API guide, Swagger, Vietnamese Study and actual test evidence ship
+  with this function. No GPS broadcasting, background consent or auto-presence yet.
+
+## Data and interfaces
+
+FavoritePlace adds revision integer default zero. PATCH/DELETE require expected
+revision; old documents without the field match zero without a migration. Group
+adds hidden placeGuardVersion for transaction conflicts with membership changes.
+MemberPlaceLabel stores groupId,userId,label,placeId,customLabel and timestamps;
+unique compound key. Labels are personal; no client-controlled owner ID. Reads
+require live membership and return only caller labels. Leaving denies all access;
+private labels are retained for rejoin; deleting a place removes every referencing
+label. There is no place visit/presence or history collection in this function.
+
+HTTP /api/v1/groups/:groupId: existing POST/GET /places; new GET/PATCH/DELETE
+/places/:placeId; GET /me/place-labels; PUT/DELETE /me/place-labels/:label.
+Label enum home/work/leisure/custom; customLabel trimmed 1..50 for custom only.
+PATCH allows name/category and paired latitude/longitude; revision >=0 required.
+DELETE uses query revision. Full contracts will be synchronized after verification.
+Coordinates are user-authored input; do not fetch/cache provider POI data here.
+
+## Implementation files and verification
+
+src/domain/placeLabels.js; FavoritePlace/Group/MemberPlaceLabel models; database
+connection registration; groupRepository membership guard; placeRepository CRUD/
+labels; placeUseCases; group.schemas; groupController/groupRoutes. Reuse deps.placeRepo.
+Test real REST + MongoMemoryReplSet in tests/placeManagement.test.js, covering
+AC-P1..P5, concurrent CAS, transactional rollback and membership races. Run existing
+API/privacy/Circle regression and full npm test after focused checks; syntax check
+changed JS individually. No production Mongo, seed, deployment or app install.
+Update api-docs/PLACES_API_DOC.md, Study/PLACE_PURPOSES.md, owner docs/PROGRESS.
+
+## Delivery
+
+Commit only when this function and required checks/docs pass. Push a feature branch
+because pushes to main/develop trigger existing publish/deploy workflow. User has
+explicitly authorized commit/push, not deployment. Keep reviewed interview/spec
+changes from preceding discussion; preserve any unrelated work. Do not force push.
+
+## Remaining feature roadmap (not revision A implementation)
+
+GPS dwell/presence/invalidation and Mobile UI follow as separate functions. Original
+PLACE-T04..08 geofence/native items remain visible in tasks; do not mark all done.
+Detailed prior proposal is retained below for future research; revision A supersedes
+its shared purpose fields and DTO guesses for the completed saved-place function.
+
+---
+
+## Historical extension proposal (not a current API contract)
+
 # Plan mở rộng: địa điểm theo mục đích và nhận diện trong Circle
 
 Status: **Proposed — chưa hiện thực** | Date: 2026-11-12.
@@ -5,6 +87,14 @@ Status: **Proposed — chưa hiện thực** | Date: 2026-11-12.
 · [Tasks](tasks.md) · [Roadmap/authority](../../system/mobility-roadmap.md).
 REQ-MOB-04/06 yêu cầu purpose, chia sẻ Circle và tự nhận diện nơi ở. Các field,
 permission/default/acceptance bên dưới chờ duyệt, không sửa contract hiện hữu.
+
+**Cập nhật requirements — 2026-11-13:** REQ-MOB-16/17/18 đã xác nhận địa điểm
+chung/nhãn cá nhân, người tạo và admin sửa/xóa, mỗi người chỉ tự thay nhãn của mình;
+pause Circle không được lộ GPS/nhãn qua self-only services. Các bullet tương ứng
+bên dưới là proposal cũ nay có intent được xác nhận trong [spec](spec.md).
+Dwell khoảng 2 phút đã được xác nhận thêm (REQ-MOB-24). API/model,
+radius/freshness/overlap và lifecycle kỹ thuật vẫn chưa duyệt. Xem
+[progress](progress.md); đây chưa phải plan revision được duyệt để implementation.
 
 ## Thiết kế sản phẩm
 

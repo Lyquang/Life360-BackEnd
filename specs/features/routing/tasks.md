@@ -2,6 +2,10 @@
 
 [Spec](spec.md) · [Plan](plan.md). Implementation pending design approval.
 
+**Review needed — 2026-11-13:** danh sách dưới là task draft cũ, chưa bao phủ
+REQ-MOB-13 in-app turn-by-turn/voice và constraint free-only. Xem [progress](progress.md).
+Chưa tái sinh tasks/analyze hoặc bắt đầu code; giữ các ID/completion evidence cũ.
+
 - [x] ROUTE-T01 Phân biệt route planner với GPS matcher, ghi lifecycle/acceptance draft.
 - [ ] ROUTE-T02 Chốt modes/coverage/navigation scope, provider rights/quotas, expiry và reroute policy; P0, Q-MOB-01/02/05/06.
 - [ ] ROUTE-T03 Adapter + port + preview DTO/routes/controller/Swagger, test AC-ROUTE-01/02/03.

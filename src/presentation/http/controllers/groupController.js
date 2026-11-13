@@ -86,6 +86,31 @@ function createGroupController({ groups, digests, places }) {
       const data = await places.listPlaces({ userId: req.user._id, groupId: req.dto.params.groupId });
       res.json({ success: true, count: data.length, data });
     }),
+
+    getPlace: asyncHandler(async (req, res) => {
+      const data = await places.getPlace({ userId: req.user._id, ...req.dto.params });
+      res.json({ success: true, data });
+    }),
+    updatePlace: asyncHandler(async (req, res) => {
+      const data = await places.updatePlace({ userId: req.user._id, ...req.dto.params, ...req.dto.body });
+      res.json({ success: true, data });
+    }),
+    deletePlace: asyncHandler(async (req, res) => {
+      const data = await places.deletePlace({ userId: req.user._id, ...req.dto.params, ...req.dto.query });
+      res.json({ success: true, data });
+    }),
+    listMyPlaceLabels: asyncHandler(async (req, res) => {
+      const data = await places.listMyLabels({ userId: req.user._id, ...req.dto.params });
+      res.json({ success: true, count: data.length, data });
+    }),
+    setMyPlaceLabel: asyncHandler(async (req, res) => {
+      const data = await places.setMyLabel({ userId: req.user._id, ...req.dto.params, ...req.dto.body });
+      res.json({ success: true, data });
+    }),
+    deleteMyPlaceLabel: asyncHandler(async (req, res) => {
+      const data = await places.deleteMyLabel({ userId: req.user._id, ...req.dto.params });
+      res.json({ success: true, data });
+    }),
   };
 }
 

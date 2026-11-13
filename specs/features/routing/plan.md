@@ -2,6 +2,13 @@
 
 Status: **Proposed**. [Spec](spec.md) · [Roadmap](../../system/mobility-roadmap.md).
 
+**Cần review lại — 2026-11-13:** user đã chốt Việt Nam, free-only/chưa billing,
+in-app turn-by-turn có giọng nói và self-only location khi bật riêng lúc pause.
+[Spec](spec.md) và [interview](../../system/mobility-interview.md) ghi authority.
+Thiết kế preview/active-trip bên dưới chưa đủ yêu cầu navigation mới; chưa được
+duyệt triển khai và chưa chọn SDK/provider. Không dùng bản plan cũ làm approval.
+Chờ giải quyết blockers và human requirements confirmation trước lập plan mới.
+
 ## Cập nhật nền bản đồ đã xác minh
 
 Mobile dùng native Swift/SwiftUI + Apple MapKit, iOS 16; không phải Google Maps.
@@ -11,7 +18,7 @@ native Apple không giải quyết luôn routing xe máy hoặc traffic worker �
 Luồng server-side dưới đây vẫn là proposal cho active-trip/traffic, chưa chọn
 provider. Google mapping/API trong plan là candidate, **không** đã duyệt để vẽ lên
 Apple Maps; phải xác minh điều khoản/capability trước chọn. Không đổi maps nền
-hoặc bỏ yêu cầu xe máy vì phát hiện này. Country/coverage còn mở.
+hoặc bỏ yêu cầu xe máy vì phát hiện này. Việt Nam đã xác nhận; coverage thực còn mở.
 
 ## Flow và file dự kiến
 

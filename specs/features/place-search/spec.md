@@ -46,8 +46,9 @@ hiện mục gần đây từ cache, xóa từng mục/xóa hết; cache mất t
 ## Câu hỏi
 
 Maps nền đã xác minh là Apple MapKit; đề xuất dùng MKLocalSearchCompleter/MKLocalSearch
-ngay mobile cho search. Quốc gia ưu tiên chưa được trả lời; coverage và các feature
-provider khác/budget vẫn cần P0. Nearby/text search có sẵn trong scope; cần kiểm tra
+ngay mobile cho search. Cập nhật 2026-11-13: user chọn Việt Nam trước và thử
+nghiệm miễn phí/chưa billing theo REQ-MOB-14/15. Coverage thực và provider/quota
+của routing/weather vẫn cần P0; không thay native search chỉ từ yêu cầu mới. Nearby/text search có sẵn trong scope; cần kiểm tra
 region/POI availability iOS 16. DEC-SEARCH-03 đã cho phép sửa Mobile cho search/history; phạm vi khác vẫn theo plan
 riêng. Country/device coverage là QA tiếp theo, không khẳng định từ build hoặc smoke.
 Q-MOB-07 về vị trí cache/retention đã được DEC-SEARCH-01 giải quyết; còn kiểm tra
