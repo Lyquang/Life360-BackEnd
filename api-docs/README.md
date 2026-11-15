@@ -9,6 +9,7 @@ mới hoặc chứng minh API đã được deploy. Nếu các nguồn khác nha
 
 | Nhu cầu | Hướng dẫn |
 |---|---|
+| Xem trước tuyến xe máy/ô tô/đi bộ và tuyến thay thế | [Routing preview](ROUTING_API_DOC.md) |
 | Địa điểm Circle, nhãn cá nhân và snapshot nơi đang ở | [Saved places](PLACES_API_DOC.md) |
 | Toàn chuỗi Location | [Mobile location index](MOBILE_LOCATION_INTEGRATION_INDEX.md) |
 | Gửi GPS realtime và batch offline | [Location update](LOCATION_UPDATE_API_DOC.md) |

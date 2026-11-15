@@ -53,9 +53,95 @@ historical, not an outstanding approval question.
 
 ## Current provider gate
 
-Backend places/presence have been delivered. Before routing-dependent code, resolve
-Q-MOB-27 (trial account/provider information; no credential requested) and verify
+Backend places/presence have been delivered. Q-MOB-27 is now answered in the
+2026-11-14 follow-up below. Before routing-dependent code, verify
 navigation/MapKit display/retention entitlement and actual mode/traffic contract.
 See research.md for current TomTom/VietMap evidence and unresolved documentation
 conflicts. No provider chosen, no billing/accounts/API calls performed. Original
 requirements/start authorization remain valid; do not ask to approve them again.
+
+## Routing implementation request — 2026-11-14
+
+User directly requested “HIện thực chức năng Tìm tuyến và dẫn đường”. Q-MOB-27 is
+answered: no provider account exists. User additionally authorized routing-scoped
+edits to the Mobile repository and local iOS build/tests. Q-MOB-28/29/30 confirmed
+bounded automatic online reroute, stable-arrival auto-end and continued background
+voice guidance. The canonical answers and scope are in the
+[interview](../../system/mobility-interview.md#routing-follow-up--2026-11-14).
+
+**Stage remains CLARIFYING/provider gate.** Existing draft plan/tasks still lack
+an entitled provider, exact v1/other API contract and native navigation design;
+they are not a reviewed implementation packet. TomTom Orbis v2/v3 do not document
+motorcycle support, VietMap Trial disables Traffic by default. See
+[research](research.md#recheck--2026-11-14). No backend/mobile runtime change,
+provider call, key, billing or deployment has occurred in this follow-up.
+
+Q-MOB-31 is answered: user chose **TomTom Maps Routing API v1 as a conditional
+internal-trial candidate**. This resolves provider preference, but no account or
+key exists, and beta motorcycle/traffic/navigation rights have not been validated
+on an entitled account. Next: finish a revised reviewable Backend + Mobile plan,
+then obtain the account/private key and run mode-specific trial validation before
+claiming end-to-end implementation or enabling the feature.
+
+## Key availability and first provider check — 2026-11-14
+
+User reported key configured in ignored Backend `.env`. Local presence check
+confirmed one nonempty entry; no value was printed or copied into docs. Six
+limited authenticated public-Hanoi-point v1 calls returned HTTP 200 and route
+geometry/guidance for motorcycle, car and pedestrian, with two alternatives each.
+The `sectionType=travelMode` probe found `other` sections in motorcycle/car, and
+motorcycle/car output was identical on this one sample. See [research](research.md#keyed-public-route-feasibility--2026-11-14).
+This proves key access to this endpoint, **not** free billing status, account
+terms, Vietnam motorcycle legality or iOS guidance. Native plan/contract/tasks
+review and Mobile approval gate still precede runtime edits.
+
+User subsequently confirmed Free + Routing API assignment (Q-MOB-33) and the
+mixed-mode warning policy (Q-MOB-32). A seventh public route call showed that
+`language=vi-VN` can still return English maneuver messages. Vietnamese speech
+needs local coded-maneuver templates and device QA; do not claim provider-localized
+voice. No additional secret was exposed.
+
+## Revision 2 review packet — 2026-11-14
+
+Stage: **AWAITING_APPROVAL** for the current Backend preview and linked Mobile
+navigation design. The initial implementation request established intent, while
+this stateless Backend/local Mobile session architecture and exact proposed DTO
+were written afterward; they require review under AGENTS.md. No runtime code
+has changed for routing. [Spec](spec.md) · [Plan](plan.md#revision-2--route-finding--in-app-navigation-2026-11-14)
+· [Tasks](tasks.md#revision-2-execution-queue-2026-11-14) · [Proposed contract](contracts.md)
+· [Mobile plan](../../../../Mobile/.spec/016-route-navigation/plan.md).
+
+Read-only Spec Kit consistency analysis after task generation: selected native
+feature path with `check-prerequisites.sh --require-spec --require-tasks`;
+reviewed requirements/ACs against Revision 2 flow and R2-01…09, and checked
+constitution/owner boundaries. **No critical internal contradiction remains**:
+historical ActiveTrip AC-ROUTE-04…07 and plan/tasks are explicitly superseded
+for this slice. External gates remain TomTom account terms/route rights, actual
+Vietnam motorcycle/device pilot, and verified Backend API handoff; do not
+construe these as passed. No implementation approval recorded.
+
+Review snapshot SHA-256: spec `d6ff36ada2f1606c4192e3327024c72d492f201b1bca2ade66bb05ebe99ed55c`,
+plan `f93844cdea806c11e528a66f1ed22a3123a2bf2ef9b3766176d0473bf8b83e9a`,
+tasks/scope digest `b83d8d40cff24d60cbb098c9b04caa7334a99e6a62603cd61d078a4a81013c6c`.
+Approval, if given, is limited to Revision 2 and the linked Mobile plan;
+it does not authorize billing, deployment, weather, traffic push or historical
+Backend ActiveTrip.
+
+## Implementation approval — 2026-11-14
+
+User explicitly replied “Tôi duyệt plan trên, hiện thực đầy đủ cho tôi” after
+reviewing the Vietnamese summary of Revision 2. This approves the exact Backend
+spec/plan/task hashes and linked Mobile review packet above. Stage: **IMPLEMENTING**.
+TomTom account terms, Vietnam road pilot and device background voice remain
+verification/activation gates; approval does not certify those outcomes or enable
+paid billing/deployment. Backend route preview is the first implementation slice.
+
+## Local implementation checkpoint — 2026-11-14
+
+Backend `POST /api/v1/routes/preview` is implemented behind optional `TOMTOM_ROUTING_API_KEY`, with JWT, strict DTO, per-user budget, normalized real route alternatives, `other` sections, traffic availability and Swagger. It stores no trip. [Client handoff](../../../api-docs/ROUTING_API_DOC.md) and [Study](../../../Study/ROUTING_NAVIGATION.md) describe the implemented interface and limits. Focused Backend checks: 5 pass; full suite: 309/309 pass across 63 suites after the fifth focused case was added. Mobile simulator build and standalone navigation harness pass; see [Mobile verification](../../../../Mobile/.spec/016-route-navigation/verification.md). Stage remains **IMPLEMENTING**, since account terms and device/road pilot are pending. No deployment or paid billing performed.
+
+## Device screenshot and Render discrepancy — 2026-11-15
+
+User installed the app on the paired iPhone and showed `route.state.unavailable` on the route panel. Mobile production configuration targets `https://life360-backend-version2-0.onrender.com/api/v1`. A public, credential-free probe returned `GET /api/v1/health` 200 and `POST /api/v1/routes/preview` with an empty body **404**. The locally mounted route applies authentication before validation, so an unauthenticated request should be 401 when this code is deployed. This is evidence that the live service does not serve the local routing implementation; it does not prove which Git branch Render tracks. No user GPS/token was sent in the probe.
+
+`render.yaml` now declares `TOMTOM_ROUTING_API_KEY` as a secret and the preview rate limit, and quotes the pre-existing `REDIS_KEY_PREFIX` value so YAML parses. The live service branch and whether its Environment has the TomTom key remain unverified. Keep stage **IMPLEMENTING** until the correct service receives the reviewed code, the route responds correctly, and the iPhone flow is tested. No push/deployment occurred in this investigation.

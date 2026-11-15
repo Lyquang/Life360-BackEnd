@@ -1,5 +1,12 @@
 # Progress Log
 
+### Routing/navigation discovery follow-up (2026-11-14)
+
+- User requested implementation of route finding and in-app navigation, authorized routing-scoped Mobile edits/local iOS checks, and confirmed bounded automatic online reroute, stable-arrival auto-end and background voice. User chose TomTom Maps Routing API v1 for a conditional internal trial but has no provider account/entitlement yet. Canonical answers: `specs/system/mobility-interview.md`; routing owner: `specs/features/routing/`.
+- Current official docs distinguish TomTom Maps Routing v1 (motorcycle BETA/car/pedestrian) from Orbis v2/v3 (no documented motorcycle), and VietMap Trial disables Traffic by default. Candidate research was updated; no live Vietnam route, key, account terms, retention rights or device behavior was verified.
+- Documentation only: no runtime/API/Mobile changes, provider calls, billing, deploy, commit or push. `git diff --check` passed; tests were not run because executable code did not change. Routing remains CLARIFYING pending provider/entitlement and a current reviewed plan/tasks/analysis.
+- Follow-up after user placed a local key: one nonempty ignored `.env` entry verified without disclosure; six bounded TomTom v1 requests using public Hanoi points returned route/guidance/alternatives for motorcycle, car and pedestrian. Motorcycle/car output was identical in that sample and both included an `other` travel-mode section, so real motorcycle suitability remains unproved. No account billing/terms/device validation, runtime edits, commit or push.
+
 ### SOS temporary realtime location: architecture proposal (2026-10-30)
 
 - Read the Mobile proposal and checked normal privacy/publish/batch/trail, SOS audience/transaction/outbox, group membership hooks and auth revocation. Normal updates write shared caches/history and cannot be reused as a temporary SOS bypass. Current watch invalidation/Socket transport is process-local.
@@ -461,3 +468,9 @@ M3-0 verification: 180/180 tests pass (49 suites), including two new privacy reg
 - Saved-place management/labels: 3adfee8; shared-GPS presence snapshot: dcf0637. Both feature commits pushed sequentially to origin/feat/circle-place-purposes after their appropriate tests/docs. T001..T011 complete; backend revisions A/B only, not Mobile/device/production or all mobility scope.
 - Final backend evidence remains 304/304 tests PASS across63 suites, focused27/27, lint/16 individual JS syntax checks, local doc references and diff checks. Documentation-only delivery bookkeeping after the code push does not alter runtime behavior. No deployment/main merge, paid account or provider call.
 - Remaining user input: routing trial/provider Q-MOB-27 and associated entitlement. Weather explicitly deferred by user until a suitable Vietnam30-minute source is verified. Preserve current requirements; do not replace with hourly forecasts or silently change the base map.
+
+### Routing Revision 2 local implementation — 2026-11-14
+
+- User approved the reviewed Backend/Mobile plan. Implemented Backend TomTom v1 route preview with JWT, strict mode/coordinate DTO, bounded provider response, user rate limit, real alternatives, `other` segments, traffic availability and Swagger; added Mobile MapKit preview, private location lease, in-memory navigation, localized voice, bounded reroute, stable arrival and offline continuation.
+- Backend focused checks 5/5 pass; full suite 309/309 pass across 63 suites. Mobile Simulator Debug build, Swift navigation harness, vi/en localization and SwiftLint passed. API handoff and Study notes exist. See routing owner progress and Mobile verification for exact scope.
+- Native convergence recorded remaining account terms, Vietnam motorcycle/device/background/accessibility and privacy integration checks. Stage IMPLEMENTING; no commit/push, deployment or paid billing claim for this incomplete function.

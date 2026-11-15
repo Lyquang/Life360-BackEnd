@@ -185,6 +185,44 @@ Answer (actual user): **“Giữ yêu cầu 30 phút; chưa triển khai weather
 
 
 Q-MOB-27 (provider follow-up): Asked whether user already has a TomTom/VietMap trial
-account/key, or neither; no keys/credentials requested in chat. **Pending answer**.
-Research identifies candidates, not a selected/entitled provider. “Tiếp tục”
-continues independent work and is not a provider selection or account/billing action.
+account/key, or neither; no keys/credentials requested in chat. **Answered 2026-11-14:**
+“Chưa có tài khoản”. Research identifies candidates, not a selected/entitled
+provider. User must create any chosen account and configure its key privately;
+this answer does not authorize billing or prove navigation entitlement.
+
+## Routing follow-up — 2026-11-14
+
+User explicitly requested implementation of route finding and navigation, then
+allowed changes in `/Users/lyq02/Desktop/Family Tracker Off/Mobile` for this
+feature plus local iOS build/tests. This expands the prior Backend-only write
+boundary for **routing only**; it does not authorize paid service, deployment,
+or unrelated Mobile changes.
+
+| Q-ID | Question | Actual user answer | Effect |
+|---|---|---|---|
+| Q-MOB-28 | Off-route behavior | “Tự tính lại, có giới hạn” | Automatic online reroute with a bounded policy; exact cooldown/quota remains an engineering proposal for review. |
+| Q-MOB-29 | Arrival behavior | “Tự kết thúc khi ổn định” | Do not finish from a single GPS fix; propose a reliable dwell rule. |
+| Q-MOB-30 | Background voice | “Tiếp tục giọng nói nền” | Native iOS background location/audio lifecycle and permissions must be in the plan and device verification. |
+
+All three answers were given on 2026-11-14. They confirm the product behavior,
+not provider access, an exact native implementation design, or device readiness.
+
+Q-MOB-31 (trial provider choice): Recommended TomTom Maps Routing API v1 for an
+internal prototype, subject to account entitlement and real Vietnam route checks.
+The v1 docs include motorcycle BETA, car/pedestrian, alternatives/guidance and
+traffic; Orbis v2/v3 do not document motorcycle routing. Actual user answer:
+**“Đồng ý thử TomTom v1”** (2026-11-14). This selects a conditional trial
+candidate, not paid billing, production rollout, permission to use an absent
+account/key, or proof that beta motorcycle routes are reliable in Vietnam.
+
+Q-MOB-32 (mixed travel-mode segment): TomTom v1 public Hanoi route returned a
+mostly motorcycle route with seven final geometry points labeled `other`. Asked
+whether to reject it or show it with a warning. Actual user answer 2026-11-14:
+**“Hiện tuyến kèm cảnh báo”**. Warn that TomTom has not confirmed motorcycle
+access for that segment; `other` alone does not prove it is a walking segment.
+
+Q-MOB-33 (account assignment): Asked user to verify MyTomTom key type and
+assigned product without sharing key. Actual user answer 2026-11-14:
+**“Đã thấy Free và Routing API”**. This is user-reported account evidence,
+not a screenshot or legal-terms/device/road-legality verification. The key's
+v1 endpoint access was separately verified by six public-point trial calls.
