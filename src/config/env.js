@@ -67,6 +67,8 @@ const envSchema = z.object({
   LIVE_TRAIL_MATCHER_ENABLED: z.enum(['true', 'false']).default('false'),
   LIVE_TRAIL_MATCHER_PROVIDER: z.enum(['noop', 'fake', 'mapbox']).default('noop'),
   MAPBOX_ACCESS_TOKEN: optionalString,
+  TOMTOM_ROUTING_API_KEY: optionalString,
+  ROUTING_PREVIEW_RATE_LIMIT: z.coerce.number().int().min(1).max(60).default(10),
   LIVE_TRAIL_MATCH_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.6),
   LIVE_TRAIL_MATCH_WINDOW_SIZE: z.coerce.number().int().min(3).max(100).default(5),
   LIVE_TRAIL_MATCH_WINDOW_WAIT_SECONDS: z.coerce.number().int().min(1).max(300).default(30),
@@ -233,6 +235,10 @@ function loadConfig(env = process.env) {
     corsOrigin,
     publicUrl: e.PUBLIC_URL || e.RENDER_EXTERNAL_URL || `http://localhost:${e.PORT}`,
     authRateLimit: e.AUTH_RATE_LIMIT,
+    routing: {
+      apiKey: e.TOMTOM_ROUTING_API_KEY,
+      previewRateLimit: e.ROUTING_PREVIEW_RATE_LIMIT,
+    },
     refreshRateLimit: e.REFRESH_RATE_LIMIT,
     locationBatch: {
       rateLimit: e.LOCATION_BATCH_RATE_LIMIT,

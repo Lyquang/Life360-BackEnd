@@ -1,5 +1,12 @@
 # Progress Log
 
+### Routing/navigation discovery follow-up (2026-11-14)
+
+- User requested implementation of route finding and in-app navigation, authorized routing-scoped Mobile edits/local iOS checks, and confirmed bounded automatic online reroute, stable-arrival auto-end and background voice. User chose TomTom Maps Routing API v1 for a conditional internal trial but has no provider account/entitlement yet. Canonical answers: `specs/system/mobility-interview.md`; routing owner: `specs/features/routing/`.
+- Current official docs distinguish TomTom Maps Routing v1 (motorcycle BETA/car/pedestrian) from Orbis v2/v3 (no documented motorcycle), and VietMap Trial disables Traffic by default. Candidate research was updated; no live Vietnam route, key, account terms, retention rights or device behavior was verified.
+- Documentation only: no runtime/API/Mobile changes, provider calls, billing, deploy, commit or push. `git diff --check` passed; tests were not run because executable code did not change. Routing remains CLARIFYING pending provider/entitlement and a current reviewed plan/tasks/analysis.
+- Follow-up after user placed a local key: one nonempty ignored `.env` entry verified without disclosure; six bounded TomTom v1 requests using public Hanoi points returned route/guidance/alternatives for motorcycle, car and pedestrian. Motorcycle/car output was identical in that sample and both included an `other` travel-mode section, so real motorcycle suitability remains unproved. No account billing/terms/device validation, runtime edits, commit or push.
+
 ### SOS temporary realtime location: architecture proposal (2026-10-30)
 
 - Read the Mobile proposal and checked normal privacy/publish/batch/trail, SOS audience/transaction/outbox, group membership hooks and auth revocation. Normal updates write shared caches/history and cannot be reused as a temporary SOS bypass. Current watch invalidation/Socket transport is process-local.
@@ -423,3 +430,9 @@ M3-0 verification: 180/180 tests pass (49 suites), including two new privacy reg
 - Updated AGENTS/CLAUDE/spec registry and Vietnamese workflow Study; added supplemental interview/verification/progress templates and scripts/specify launcher. Setup evidence and complete changed-file inventory: specs/system/spec-kit-setup.md; usage, lifecycle and refresh: codex/spec-kit/README.md. Tooling-only API handoff is N/A: no HTTP/socket interface changed.
 - Validation: official version/init/integration, 3 composed templates, 15-step overlay order, native new-feature dry-run, legacy owner paths-only/no-persist, temporary scaffold/plan/tasks and native gate pause/reject/approve-only marker passed. Local Codex app-server skills/list discovered all 9 skills with zero project skill errors, without model/thread/turn calls. Source/lock baseline and 136 src JS ledger hashes match; no graph refresh needed. Shell syntax and final docs/structure/diff checks are recorded in setup report.
 - Not run: IDE picker display, model-driven full feature workflow, application runtime tests/native builds/provider/device QA. No feature implemented or product proposal approved by this setup. Temporary fixture approval is not approval of application work. Existing unrelated dirty work is preserved; no commit created.
+
+### Routing Revision 2 local implementation — 2026-11-14
+
+- User approved the reviewed Backend/Mobile plan. Implemented Backend TomTom v1 route preview with JWT, strict mode/coordinate DTO, bounded provider response, user rate limit, real alternatives, `other` segments, traffic availability and Swagger; added Mobile MapKit preview, private location lease, in-memory navigation, localized voice, bounded reroute, stable arrival and offline continuation.
+- Backend focused checks 5/5 pass; full suite 309/309 pass across 63 suites. Mobile Simulator Debug build, Swift navigation harness, vi/en localization and SwiftLint passed. API handoff and Study notes exist. See routing owner progress and Mobile verification for exact scope.
+- Native convergence recorded remaining account terms, Vietnam motorcycle/device/background/accessibility and privacy integration checks. Stage IMPLEMENTING; no commit/push, deployment or paid billing claim for this incomplete function.

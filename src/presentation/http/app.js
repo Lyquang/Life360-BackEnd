@@ -9,6 +9,7 @@ const {
   createLocationBatchLimiter,
   createLiveTrailReadLimiter,
   createSosLimiter,
+  createRoutingPreviewLimiter,
 } = require('./middleware/rateLimiter');
 const { createErrorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { createAuthController } = require('./controllers/authController');
@@ -28,6 +29,8 @@ const { createSosRoutes } = require('./routes/sosRoutes');
 const { createSosController } = require('./controllers/sosController');
 const { createMetricsMiddleware } = require('./middleware/metrics');
 const { createRequestContext } = require('./middleware/requestContext');
+const { createRoutingRoutes } = require('./routes/routingRoutes');
+const { createRoutingController } = require('./controllers/routingController');
 
 /** Mounts middleware and the /api/v1 routes on an existing Express app. */
 function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected, metrics, logger = console }) {
@@ -82,6 +85,11 @@ function configureApp(app, { config, useCases, swaggerSpec, isDatabaseConnected,
   }));
   v1.use('/conversations', createConversationRoutes({ controller: chatController, authenticate }));
   v1.use('/chat', createChatRoutes({ controller: chatController, authenticate }));
+  v1.use('/routes', createRoutingRoutes({
+    controller: createRoutingController(useCases),
+    authenticate,
+    limiter: createRoutingPreviewLimiter(config.routing?.previewRateLimit || 10),
+  }));
 
   app.use('/api/v1', v1);
   // Unversioned health endpoint for the load balancer (Render health check).

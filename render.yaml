@@ -103,6 +103,11 @@ services:
         value: "30"
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # Trial routing: supply the key in Render Environment; never commit its value.
+      - key: TOMTOM_ROUTING_API_KEY
+        sync: false
+      - key: ROUTING_PREVIEW_RATE_LIMIT
+        value: "10"
       - key: CORS_ORIGIN
         value: "*"
       # Redis cache/session/location (recommended: Upstash Redis; optional)
@@ -111,7 +116,7 @@ services:
       - key: REDIS_URL
         sync: false
       - key: REDIS_KEY_PREFIX
-        value: familytracker:
+        value: "familytracker:"
       - key: REDIS_DEFAULT_TTL_SECONDS
         value: "300"
       - key: REDIS_CONNECT_TIMEOUT_MS

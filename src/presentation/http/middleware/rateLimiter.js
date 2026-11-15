@@ -65,10 +65,26 @@ function createSosLimiter(limit = 60) {
   });
 }
 
+function createRoutingPreviewLimiter(limit = 10) {
+  return rateLimit({
+    windowMs: 60 * 1000,
+    limit,
+    keyGenerator: (req) => req.user._id.toString(),
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      success: false,
+      code: 'RATE_LIMITED',
+      message: 'Too many route previews. Please retry later.',
+    },
+  });
+}
+
 module.exports = {
   createSosLimiter,
   createAuthLimiter,
   createRefreshLimiter,
   createLocationBatchLimiter,
   createLiveTrailReadLimiter,
+  createRoutingPreviewLimiter,
 };

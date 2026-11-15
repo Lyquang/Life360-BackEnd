@@ -46,6 +46,8 @@ const { createChatUseCases } = require('./application/chat/chatUseCases');
 const { createNoopMapMatcher } = require('./infrastructure/matching/NoopMapMatcher');
 const { createFakeMapMatcher } = require('./infrastructure/matching/FakeMapMatcher');
 const { createMapboxMapMatcher } = require('./infrastructure/matching/MapboxMapMatcher');
+const { createTomtomRoutingV1 } = require('./infrastructure/maps/tomtomRoutingV1');
+const { createRoutingUseCases } = require('./application/routing/routingUseCases');
 
 /** Composition root: wires infrastructure adapters into application use cases. */
 function createContainer({ config, io, supportsTransactions, logger = console, metrics }) {
@@ -166,6 +168,11 @@ function createContainer({ config, io, supportsTransactions, logger = console, m
     location: createLocationUseCases({ ...deps, sosAssistance: config.sos?.enabled ? sos : null,
       sosActionLimiter: createSosSocketLimiter({ limit: config.sos?.rateLimit }) }),
     chat: createChatUseCases(deps),
+    routing: createRoutingUseCases({
+      provider: config.routing?.apiKey
+        ? createTomtomRoutingV1({ apiKey: config.routing.apiKey })
+        : null,
+    }),
   };
   useCases.location.syncBatch = createSyncLocationBatchUseCase({
     ...deps,

@@ -41,7 +41,7 @@ proxy mới; routing/weather/purpose/geofence vẫn là thiết kế chưa hiệ
 | Feature / thiết kế | Phạm vi và trạng thái |
 |---|---|
 | [place-search](features/place-search/spec.md) | Native iOS MapKit search/history đã triển khai; 21 tests + Simulator build; device/coverage QA còn lại ở plan |
-| [routing](features/routing/spec.md) | Chọn phương tiện/tuyến thay thế/traffic/active trip — Draft spec/plan/tasks |
+| [routing](features/routing/spec.md) | Backend preview và Mobile dẫn đường đã hiện thực cục bộ; Render hiện trả 404 cho route mới, deployment/device QA còn mở. Active trip/traffic worker là feature khác. |
 | [context-alerts](features/context-alerts/spec.md) | Chỉ cảnh báo đáng chú ý, inbox/device/worker/push nền — alert DB/retention đã duyệt, chi tiết thiết kế còn Draft |
 | [favorite-places extension](features/favorite-places/plan.md) | Purpose, CRUD, nhãn cá nhân trên nơi chung và Circle presence — Draft extension plan/tasks; API cũ giữ Current behavior |
 

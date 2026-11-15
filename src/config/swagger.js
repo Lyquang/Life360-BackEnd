@@ -51,6 +51,61 @@ function createSwaggerSpec({ publicUrl, port }) {
           },
         },
         schemas: {
+          RoutePoint: {
+            type: 'object',
+            required: ['latitude', 'longitude'],
+            properties: {
+              latitude: { type: 'number', minimum: -90, maximum: 90 },
+              longitude: { type: 'number', minimum: -180, maximum: 180 },
+            },
+          },
+          RoutePreviewResponse: {
+            type: 'object',
+            required: ['success', 'data'],
+            properties: {
+              success: { type: 'boolean', example: true },
+              data: {
+                type: 'object',
+                required: ['provider', 'travelMode', 'fetchedAt', 'routes'],
+                properties: {
+                  provider: { type: 'string', enum: ['tomtom-v1'] },
+                  travelMode: { type: 'string', enum: ['motorcycle', 'car', 'walking'] },
+                  fetchedAt: { type: 'string', format: 'date-time' },
+                  reason: { type: 'string', enum: ['no_route'] },
+                  routes: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      required: ['id', 'distanceMeters', 'durationSeconds', 'geometry', 'maneuvers', 'modeSections', 'traffic'],
+                      properties: {
+                        id: { type: 'string', description: 'Response-local option identity' },
+                        distanceMeters: { type: 'number' },
+                        durationSeconds: { type: 'number' },
+                        geometry: { type: 'array', items: { $ref: '#/components/schemas/RoutePoint' } },
+                        maneuvers: { type: 'array', items: {
+                          type: 'object', properties: {
+                            code: { type: 'string' }, pointIndex: { type: 'integer' },
+                            routeOffsetMeters: { type: 'number' },
+                            streetName: { type: 'string', nullable: true },
+                          },
+                        } },
+                        modeSections: { type: 'array', items: {
+                          type: 'object', properties: {
+                            startPointIndex: { type: 'integer' }, endPointIndex: { type: 'integer' },
+                            travelMode: { type: 'string', enum: ['motorcycle', 'car', 'pedestrian', 'other'] },
+                          },
+                        } },
+                        traffic: { type: 'object', properties: {
+                          status: { type: 'string', enum: ['provider_reported', 'unavailable'] },
+                          delaySeconds: { type: 'number', nullable: true },
+                        } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           AuthTokenPair: {
             type: 'object',
             required: ['token', 'accessToken', 'refreshToken', 'expiresIn'],
